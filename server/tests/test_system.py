@@ -13,7 +13,7 @@ from sonic.api import create_app
 from sonic.config import Settings
 from sonic.engine import Engine
 from sonic.exchange import DEMO_URL, PUBLIC_URL, BinanceDemo, PaperExchange
-from sonic.risk import Filters, Limits, protection_prices, size_position
+from sonic.risk import Filters, Limits, max_order_usdt, protection_prices, size_position
 from sonic.store import Store
 
 FILTERS = Filters("0.001", "0.1", 0.001, 100.0)
@@ -32,6 +32,11 @@ class FakeMarket:
     async def price(self, symbol: str) -> float:
         return self.last
 
+    async def prices(self) -> dict[str, float]:
+        from sonic.risk import ALLOWED_SYMBOLS
+
+        return {symbol: self.last for symbol in ALLOWED_SYMBOLS}
+
     async def bars(self, symbol: str, interval: str, limit: int) -> list[tuple[int, float]]:
         return [(self.bar + index, close) for index, close in enumerate(self.closes)]
 
@@ -45,6 +50,7 @@ def build(symbols: tuple[str, ...] = ("BTCUSDT",)) -> tuple[Engine, PaperExchang
     market = FakeMarket()
     exchange = PaperExchange(market, store, 10000.0)
     engine = Engine(store, exchange, settings(symbols), clock=lambda: 1_800_000_000.0)
+    engine.limits = Limits(symbols=list(symbols))
     return engine, exchange, market
 
 
@@ -248,3 +254,98 @@ async def test_demo_close_still_sends_order_when_cancel_fails() -> None:
     client = httpx.AsyncClient(base_url=DEMO_URL, transport=httpx.MockTransport(handler))
     await BinanceDemo(client, "key", "secret").close_market("BTCUSDT", -0.5, "id1")
     assert paths == ["DELETE /fapi/v1/algoOpenOrders", "POST /fapi/v1/order"]
+
+
+def test_ten_dollar_amount_sizes_small_coins_but_not_btc() -> None:
+    limits = Limits(capital_usdt=10, max_daily_loss_usdt=3, leverage=1)
+    assert max_order_usdt(limits, 10) == 10.0
+    small_coin = Filters("1", "0.0001", 1.0, 5.0)
+    assert size_position(limits, 2.0, 0.0, small_coin).qty == 5.0
+    btc = Filters("0.001", "0.1", 0.001, 50.0)
+    assert size_position(limits, 75000.0, 0.0, btc).reason == "below_exchange_minimum"
+
+
+def test_limits_reject_unknown_coin() -> None:
+    with pytest.raises(ValueError, match="unknown_symbol"):
+        Limits(symbols=["SCAMUSDT"])
+
+
+async def test_losing_the_whole_amount_closes_and_halts() -> None:
+    engine, exchange, market = build()
+    # A 100 USDT order (the market minimum) on a 20 USDT amount, then a crash through the stop.
+    limits = Limits(
+        capital_usdt=20,
+        max_daily_loss_usdt=20,
+        risk_per_trade_pct=5,
+        stop_loss_pct=1,
+        leverage=5,
+        symbols=["BTCUSDT"],
+    )
+    await engine.set_limits(limits)
+    await engine.start()
+    await engine.tick()
+    assert engine.store.open_trades()
+    market.last = 50.0
+    await engine.tick()
+    assert engine.halted == "budget_used"
+    assert exchange.state["open"] == {}
+    with pytest.raises(ValueError, match="budget_still_used"):
+        await engine.clear_halt()
+
+
+async def test_trades_shrink_after_a_loss() -> None:
+    engine, exchange, market = build()
+    await engine.set_limits(Limits(capital_usdt=1000, max_daily_loss_usdt=500, symbols=["BTCUSDT"]))
+    await engine.start()
+    await engine.tick()
+    first = engine.store.open_trades()[0]["qty"]
+    market.last = 98.0
+    await engine.tick()
+    market.last = 100.0
+    market.bar += 1
+    await engine.tick()
+    second = engine.store.open_trades()[0]["qty"]
+    assert engine.budget_realized() < 0
+    assert second < first
+
+
+async def test_saving_amount_starts_a_new_budget() -> None:
+    engine, _, market = build()
+    await engine.start()
+    await engine.tick()
+    market.last = 98.0
+    await engine.tick()
+    assert engine.budget_realized() < 0
+    await engine.stop()
+    engine.clock = lambda: 1_800_000_100.0
+    await engine.set_limits(Limits(capital_usdt=500, symbols=["BTCUSDT"]))
+    assert engine.budget_realized() == 0
+    assert engine.budget_left() == 500
+
+
+def test_api_lists_markets_and_explains_limit_errors() -> None:
+    engine, _, _ = build()
+    with TestClient(create_app(engine, "secret", background=False)) as client:
+        headers = {"Authorization": "Bearer secret"}
+        markets = client.get("/markets", headers=headers).json()
+        assert len(markets) == 12
+        assert markets[0]["min_order_usdt"] == 100.0
+        too_big = {"capital_usdt": 10, "max_daily_loss_usdt": 30}
+        response = client.put("/limits", headers=headers, json=too_big)
+        assert response.json()["detail"] == "daily_loss_above_capital"
+        response = client.put("/limits", headers=headers, json={"symbols": ["SCAMUSDT"]})
+        assert response.json()["detail"] == "unknown_symbol"
+        status = client.get("/status", headers=headers).json()
+        assert status["budget_left"] == 1000.0
+
+
+def test_api_refuses_a_coin_the_amount_cannot_trade() -> None:
+    engine, _, _ = build()
+    with TestClient(create_app(engine, "secret", background=False)) as client:
+        headers = {"Authorization": "Bearer secret"}
+        ten_dollars = {"capital_usdt": 10, "max_daily_loss_usdt": 3, "leverage": 1}
+        body = {**ten_dollars, "symbols": ["BTCUSDT"]}
+        response = client.put("/limits", headers=headers, json=body)
+        assert response.status_code == 422
+        assert response.json()["detail"] == "coin_below_minimum"
+        assert engine.limits.capital_usdt == 1000

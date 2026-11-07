@@ -7,10 +7,11 @@ import hmac
 from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager, suppress
 from pathlib import Path
-from typing import Any
+from typing import Annotated, Any
 
-from fastapi import Depends, FastAPI, Header, HTTPException, Query
+from fastapi import Body, Depends, FastAPI, Header, HTTPException, Query
 from fastapi.staticfiles import StaticFiles
+from pydantic import ValidationError
 
 from .engine import Engine
 from .risk import Limits
@@ -50,12 +51,29 @@ def create_app(engine: Engine, token: str, background: bool = True) -> FastAPI:
         return engine.store.events(limit)
 
     @app.put("/limits", dependencies=secured)
-    async def put_limits(limits: Limits) -> dict[str, Any]:
+    async def put_limits(body: Annotated[dict[str, Any], Body()]) -> dict[str, Any]:
+        try:
+            limits = Limits.model_validate(body)
+        except ValidationError as error:
+            text = str(error)
+            code = next(
+                (name for name in ("daily_loss_above_capital", "unknown_symbol") if name in text),
+                "invalid_values",
+            )
+            raise HTTPException(status_code=422, detail=code) from error
+        too_small = await engine.unaffordable(limits)
+        if too_small:
+            raise HTTPException(status_code=422, detail="coin_below_minimum")
         try:
             await engine.set_limits(limits)
         except ValueError as error:
             raise HTTPException(status_code=409, detail=str(error)) from error
         return limits.model_dump()
+
+    @app.get("/markets", dependencies=secured)
+    async def markets() -> list[dict[str, Any]]:
+        """Each coin the owner can pick, with the smallest order Binance accepts for it."""
+        return await engine.markets()
 
     @app.post("/start", dependencies=secured)
     async def start() -> dict[str, Any]:

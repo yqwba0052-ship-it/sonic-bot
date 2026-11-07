@@ -5,6 +5,11 @@ const MESSAGES: Record<string, string> = {
   stop_first: 'أوقف البوت أولًا، ثم غيّر الحدود.',
   halted: 'البوت موقوف للأمان. راجع السبب ثم أعد التفعيل.',
   invalid_values: 'بعض القيم خارج الحدود المسموحة.',
+  daily_loss_above_capital: 'الخسارة اليومية لازم تكون أقل من المبلغ أو تساويه.',
+  unknown_symbol: 'عملة غير متاحة.',
+  coin_below_minimum: 'مبلغك لا يكفي لأقل صفقة في عملة مختارة. ألغِ اختيارها أو ارفع المبلغ.',
+  budget_used: 'خسر البوت المبلغ المخصص كله، فأقفل الصفقات وتوقف. باقي رصيدك لم يُلمس.',
+  budget_still_used: 'المبلغ المخصص انتهى. احفظ مبلغًا جديدًا من تبويب الأمان أولًا.',
   daily_loss_still_breached: 'ما زالت خسارة اليوم فوق الحد. انتظر إلى اليوم التالي.',
   panic_button: 'أوقفته أنت بزر الإغلاق الطارئ.',
   daily_loss_limit: 'وصل البوت إلى حد الخسارة اليومي، فأقفل الصفقات وتوقف.',
@@ -20,6 +25,10 @@ const MESSAGES: Record<string, string> = {
   trade_skipped: 'لم تُفتح صفقة',
   tick_failed: 'فشلت دورة فحص',
 };
+
+export function coinName(symbol: string): string {
+  return symbol.replace(/USDT$/, '');
+}
 
 export function message(code: string): string {
   return MESSAGES[code] ?? code;

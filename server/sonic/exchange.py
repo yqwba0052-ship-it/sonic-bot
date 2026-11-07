@@ -54,6 +54,7 @@ class Closed:
 class Exchange(Protocol):
     async def filters(self, symbol: str) -> Filters: ...
     async def price(self, symbol: str) -> float: ...
+    async def prices(self) -> dict[str, float]: ...
     async def bars(self, symbol: str, interval: str, limit: int) -> list[tuple[int, float]]: ...
     async def balance(self) -> float: ...
     async def positions(self) -> dict[str, Position]: ...
@@ -99,6 +100,10 @@ class PublicMarket:
         data = await self.get("/fapi/v1/ticker/price", {"symbol": symbol})
         return float(data["price"])
 
+    async def prices(self) -> dict[str, float]:
+        data = await self.get("/fapi/v1/ticker/price")
+        return {item["symbol"]: float(item["price"]) for item in data}
+
     async def bars(self, symbol: str, interval: str, limit: int) -> list[tuple[int, float]]:
         """Return (open_time, close) for closed bars only."""
         data = await self.get(
@@ -128,6 +133,9 @@ class PaperExchange:
 
     async def bars(self, symbol: str, interval: str, limit: int) -> list[tuple[int, float]]:
         return await self.market.bars(symbol, interval, limit)
+
+    async def prices(self) -> dict[str, float]:
+        return await self.market.prices()
 
     async def balance(self) -> float:
         return float(self.state["balance"])
@@ -232,6 +240,9 @@ class BinanceDemo:
 
     async def bars(self, symbol: str, interval: str, limit: int) -> list[tuple[int, float]]:
         return await self.market.bars(symbol, interval, limit)
+
+    async def prices(self) -> dict[str, float]:
+        return await self.market.prices()
 
     async def balance(self) -> float:
         for item in await self.signed("GET", "/fapi/v3/balance"):

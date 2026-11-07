@@ -38,6 +38,7 @@ class Engine:
         self.unrealized = 0.0
         self.balance = 0.0
         self.live: dict[str, Any] = {}
+        self.minimums: dict[str, float] = {}
         self.limits = Limits(**store.get("limits", {}))
         self.halted: str = store.get("halted", "")
         # Never resume trading by itself after a restart.
@@ -55,6 +56,22 @@ class Engine:
 
     def realized_today(self) -> float:
         return self.store.realized_since(self.day_start_ms())
+
+    def budget_start_ms(self) -> int:
+        return int(self.store.get("budget_start_ms", 0))
+
+    def budget_realized(self) -> float:
+        """Closed-trade result since the owner last saved the amount."""
+        return self.store.realized_since(self.budget_start_ms())
+
+    def budget_left(self) -> float:
+        """What is left of the amount, counting open trades at their current value."""
+        return self.limits.capital_usdt + self.budget_realized() + self.unrealized
+
+    def trading_budget(self) -> float:
+        """Amount new trades may use: the remaining amount, never more than the wallet."""
+        remaining = self.limits.capital_usdt + self.budget_realized()
+        return min(remaining, self.balance) if self.balance > 0 else remaining
 
     def halt(self, reason: str, detail: str = "") -> None:
         self.running = False
@@ -80,6 +97,8 @@ class Engine:
             if self.halted == "daily_loss_limit":
                 if risk.daily_loss_breached(self.limits, self.realized_today(), self.unrealized):
                     raise ValueError("daily_loss_still_breached")
+            if self.halted == "budget_used" and self.budget_left() <= 0:
+                raise ValueError("budget_still_used")
             self.halted = ""
             self.failures = 0
             self.store.put("halted", "")
@@ -91,6 +110,8 @@ class Engine:
                 raise ValueError("stop_first")
             self.limits = limits
             self.store.put("limits", limits.model_dump())
+            # Saving the amount starts a new budget from now.
+            self.store.put("budget_start_ms", self.now_ms())
             self.log("info", "limits_changed", limits.model_dump_json())
 
     async def panic(self) -> None:
@@ -111,6 +132,7 @@ class Engine:
         async with self.lock:
             try:
                 await self._sync()
+                await self._refresh_minimums()
                 await self._guard()
                 if self.running and not self.halted:
                     await self._entries()
@@ -144,7 +166,37 @@ class Engine:
             if symbol not in tracked:
                 self.halt("unknown_position", symbol)
 
+    async def markets(self) -> list[dict[str, Any]]:
+        prices = await self.exchange.prices()
+        result = []
+        for symbol in risk.ALLOWED_SYMBOLS:
+            filters = await self.exchange.filters(symbol)
+            price = prices[symbol]
+            minimum = round(max(filters.min_notional, filters.min_qty * price), 2)
+            result.append({"symbol": symbol, "price": price, "min_order_usdt": minimum})
+        return result
+
+    async def unaffordable(self, limits: Limits) -> list[str]:
+        """Chosen coins whose smallest order is larger than the new amount allows."""
+        largest = risk.max_order_usdt(limits, limits.capital_usdt)
+        minimums = {item["symbol"]: item["min_order_usdt"] for item in await self.markets()}
+        return [symbol for symbol in limits.symbols if minimums[symbol] > largest]
+
+    async def _refresh_minimums(self) -> None:
+        for symbol in self.limits.symbols:
+            filters = await self.exchange.filters(symbol)
+            price = await self.exchange.price(symbol)
+            self.minimums[symbol] = round(max(filters.min_notional, filters.min_qty * price), 2)
+
     async def _guard(self) -> None:
+        if self.budget_left() <= 0:
+            if self.halted != "budget_used":
+                self.running = False
+                self.halted = ""
+                self.halt("budget_used", f"amount {self.limits.capital_usdt}")
+                await self._close_all()
+                await self._sync()
+            return
         if not risk.daily_loss_breached(self.limits, self.realized_today(), self.unrealized):
             return
         if self.halted != "daily_loss_limit":
@@ -158,7 +210,7 @@ class Engine:
         open_trades = self.store.open_trades()
         used = {trade["symbol"] for trade in open_trades}
         margin = sum(trade["margin"] for trade in open_trades)
-        for symbol in self.settings.symbols:
+        for symbol in self.limits.symbols:
             if symbol in used:
                 continue
             bars = await self.exchange.bars(symbol, self.settings.interval, HISTORY_BARS)
@@ -175,7 +227,7 @@ class Engine:
     async def _open(self, symbol: str, side: str, margin: float) -> float:
         filters = await self.exchange.filters(symbol)
         price = await self.exchange.price(symbol)
-        size = risk.size_position(self.limits, price, margin, filters)
+        size = risk.size_position(self.limits, price, margin, filters, self.trading_budget())
         if not size.qty:
             self.log("warning", "trade_skipped", f"{symbol} {size.reason}")
             return 0.0
@@ -219,6 +271,9 @@ class Engine:
             "positions": self.live,
             "open_trades": self.store.open_trades(),
             "limits": self.limits.model_dump(),
+            "budget_left": self.budget_left(),
+            "max_order_usdt": risk.max_order_usdt(self.limits, self.trading_budget()),
+            "minimums": self.minimums,
             "last_tick_ms": self.last_tick_ms,
             "last_error": self.last_error,
         }

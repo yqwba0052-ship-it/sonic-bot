@@ -2,7 +2,7 @@ import { useState } from 'react';
 
 import { Body, Button, Card, colors, ConfirmButton, Row, Screen } from '@/components/ui';
 import { errorCode, useBot } from '@/lib/bot-context';
-import { message, money, signed } from '@/lib/text';
+import { coinName, message, money, signed } from '@/lib/text';
 
 const MODE_LABEL = { paper: 'رصيد وهمي بأسعار حقيقية', demo: 'حساب Binance التجريبي' };
 
@@ -57,8 +57,24 @@ export default function StatusScreen() {
             <Row label="الرصيد" value={money(status.balance)} />
             <Row label="ربح أو خسارة اليوم" value={signed(today)} color={pnlColor(today)} />
             <Row label="المبلغ المخصص" value={money(status.limits.capital_usdt)} />
+            <Row
+              label="المتبقي من المبلغ"
+              value={money(status.budget_left)}
+              color={status.budget_left < status.limits.capital_usdt ? colors.warn : undefined}
+            />
+            <Row label="العملات" value={status.limits.symbols.map(coinName).join('، ')} />
             <Row label="حد الخسارة اليومي" value={money(status.limits.max_daily_loss_usdt)} />
           </Card>
+          {status.limits.symbols
+            .filter((symbol) => (status.minimums[symbol] ?? 0) > status.max_order_usdt)
+            .map((symbol) => (
+              <Card key={symbol} tone={colors.warn}>
+                <Body color={colors.warn}>
+                  {coinName(symbol)}: أقل صفقة {status.minimums[symbol]}$ وأكبر صفقة لمبلغك{' '}
+                  {status.max_order_usdt.toFixed(2)}$، فلن يتداول البوت فيها.
+                </Body>
+              </Card>
+            ))}
           {status.halted ? (
             <Card tone={colors.loss}>
               <Body>{message(status.halted)}</Body>

@@ -8,7 +8,10 @@ export type Limits = {
   risk_per_trade_pct: number;
   stop_loss_pct: number;
   take_profit_pct: number;
+  symbols: string[];
 };
+
+export type Market = { symbol: string; price: number; min_order_usdt: number };
 
 export type Trade = {
   id: number;
@@ -39,6 +42,9 @@ export type Status = {
   positions: Record<string, { qty: number; mark: number; unrealized: number }>;
   open_trades: Trade[];
   limits: Limits;
+  budget_left: number;
+  max_order_usdt: number;
+  minimums: Record<string, number>;
   last_tick_ms: number;
   last_error: string;
 };
