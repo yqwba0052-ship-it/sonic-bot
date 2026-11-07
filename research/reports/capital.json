@@ -1,0 +1,362 @@
+[
+ {
+  "start": 20,
+  "risk": 0.005,
+  "max_open": 3,
+  "final": 41.77,
+  "gain": 1.0884415955452509,
+  "max_drawdown": 0.17557825806741933,
+  "taken": 167,
+  "skipped": 285
+ },
+ {
+  "start": 20,
+  "risk": 0.005,
+  "max_open": 6,
+  "final": 38.91,
+  "gain": 0.9455711800532971,
+  "max_drawdown": 0.28540293336910416,
+  "taken": 250,
+  "skipped": 202
+ },
+ {
+  "start": 20,
+  "risk": 0.01,
+  "max_open": 3,
+  "final": 49.23,
+  "gain": 1.461306188586513,
+  "max_drawdown": 0.18473826203090282,
+  "taken": 168,
+  "skipped": 284
+ },
+ {
+  "start": 20,
+  "risk": 0.01,
+  "max_open": 6,
+  "final": 44.88,
+  "gain": 1.2440030138702554,
+  "max_drawdown": 0.28775731010028005,
+  "taken": 250,
+  "skipped": 202
+ },
+ {
+  "start": 30,
+  "risk": 0.005,
+  "max_open": 3,
+  "final": 49.36,
+  "gain": 0.6451723451857467,
+  "max_drawdown": 0.17283616846990268,
+  "taken": 179,
+  "skipped": 273
+ },
+ {
+  "start": 30,
+  "risk": 0.005,
+  "max_open": 6,
+  "final": 47.1,
+  "gain": 0.5698374281927261,
+  "max_drawdown": 0.26903786234892,
+  "taken": 269,
+  "skipped": 183
+ },
+ {
+  "start": 30,
+  "risk": 0.01,
+  "max_open": 3,
+  "final": 67.86,
+  "gain": 1.261879998487208,
+  "max_drawdown": 0.17305566420860752,
+  "taken": 181,
+  "skipped": 271
+ },
+ {
+  "start": 30,
+  "risk": 0.01,
+  "max_open": 6,
+  "final": 54.38,
+  "gain": 0.8128208062476105,
+  "max_drawdown": 0.3052716075209889,
+  "taken": 270,
+  "skipped": 182
+ },
+ {
+  "start": 50,
+  "risk": 0.005,
+  "max_open": 3,
+  "final": 65.89,
+  "gain": 0.3178141950550235,
+  "max_drawdown": 0.2059620769426529,
+  "taken": 186,
+  "skipped": 266
+ },
+ {
+  "start": 50,
+  "risk": 0.005,
+  "max_open": 6,
+  "final": 113.44,
+  "gain": 1.2687220360880689,
+  "max_drawdown": 0.25483628105185263,
+  "taken": 309,
+  "skipped": 143
+ },
+ {
+  "start": 50,
+  "risk": 0.01,
+  "max_open": 3,
+  "final": 84.79,
+  "gain": 0.6957666499697737,
+  "max_drawdown": 0.23076740851534838,
+  "taken": 186,
+  "skipped": 266
+ },
+ {
+  "start": 50,
+  "risk": 0.01,
+  "max_open": 6,
+  "final": 130.99,
+  "gain": 1.6198223573380308,
+  "max_drawdown": 0.27421475549873753,
+  "taken": 309,
+  "skipped": 143
+ },
+ {
+  "start": 75,
+  "risk": 0.005,
+  "max_open": 3,
+  "final": 123.15,
+  "gain": 0.6420474213152199,
+  "max_drawdown": 0.13763467884609382,
+  "taken": 194,
+  "skipped": 258
+ },
+ {
+  "start": 75,
+  "risk": 0.005,
+  "max_open": 6,
+  "final": 151.45,
+  "gain": 1.0193558393025146,
+  "max_drawdown": 0.18446891219018413,
+  "taken": 322,
+  "skipped": 130
+ },
+ {
+  "start": 75,
+  "risk": 0.01,
+  "max_open": 3,
+  "final": 154.41,
+  "gain": 1.0588486228075387,
+  "max_drawdown": 0.17776999625107193,
+  "taken": 194,
+  "skipped": 258
+ },
+ {
+  "start": 75,
+  "risk": 0.01,
+  "max_open": 6,
+  "final": 185.3,
+  "gain": 1.4707263219706204,
+  "max_drawdown": 0.2570725354452287,
+  "taken": 323,
+  "skipped": 129
+ },
+ {
+  "start": 100,
+  "risk": 0.005,
+  "max_open": 3,
+  "final": 146.5,
+  "gain": 0.46503685420026497,
+  "max_drawdown": 0.1342719544487463,
+  "taken": 194,
+  "skipped": 258
+ },
+ {
+  "start": 100,
+  "risk": 0.005,
+  "max_open": 6,
+  "final": 199.67,
+  "gain": 0.9967123499611601,
+  "max_drawdown": 0.1742035285065322,
+  "taken": 327,
+  "skipped": 125
+ },
+ {
+  "start": 100,
+  "risk": 0.01,
+  "max_open": 3,
+  "final": 170.54,
+  "gain": 0.705355216680505,
+  "max_drawdown": 0.18298601351597754,
+  "taken": 194,
+  "skipped": 258
+ },
+ {
+  "start": 100,
+  "risk": 0.01,
+  "max_open": 6,
+  "final": 256.93,
+  "gain": 1.5692944071994197,
+  "max_drawdown": 0.24890084271052304,
+  "taken": 328,
+  "skipped": 124
+ },
+ {
+  "start": 150,
+  "risk": 0.005,
+  "max_open": 3,
+  "final": 221.52,
+  "gain": 0.4768101006192609,
+  "max_drawdown": 0.10648637385358972,
+  "taken": 196,
+  "skipped": 256
+ },
+ {
+  "start": 150,
+  "risk": 0.005,
+  "max_open": 6,
+  "final": 283.7,
+  "gain": 0.8913436699220032,
+  "max_drawdown": 0.1527151778143101,
+  "taken": 334,
+  "skipped": 118
+ },
+ {
+  "start": 150,
+  "risk": 0.01,
+  "max_open": 3,
+  "final": 252.0,
+  "gain": 0.6799774998059527,
+  "max_drawdown": 0.17220939365263888,
+  "taken": 197,
+  "skipped": 255
+ },
+ {
+  "start": 150,
+  "risk": 0.01,
+  "max_open": 6,
+  "final": 375.41,
+  "gain": 1.502720132760671,
+  "max_drawdown": 0.23936187852526714,
+  "taken": 333,
+  "skipped": 119
+ },
+ {
+  "start": 200,
+  "risk": 0.005,
+  "max_open": 3,
+  "final": 288.81,
+  "gain": 0.44404733932435936,
+  "max_drawdown": 0.11735513236813355,
+  "taken": 195,
+  "skipped": 257
+ },
+ {
+  "start": 200,
+  "risk": 0.005,
+  "max_open": 6,
+  "final": 354.97,
+  "gain": 0.7748274394631114,
+  "max_drawdown": 0.13638054990325454,
+  "taken": 338,
+  "skipped": 114
+ },
+ {
+  "start": 200,
+  "risk": 0.01,
+  "max_open": 3,
+  "final": 355.79,
+  "gain": 0.7789559095800311,
+  "max_drawdown": 0.16260976558391826,
+  "taken": 193,
+  "skipped": 259
+ },
+ {
+  "start": 200,
+  "risk": 0.01,
+  "max_open": 6,
+  "final": 470.67,
+  "gain": 1.3533735769130932,
+  "max_drawdown": 0.23634718520325115,
+  "taken": 337,
+  "skipped": 115
+ },
+ {
+  "start": 300,
+  "risk": 0.005,
+  "max_open": 3,
+  "final": 405.28,
+  "gain": 0.3509223225878897,
+  "max_drawdown": 0.11454592993003931,
+  "taken": 198,
+  "skipped": 254
+ },
+ {
+  "start": 300,
+  "risk": 0.005,
+  "max_open": 6,
+  "final": 497.6,
+  "gain": 0.6586755452045574,
+  "max_drawdown": 0.13082833172351005,
+  "taken": 340,
+  "skipped": 112
+ },
+ {
+  "start": 300,
+  "risk": 0.01,
+  "max_open": 3,
+  "final": 500.69,
+  "gain": 0.6689747226402831,
+  "max_drawdown": 0.18276847616662628,
+  "taken": 198,
+  "skipped": 254
+ },
+ {
+  "start": 300,
+  "risk": 0.01,
+  "max_open": 6,
+  "final": 686.1,
+  "gain": 1.2869896415785909,
+  "max_drawdown": 0.23727998910993864,
+  "taken": 340,
+  "skipped": 112
+ },
+ {
+  "start": 500,
+  "risk": 0.005,
+  "max_open": 3,
+  "final": 664.7,
+  "gain": 0.3293939348442845,
+  "max_drawdown": 0.09642465371965758,
+  "taken": 198,
+  "skipped": 254
+ },
+ {
+  "start": 500,
+  "risk": 0.005,
+  "max_open": 6,
+  "final": 815.75,
+  "gain": 0.6314987983186136,
+  "max_drawdown": 0.12639580301650255,
+  "taken": 340,
+  "skipped": 112
+ },
+ {
+  "start": 500,
+  "risk": 0.01,
+  "max_open": 3,
+  "final": 844.21,
+  "gain": 0.6884279063405538,
+  "max_drawdown": 0.17271619407029593,
+  "taken": 198,
+  "skipped": 254
+ },
+ {
+  "start": 500,
+  "risk": 0.01,
+  "max_open": 6,
+  "final": 1151.33,
+  "gain": 1.3026605580210888,
+  "max_drawdown": 0.2340938182058827,
+  "taken": 340,
+  "skipped": 112
+ }
+]
