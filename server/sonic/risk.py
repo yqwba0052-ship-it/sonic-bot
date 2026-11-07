@@ -35,13 +35,19 @@ SMALL_ACCOUNT_SYMBOLS = [
     "AVAXUSDT",
 ]
 # A trade too small for the exchange minimum may be raised to the minimum only while its stop
-# then risks at most this share of the amount (the tested small-account rule).
-MAX_RISK_PCT = 2.0
+# then risks at most max(2 x risk per trade, 2%) of the amount (the tested replay rule).
+MIN_RAISE_CAP_PCT = 2.0
+
+
+def raise_cap_pct(risk_per_trade_pct: float) -> float:
+    return max(2 * risk_per_trade_pct, MIN_RAISE_CAP_PCT)
 
 
 class Limits(BaseModel):
     capital_usdt: float = Field(default=30.0, gt=0, le=100000)
     max_daily_loss_usdt: float = Field(default=6.0, gt=0)
+    # Leverage only sets the margin held; the stop and risk_per_trade_pct decide the loss.
+    # Capped at 5: at x24 Binance liquidates about 3.7% against the trade, inside the stop.
     leverage: int = Field(default=3, ge=1, le=5)
     risk_per_trade_pct: float = Field(default=1.0, ge=0.25, le=2)
     max_open: int = Field(default=3, ge=1, le=6)
@@ -87,10 +93,13 @@ def ceil_to(value: float, step: str) -> float:
     return float(Decimal(str(math.ceil(value / unit - 1e-9))) * Decimal(step))
 
 
-def min_amount_for(min_order: float, stop_pct: float, leverage: int) -> float:
-    """Smallest amount that can take one trade: the minimum order's stop must fit inside
-    MAX_RISK_PCT of the amount, and its margin inside the amount."""
-    return max(min_order * stop_pct / (MAX_RISK_PCT / 100), min_order / leverage)
+def min_amount_for(
+    min_order: float, stop_pct: float, leverage: int, risk_per_trade_pct: float = 2.0
+) -> float:
+    """Smallest amount that can take one trade: the minimum order's stop must fit inside the
+    raise cap, and its margin inside the amount."""
+    cap = raise_cap_pct(risk_per_trade_pct) / 100
+    return max(min_order * stop_pct / cap, min_order / leverage)
 
 
 def size_position(
@@ -112,7 +121,7 @@ def size_position(
     minimum = filters.min_order(price)
     if notional < minimum:
         qty = ceil_to(minimum / price, filters.step_size)
-        if qty * stop_dist > budget * MAX_RISK_PCT / 100:
+        if qty * stop_dist > budget * raise_cap_pct(limits.risk_per_trade_pct) / 100:
             return Size(0.0, "amount_too_small")
     else:
         qty = floor_to(min(notional, max_notional) / price, filters.step_size)

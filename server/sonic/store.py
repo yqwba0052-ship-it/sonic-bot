@@ -39,9 +39,9 @@ class Store:
         self.db.row_factory = sqlite3.Row
         self.db.executescript(SCHEMA)
         columns = {row["name"] for row in self.db.execute("PRAGMA table_info(trades)")}
-        for name in ("risk_usdt", "r"):
+        for name, kind in (("risk_usdt", "REAL"), ("r", "REAL"), ("scaled", "INTEGER DEFAULT 0")):
             if name not in columns:
-                self.db.execute(f"ALTER TABLE trades ADD COLUMN {name} REAL")
+                self.db.execute(f"ALTER TABLE trades ADD COLUMN {name} {kind}")
         self.db.commit()
 
     def get(self, key: str, default: Any = None) -> Any:
@@ -80,6 +80,12 @@ class Store:
         self.db.execute(
             "UPDATE trades SET stop_price = ?, target_price = ? WHERE id = ?",
             (stop, target, trade_id),
+        )
+        self.db.commit()
+
+    def mark_scaled(self, trade_id: int, new_stop: float) -> None:
+        self.db.execute(
+            "UPDATE trades SET scaled = 1, stop_price = ? WHERE id = ?", (new_stop, trade_id)
         )
         self.db.commit()
 

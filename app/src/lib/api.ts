@@ -21,10 +21,12 @@ export type Market = {
 
 export type Insights = {
   expected_avg_r: number;
+  expected_win_rate: number;
   drift_floor: number;
   window: number;
   recent_trades: number;
   recent_avg_r: number | null;
+  recent_win_rate: number | null;
   coins: { symbol: string; trades: number; avg_r: number | null; pnl: number; wins: number }[];
   notes: { code: string; symbol: string; trades: number; avg_r: number }[];
 };
@@ -43,6 +45,7 @@ export type Trade = {
   pnl: number | null;
   fees: number | null;
   r: number | null;
+  scaled: number | null;
 };
 
 export type BotEvent = { id: number; at_ms: number; level: string; code: string; detail: string };

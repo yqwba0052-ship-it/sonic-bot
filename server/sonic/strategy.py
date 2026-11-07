@@ -3,10 +3,13 @@
 trend-20-100-k3-tnone-h120-btc on 4-hour bars:
 - enter when the 20-bar EMA crosses the 100-bar EMA on a closed bar;
 - buy only while BTC closes above its 300-bar EMA, sell only while it closes below;
-- stop at 3 x ATR(14) from the entry, no fixed target;
-- exit when the EMAs cross back, or after 120 bars (20 days).
-Tested 2021-01..2026-10 with fees, slippage and funding; profitable in every year, but it
-wins about 3 trades in 10 and has long losing runs.
+- stop at 3 x ATR(14) from the entry;
+- half the position closes at +0.25 x the stop distance, then the rest's stop moves to the entry
+  (owner's choice: most trades end in profit, smaller total; research/sonic_research/partial.py);
+- the rest exits when the EMAs cross back, or after 120 bars (20 days).
+Tested 2021-01..2026-10 with fees, slippage and funding: 78% of trades ended in profit (80% in
+the unseen 2024-07..2026-10 part); half of all months had 80%+ winning trades, the worst month
+40%. A $30 account grew to about $56, deepest drop 7%. Past results are no promise.
 """
 
 from __future__ import annotations
@@ -24,11 +27,16 @@ REGIME_PERIOD = 300
 MAX_HOLD_BARS = 120
 HISTORY_BARS = 1000
 
-# Self-check: the average R of the last 30 closed trades was never below -0.86 in 5.8 years
-# of history (1st percentile -0.81). Worse than this means the market no longer fits.
+HALF_AT_R = 0.25
+
+# Self-check for this exit style (longs only, half at 0.25R): the average R of the last 30
+# closed trades was never below -0.39 in 5.8 years (1st percentile -0.29). Worse than this
+# means the market no longer fits. History on the 8 small-account coins: 78% of trades ended
+# in profit, average +0.21R.
 DRIFT_WINDOW = 30
-DRIFT_FLOOR = -0.80
-EXPECTED_AVG_R = 0.34
+DRIFT_FLOOR = -0.40
+EXPECTED_AVG_R = 0.21
+EXPECTED_WIN_RATE = 0.78
 
 
 @dataclass(frozen=True)

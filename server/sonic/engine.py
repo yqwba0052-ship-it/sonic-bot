@@ -146,6 +146,7 @@ class Engine:
         async with self.lock:
             try:
                 await self._sync()
+                await self._follow_scaling()
                 await self._guard()
                 bar = self.last_closed_bar()
                 if bar > int(self.store.get("last_bar_ms", 0)):
@@ -180,6 +181,17 @@ class Engine:
         for symbol in positions:
             if symbol not in tracked:
                 self.halt("unknown_position", symbol)
+
+    async def _follow_scaling(self) -> None:
+        """When the half take-profit has filled, move the rest's stop to the entry."""
+        for trade in self.store.open_trades():
+            live = self.live.get(trade["symbol"])
+            if trade["scaled"] or not trade["target_price"] or live is None:
+                continue
+            if abs(live["qty"]) < trade["qty"] - 1e-12:
+                await self.exchange.move_stop(trade["symbol"], trade["side"], trade["entry_price"])
+                self.store.mark_scaled(trade["id"], trade["entry_price"])
+                self.log("info", "trade_scaled", trade["symbol"])
 
     async def _guard(self) -> None:
         if self.budget_left() <= 0:
@@ -230,9 +242,9 @@ class Engine:
                 reason = "trade_exit_signal"
             elif held_bars >= strategy.MAX_HOLD_BARS:
                 reason = "trade_exit_time"
-            if reason:
-                qty = trade["qty"] if trade["side"] == "BUY" else -trade["qty"]
-                await self.exchange.close_market(trade["symbol"], qty, self._client_id())
+            live = self.live.get(trade["symbol"])
+            if reason and live is not None:
+                await self.exchange.close_market(trade["symbol"], live["qty"], self._client_id())
                 self.log("info", reason, trade["symbol"])
         await self._sync()
         if not self.running or self.halted:
@@ -271,27 +283,34 @@ class Engine:
         fill = await self.exchange.open_market(symbol, side, size.qty, self._client_id())
         used_margin = fill.qty * fill.price / self.limits.leverage
         stop = risk.stop_price(side, fill.price, stop_dist, filters.tick_size)
+        direction = 1 if side == "BUY" else -1
+        half = risk.floor_to(fill.qty / 2, filters.step_size)
+        target = None
+        if half >= filters.min_qty:
+            target = risk.floor_to(
+                fill.price + direction * strategy.HALF_AT_R * stop_dist, filters.tick_size
+            )
         trade_id = self.store.open_trade(
             symbol=symbol,
             side=side,
             qty=fill.qty,
             entry_price=fill.price,
             stop_price=stop,
-            target_price=0.0,
+            target_price=target or 0.0,
             margin=used_margin,
             opened_ms=opened_ms,
             risk_usdt=fill.qty * abs(fill.price - stop),
         )
         self.log("info", "trade_opened", f"{side} {symbol} {fill.qty} @ {fill.price}")
         try:
-            await self.exchange.protect(symbol, side, stop, None)
+            await self.exchange.protect(symbol, side, stop, target, half if target else 0.0)
         except Exception as error:  # noqa: BLE001 - an unprotected position must not stay open
             self.halt("protection_failed", str(error)[:300])
             signed = fill.qty if side == "BUY" else -fill.qty
             await self.exchange.close_market(symbol, signed, self._client_id())
             await self._sync()
             return 0.0
-        self.store.set_protection(trade_id, stop, 0.0)
+        self.store.set_protection(trade_id, stop, target or 0.0)
         return used_margin
 
     # ---------- information for the app
@@ -316,7 +335,10 @@ class Engine:
                 "min_order_usdt": minimum,
                 "stop_pct": round(stop_pct, 4),
                 "min_amount_usdt": round(
-                    risk.min_amount_for(minimum, stop_pct, self.limits.leverage), 2
+                    risk.min_amount_for(
+                        minimum, stop_pct, self.limits.leverage, self.limits.risk_per_trade_pct
+                    ),
+                    2,
                 ),
             })
         self.markets_cache = (now, result)
@@ -329,7 +351,10 @@ class Engine:
             symbol
             for symbol in limits.symbols
             if risk.min_amount_for(
-                need[symbol]["min_order_usdt"], need[symbol]["stop_pct"], limits.leverage
+                need[symbol]["min_order_usdt"],
+                need[symbol]["stop_pct"],
+                limits.leverage,
+                limits.risk_per_trade_pct,
             )
             > limits.capital_usdt
         ]
@@ -345,10 +370,12 @@ class Engine:
                               "trades": coin["trades"], "avg_r": coin["avg_r"]})
         return {
             "expected_avg_r": strategy.EXPECTED_AVG_R,
+            "expected_win_rate": strategy.EXPECTED_WIN_RATE,
             "drift_floor": strategy.DRIFT_FLOOR,
             "window": strategy.DRIFT_WINDOW,
             "recent_trades": len(recent),
             "recent_avg_r": sum(recent) / len(recent) if recent else None,
+            "recent_win_rate": sum(r > 0 for r in recent) / len(recent) if recent else None,
             "coins": coins,
             "notes": notes,
         }

@@ -63,8 +63,14 @@ class Exchange(Protocol):
     async def prepare(self, symbol: str, leverage: int) -> None: ...
     async def open_market(self, symbol: str, side: str, qty: float, client_id: str) -> Fill: ...
     async def protect(
-        self, symbol: str, side: str, stop: float, target: float | None
+        self,
+        symbol: str,
+        side: str,
+        stop: float,
+        target: float | None,
+        target_qty: float = 0.0,
     ) -> None: ...
+    async def move_stop(self, symbol: str, side: str, stop: float) -> None: ...
     async def close_market(self, symbol: str, qty: float, client_id: str) -> None: ...
     async def closed_result(self, symbol: str, since_ms: int) -> Closed: ...
 
@@ -164,55 +170,90 @@ class PaperExchange:
         return Fill(price, qty)
 
     async def protect(
-        self, symbol: str, side: str, stop: float, target: float | None
+        self,
+        symbol: str,
+        side: str,
+        stop: float,
+        target: float | None,
+        target_qty: float = 0.0,
     ) -> None:
-        self.state["open"][symbol].update({"stop": stop, "target": target})
+        self.state["open"][symbol].update(
+            {"stop": stop, "target": target, "target_qty": target_qty}
+        )
+        self._save()
+
+    async def move_stop(self, symbol: str, side: str, stop: float) -> None:
+        if symbol in self.state["open"]:
+            self.state["open"][symbol]["stop"] = stop
+            self._save()
+
+    def _fill(self, pos: dict[str, Any], qty: float, raw: float) -> tuple[float, float, float]:
+        """Close `qty` (signed like the position) at `raw`: returns (price, gross, fee)."""
+        price = raw * (1 - SLIPPAGE if pos["qty"] > 0 else 1 + SLIPPAGE)
+        return price, qty * (price - pos["entry"]), abs(qty) * price * FEE_RATE
+
+    def _scale(self, symbol: str, raw: float) -> None:
+        """Take the first half at the target and move the rest's stop to the entry."""
+        pos = self.state["open"][symbol]
+        part = abs(pos["target_qty"]) * (1 if pos["qty"] > 0 else -1)
+        _, gross, fee = self._fill(pos, part, raw)
+        self.state["balance"] += gross - fee
+        pos["qty"] -= part
+        pos["realized"] = pos.get("realized", 0.0) + gross
+        pos["fees"] += fee
+        pos["target"] = None
+        pos["stop"] = pos["entry"]
         self._save()
 
     def _settle(self, symbol: str, last: float) -> None:
         pos = self.state["open"].pop(symbol)
-        price = last * (1 - SLIPPAGE if pos["qty"] > 0 else 1 + SLIPPAGE)
-        fee = abs(pos["qty"]) * price * FEE_RATE
-        gross = pos["qty"] * (price - pos["entry"])
+        price, gross, fee = self._fill(pos, pos["qty"], last)
         self.state["balance"] += gross - fee
         fees = pos["fees"] + fee
-        self.state["closed"][symbol] = {"exit": price, "pnl": gross - fees, "fees": fees}
+        total = gross + pos.get("realized", 0.0)
+        self.state["closed"][symbol] = {"exit": price, "pnl": total - fees, "fees": fees}
         self._save()
 
-    async def _missed_stop(self, symbol: str, pos: dict[str, Any]) -> float | None:
-        """Fill price if a closed 1-hour bar since the last check touched the stop."""
-        stop = pos.get("stop")
-        if stop is None:
-            return None
+    async def _replay_missed(self, symbol: str, pos: dict[str, Any]) -> bool:
+        """Apply what closed 1-hour bars since the last check would have triggered (stop first,
+        then the half target). Returns True when the position was closed."""
+        if pos.get("stop") is None:
+            return False
         since = int(pos.get("checked_ms", 0))
-        long = pos["qty"] > 0
         for bar in await self.market.bars(symbol, "1h", 500):
             if bar.t + HOUR_MS <= since:
                 continue
+            long = pos["qty"] > 0
+            stop, target = pos["stop"], pos.get("target")
             if long and bar.low <= stop:
-                return min(bar.o, stop)
+                self._settle(symbol, min(bar.o, stop))
+                return True
             if not long and bar.h >= stop:
-                return max(bar.o, stop)
-        return None
+                self._settle(symbol, max(bar.o, stop))
+                return True
+            if target is not None and (bar.h >= target if long else bar.low <= target):
+                self._scale(symbol, max(bar.o, target) if long else min(bar.o, target))
+                pos = self.state["open"][symbol]
+        return False
 
     async def positions(self) -> dict[str, Position]:
         result: dict[str, Position] = {}
         for symbol in list(self.state["open"]):
             pos = self.state["open"][symbol]
-            missed = await self._missed_stop(symbol, pos)
-            if missed is not None:
-                self._settle(symbol, missed)
+            if await self._replay_missed(symbol, pos):
                 continue
+            pos = self.state["open"][symbol]
             pos["checked_ms"] = int(time.time() * 1000)
             self._save()
             last = await self.market.price(symbol)
             long = pos["qty"] > 0
             stop, target = pos.get("stop"), pos.get("target")
-            hit_stop = stop is not None and (last <= stop if long else last >= stop)
-            hit_target = target is not None and (last >= target if long else last <= target)
-            if hit_stop or hit_target:
+            if stop is not None and (last <= stop if long else last >= stop):
                 self._settle(symbol, last)
                 continue
+            if target is not None and (last >= target if long else last <= target):
+                self._scale(symbol, last)
+                pos = self.state["open"][symbol]
             unrealized = pos["qty"] * (last - pos["entry"])
             result[symbol] = Position(symbol, pos["qty"], pos["entry"], last, unrealized)
         return result
@@ -333,13 +374,36 @@ class BinanceDemo:
         )
         return Fill(float(data["avgPrice"]), float(data["executedQty"]))
 
+    async def move_stop(self, symbol: str, side: str, stop: float) -> None:
+        """Replace the remaining stop (the half take-profit has already filled)."""
+        await self.cancel_protection(symbol)
+        await self.protect(symbol, side, stop, None)
+
     async def protect(
-        self, symbol: str, side: str, stop: float, target: float | None
+        self,
+        symbol: str,
+        side: str,
+        stop: float,
+        target: float | None,
+        target_qty: float = 0.0,
     ) -> None:
         exit_side = "SELL" if side == "BUY" else "BUY"
+        if target is not None and target_qty > 0:
+            await self.signed(
+                "POST",
+                "/fapi/v1/algoOrder",
+                {
+                    "algoType": "CONDITIONAL",
+                    "symbol": symbol,
+                    "side": exit_side,
+                    "type": "TAKE_PROFIT_MARKET",
+                    "triggerPrice": f"{target:.8f}".rstrip("0").rstrip("."),
+                    "quantity": f"{target_qty:.8f}".rstrip("0").rstrip("."),
+                    "reduceOnly": "true",
+                    "workingType": "MARK_PRICE",
+                },
+            )
         orders = [("STOP_MARKET", stop)]
-        if target is not None:
-            orders.append(("TAKE_PROFIT_MARKET", target))
         for order_type, trigger in orders:
             await self.signed(
                 "POST",

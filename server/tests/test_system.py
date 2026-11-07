@@ -101,7 +101,15 @@ def test_default_limits_are_the_tested_small_account() -> None:
     limits = Limits()
     assert limits.capital_usdt == 30
     assert limits.max_open == 3
+    assert limits.leverage == 3
+    assert limits.risk_per_trade_pct == 1
+    assert not limits.allow_shorts
     assert "BTCUSDT" not in limits.symbols
+
+
+def test_leverage_24_is_refused() -> None:
+    with pytest.raises(ValueError):
+        Limits(leverage=24)
 
 
 def test_limits_reject_bad_relations() -> None:
@@ -120,14 +128,16 @@ def test_size_risks_the_set_share_of_the_amount() -> None:
 
 
 def test_small_amount_is_raised_to_the_exchange_minimum_when_risk_allows() -> None:
-    size = size_position(Limits(), 100.0, 7.0, 0.0, FILTERS, 30.0)
+    size = size_position(Limits(risk_per_trade_pct=1), 100.0, 7.0, 0.0, FILTERS, 30.0)
     assert size.qty == 0.05  # 5 USDT order, stop risks 0.35 USDT <= 2% of 30
 
 
 def test_too_small_amount_skips_the_trade() -> None:
-    size = size_position(Limits(capital_usdt=10, max_daily_loss_usdt=3), 100.0, 7.0, 0.0,
-                         FILTERS, 10.0)
-    assert size.reason == "amount_too_small"
+    limits = Limits(capital_usdt=10, max_daily_loss_usdt=3, risk_per_trade_pct=1)
+    assert size_position(limits, 100.0, 7.0, 0.0, FILTERS, 10.0).reason == "amount_too_small"
+    # At 2% risk the cap is 4%: a 0.35 USDT stop on 10 USDT fits.
+    two = Limits(capital_usdt=10, max_daily_loss_usdt=3, risk_per_trade_pct=2)
+    assert size_position(two, 100.0, 7.0, 0.0, FILTERS, 10.0).qty == 0.05
 
 
 def test_margin_must_fit_in_the_amount() -> None:
@@ -136,8 +146,9 @@ def test_margin_must_fit_in_the_amount() -> None:
 
 
 def test_min_amount_matches_research_rule() -> None:
-    assert min_amount_for(5.0, 0.063, 3) == pytest.approx(15.75)
-    assert min_amount_for(76.0, 0.063, 3) == pytest.approx(239.4)
+    assert min_amount_for(5.0, 0.063, 3, 1.0) == pytest.approx(15.75)
+    assert min_amount_for(76.0, 0.063, 3, 1.0) == pytest.approx(239.4)
+    assert min_amount_for(5.0, 0.063, 5, 2.0) == pytest.approx(7.875)
 
 
 def test_stop_price_sits_on_the_losing_side() -> None:
@@ -169,17 +180,21 @@ def test_btc_regime() -> None:
 # ---------- engine
 
 
-async def test_opens_once_per_bar_with_a_stop_and_no_target() -> None:
+async def test_opens_once_per_bar_with_a_stop_and_a_half_target() -> None:
     engine, exchange, _, _ = build()
     await engine.start()
     await engine.tick()
     await engine.tick()
     trades = engine.store.open_trades()
     assert len(trades) == 1
-    assert trades[0]["side"] == "BUY"
-    assert exchange.state["open"]["SOLUSDT"]["stop"] == trades[0]["stop_price"]
-    assert exchange.state["open"]["SOLUSDT"]["target"] is None
-    assert trades[0]["risk_usdt"] > 0
+    trade = trades[0]
+    assert trade["side"] == "BUY"
+    paper = exchange.state["open"]["SOLUSDT"]
+    assert paper["stop"] == trade["stop_price"]
+    distance = trade["entry_price"] - trade["stop_price"]
+    assert trade["target_price"] == pytest.approx(trade["entry_price"] + distance / 4, abs=0.02)
+    assert paper["target_qty"] == pytest.approx(trade["qty"] / 2, abs=0.001)
+    assert trade["risk_usdt"] > 0
 
 
 async def test_no_entry_while_stopped() -> None:
@@ -477,3 +492,70 @@ async def test_no_shorts_unless_the_owner_allows_them() -> None:
     clock.next_bar()
     await engine.tick()
     assert engine.store.open_trades()[0]["side"] == "SELL"
+
+
+async def test_half_closes_at_the_target_and_the_rest_cannot_lose() -> None:
+    engine, exchange, market, _ = build()
+    await engine.start()
+    await engine.tick()
+    trade = engine.store.open_trades()[0]
+    market.last = trade["target_price"] * 1.001
+    await engine.tick()
+    scaled = engine.store.open_trades()[0]
+    assert scaled["scaled"] == 1
+    assert scaled["stop_price"] == trade["entry_price"]
+    assert exchange.state["open"]["SOLUSDT"]["qty"] == pytest.approx(trade["qty"] / 2, abs=0.001)
+    assert any(e["code"] == "trade_scaled" for e in engine.store.events(5))
+    market.last = trade["entry_price"] * 0.999  # back to the entry: the rest stops out
+    await engine.tick()
+    closed = engine.store.trades()[0]
+    assert closed["closed_ms"] is not None
+    assert closed["r"] > 0  # half the target earned, minus fees: still a winning trade
+
+
+async def test_paper_replays_a_target_then_a_stop_missed_during_sleep() -> None:
+    engine, exchange, market, _ = build()
+    await engine.start()
+    await engine.tick()
+    trade = engine.store.open_trades()[0]
+    since = exchange.state["open"]["SOLUSDT"]["checked_ms"]
+    up = Bar(since + 60_000, trade["entry_price"], trade["target_price"] * 1.01,
+             trade["entry_price"], trade["target_price"])
+    down = Bar(since + 3_660_000, trade["target_price"], trade["target_price"],
+               trade["entry_price"] * 0.99, trade["entry_price"] * 0.99)
+    real_bars = market.bars
+
+    async def slept(symbol: str, interval: str, limit: int) -> list[Bar]:
+        return [up, down] if interval == "1h" else await real_bars(symbol, interval, limit)
+
+    market.bars = slept  # type: ignore[method-assign]
+    await engine.tick()
+    closed = engine.store.trades()[0]
+    assert closed["closed_ms"] is not None
+    assert closed["pnl"] > 0
+
+
+async def test_demo_places_half_take_profit_and_moves_the_stop() -> None:
+    seen: list[httpx.Request] = []
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        seen.append(request)
+        return httpx.Response(200, json={"algoId": 1})
+
+    client = httpx.AsyncClient(base_url=DEMO_URL, transport=httpx.MockTransport(handler))
+    demo = BinanceDemo(client, "key", "secret")
+    await demo.protect("SOLUSDT", "BUY", 90.0, 105.0, 0.05)
+    first = parse_qs(urlsplit(f"?{seen[0].url.query.decode()}").query)
+    second = parse_qs(urlsplit(f"?{seen[1].url.query.decode()}").query)
+    assert first["type"] == ["TAKE_PROFIT_MARKET"]
+    assert first["quantity"] == ["0.05"]
+    assert first["reduceOnly"] == ["true"]
+    assert "closePosition" not in first
+    assert second["type"] == ["STOP_MARKET"]
+    assert second["closePosition"] == ["true"]
+    seen.clear()
+    await demo.move_stop("SOLUSDT", "BUY", 100.0)
+    assert [f"{r.method} {r.url.path}" for r in seen] == [
+        "DELETE /fapi/v1/algoOpenOrders",
+        "POST /fapi/v1/algoOrder",
+    ]

@@ -19,16 +19,24 @@ const FIELDS: { key: NumberKey; label: string; hint: string }[] = [
     label: 'أقصى خسارة يومية (USDT)',
     hint: 'لازم تكون أقل من المبلغ أو تساويه. عند الوصول إليها يتوقف البوت لبقية اليوم.',
   },
-  { key: 'leverage', label: 'الرافعة المالية القصوى', hint: 'من 1 إلى 5. المختبر: 3.' },
+  {
+    key: 'leverage',
+    label: 'الرافعة المالية القصوى',
+    hint: 'من 1 إلى 5. الرافعة تحدد الهامش المحجوز فقط، والخسارة يحددها الوقف والمخاطرة. ×24 ممنوعة: Binance يصفي الصفقة بعد 3.7% تقريبًا، قبل الوقف.',
+  },
   {
     key: 'risk_per_trade_pct',
     label: 'المخاطرة في الصفقة (%)',
-    hint: 'من 0.25 إلى 2. المختبر: 1. الوقف يحدده السوق (3 أضعاف متوسط الحركة).',
+    hint: 'من 0.25 إلى 2. المختبر: 1. الرقم الأعلى يكبر الأرباح والخسائر معًا.',
   },
   { key: 'max_open', label: 'أقصى صفقات مفتوحة معًا', hint: 'من 1 إلى 6. المختبر: 3.' },
 ];
 
-const MAX_RISK = 0.02; // same small-account rule as the server
+/** Same rule as the server: a too-small trade may be raised to the minimum order only
+ * while its stop risks at most max(2 x risk per trade, 2%) of the amount. */
+function raiseCap(riskPct: number): number {
+  return Math.max(2 * (Number.isFinite(riskPct) ? riskPct : 0), 2) / 100;
+}
 
 function initial(limits: Limits) {
   return Object.fromEntries(FIELDS.map(({ key }) => [key, String(limits[key])])) as Record<
@@ -45,9 +53,12 @@ function parse(values: Record<NumberKey, string>) {
 
 /** Same rule as the server: the smallest order's stop must fit in 2% of the amount,
  * and its margin inside the amount. */
-function minAmount(market: Market, leverage: number): number {
+function minAmount(market: Market, leverage: number, riskPct: number): number {
   const lev = Number.isFinite(leverage) && leverage > 0 ? leverage : 1;
-  return Math.max((market.min_order_usdt * market.stop_pct) / MAX_RISK, market.min_order_usdt / lev);
+  return Math.max(
+    (market.min_order_usdt * market.stop_pct) / raiseCap(riskPct),
+    market.min_order_usdt / lev
+  );
 }
 
 export default function SafetyScreen() {
@@ -81,7 +92,7 @@ function LimitsForm({ limits }: { limits: Limits }) {
 
   const numbers = parse(values);
   const fits = (market: Market) =>
-    minAmount(market, numbers.leverage) <= numbers.capital_usdt;
+    minAmount(market, numbers.leverage, numbers.risk_per_trade_pct) <= numbers.capital_usdt;
 
   const toggle = (market: Market) => {
     if (locked) return;
@@ -110,7 +121,7 @@ function LimitsForm({ limits }: { limits: Limits }) {
     const tooSmall = markets.filter(
       (market) =>
         symbols.includes(market.symbol) &&
-        minAmount(market, numbers.leverage) > numbers.capital_usdt
+        minAmount(market, numbers.leverage, numbers.risk_per_trade_pct) > numbers.capital_usdt
     );
     if (tooSmall.length > 0) {
       const names = tooSmall.map((market) => coinName(market.symbol)).join('، ');
@@ -196,8 +207,8 @@ function LimitsForm({ limits }: { limits: Limits }) {
                 </Text>
                 <Text style={[styles.coinHint, ok ? null : styles.lossText]}>
                   {ok
-                    ? `يكفيها ${Math.ceil(minAmount(market, numbers.leverage))}$`
-                    : `تحتاج ${Math.ceil(minAmount(market, numbers.leverage))}$`}
+                    ? `يكفيها ${Math.ceil(minAmount(market, numbers.leverage, numbers.risk_per_trade_pct))}$`
+                    : `تحتاج ${Math.ceil(minAmount(market, numbers.leverage, numbers.risk_per_trade_pct))}$`}
                 </Text>
               </Pressable>
             );

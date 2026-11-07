@@ -28,6 +28,18 @@ function Learned({ insights }: { insights: Insights | null }) {
         مع سلاسل خسائر طبيعية.
       </Body>
       <Row
+        label={`الصفقات الرابحة من آخر ${insights.recent_trades}`}
+        value={
+          insights.recent_win_rate === null
+            ? '—'
+            : `${Math.round(insights.recent_win_rate * 100)}%`
+        }
+      />
+      <Body color={colors.muted}>
+        المتوقع من الاختبار حوالي {Math.round(insights.expected_win_rate * 100)}%. بعض الأشهر
+        أعلى من 90% وبعضها أقل بكثير، وهذا طبيعي.
+      </Body>
+      <Row
         label={`متوسط آخر ${insights.recent_trades} صفقة`}
         value={rText(insights.recent_avg_r)}
         color={rColor(insights.recent_avg_r)}
@@ -107,6 +119,9 @@ export default function TradesScreen() {
             }
             color={trade.closed_ms === null ? colors.warn : rColor(trade.pnl)}
           />
+          {trade.scaled ? (
+            <Body color={colors.gain}>✓ أُخذ ربح النصف، والباقي وقفه عند سعر الدخول</Body>
+          ) : null}
           <Row label="الدخول" value={String(trade.entry_price)} />
           <Row label="الوقف" value={String(trade.stop_price)} />
           <Row label="الوقت" value={when(trade.opened_ms)} />

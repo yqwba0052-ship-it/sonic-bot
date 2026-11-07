@@ -49,7 +49,7 @@ export default function StatusScreen() {
         <>
           <Card tone={colors.warn}>
             <Body color={colors.warn}>
-              {MODE_LABEL[status.mode]}. الاستراتيجية: تتبع الاتجاه على شموع 4 ساعات. ربحت في اختبار 2021–2026، لكن النتائج الماضية لا تضمن المستقبل.
+              {MODE_LABEL[status.mode]}. تتبع الاتجاه على شموع 4 ساعات، شراء فقط، ويقفل نصف كل صفقة عند ربح صغير. في اختبار 2021–2026 ربحت 78% من الصفقات، لكن الماضي لا يضمن المستقبل.
             </Body>
           </Card>
           <Card>
