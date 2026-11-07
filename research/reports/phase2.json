@@ -1,0 +1,1121 @@
+{
+  "period": {
+    "train": "2021-01..2024-06",
+    "test": "2024-07..2026-10"
+  },
+  "sets_tested": 104,
+  "sets_positive_train": 76,
+  "sets_positive_test": 72,
+  "eligible": 88,
+  "top": [
+    {
+      "set": "trend-20-100-k2-tnone-h120-btc",
+      "train": {
+        "trades": 577,
+        "win_rate": 0.2668977469670711,
+        "profit_factor": 1.5461855323659142,
+        "avg_r": 0.3787619753073812,
+        "total_return": 5.759196586166143,
+        "max_drawdown": 0.3366745634975373
+      },
+      "test": {
+        "trades": 452,
+        "win_rate": 0.2323008849557522,
+        "profit_factor": 1.4332877044909256,
+        "avg_r": 0.3117934408339678,
+        "total_return": 2.1372915693567767,
+        "max_drawdown": 0.5467711702955569
+      },
+      "test_harsh_costs": {
+        "trades": 452,
+        "win_rate": 0.22787610619469026,
+        "profit_factor": 1.3910146180928993,
+        "avg_r": 0.28733474066625075,
+        "total_return": 1.8103555509171336,
+        "max_drawdown": 0.5621223037654112
+      },
+      "years": {
+        "2021": {
+          "trades": 135,
+          "avg_r": 0.427
+        },
+        "2022": {
+          "trades": 181,
+          "avg_r": 0.182
+        },
+        "2023": {
+          "trades": 170,
+          "avg_r": 0.726
+        },
+        "2024": {
+          "trades": 188,
+          "avg_r": 0.518
+        },
+        "2025": {
+          "trades": 199,
+          "avg_r": 0.118
+        },
+        "2026": {
+          "trades": 156,
+          "avg_r": 0.157
+        }
+      },
+      "neighbours_test_avg_r": [
+        0.261,
+        0.209,
+        0.066,
+        0.095,
+        0.184,
+        0.309
+      ],
+      "neighbours_positive": "6/6"
+    },
+    {
+      "set": "trend-10-100-k2-tnone-h120-btc",
+      "train": {
+        "trades": 769,
+        "win_rate": 0.2535760728218466,
+        "profit_factor": 1.584163143728429,
+        "avg_r": 0.37480835581376165,
+        "total_return": 11.35527098653868,
+        "max_drawdown": 0.42525481776393026
+      },
+      "test": {
+        "trades": 600,
+        "win_rate": 0.22666666666666666,
+        "profit_factor": 1.3989575618068613,
+        "avg_r": 0.26065790207185313,
+        "total_return": 2.5435522543030697,
+        "max_drawdown": 0.5282019659699115
+      },
+      "test_harsh_costs": {
+        "trades": 600,
+        "win_rate": 0.225,
+        "profit_factor": 1.3693126554832558,
+        "avg_r": 0.24536842057874078,
+        "total_return": 2.2345494840199054,
+        "max_drawdown": 0.5410271156665778
+      },
+      "years": {
+        "2021": {
+          "trades": 186,
+          "avg_r": 0.548
+        },
+        "2022": {
+          "trades": 231,
+          "avg_r": 0.139
+        },
+        "2023": {
+          "trades": 217,
+          "avg_r": 0.676
+        },
+        "2024": {
+          "trades": 257,
+          "avg_r": 0.428
+        },
+        "2025": {
+          "trades": 273,
+          "avg_r": 0.158
+        },
+        "2026": {
+          "trades": 206,
+          "avg_r": 0.067
+        }
+      },
+      "neighbours_test_avg_r": [
+        0.222,
+        0.05,
+        0.084,
+        0.169,
+        0.258,
+        0.312
+      ],
+      "neighbours_positive": "6/6"
+    },
+    {
+      "set": "trend-20-100-k3-tnone-h120-btc",
+      "train": {
+        "trades": 577,
+        "win_rate": 0.317157712305026,
+        "profit_factor": 1.7027194010273485,
+        "avg_r": 0.36995309151762257,
+        "total_return": 6.143738347938254,
+        "max_drawdown": 0.2834532262875197
+      },
+      "test": {
+        "trades": 452,
+        "win_rate": 0.27876106194690264,
+        "profit_factor": 1.5622769490990385,
+        "avg_r": 0.3085676155845105,
+        "total_return": 2.482023640434271,
+        "max_drawdown": 0.3321481759483974
+      },
+      "test_harsh_costs": {
+        "trades": 452,
+        "win_rate": 0.27876106194690264,
+        "profit_factor": 1.5323106196970386,
+        "avg_r": 0.29654495912996515,
+        "total_return": 2.2987176974120285,
+        "max_drawdown": 0.3501591068286908
+      },
+      "years": {
+        "2021": {
+          "trades": 135,
+          "avg_r": 0.593
+        },
+        "2022": {
+          "trades": 181,
+          "avg_r": 0.06
+        },
+        "2023": {
+          "trades": 170,
+          "avg_r": 0.545
+        },
+        "2024": {
+          "trades": 188,
+          "avg_r": 0.473
+        },
+        "2025": {
+          "trades": 199,
+          "avg_r": 0.203
+        },
+        "2026": {
+          "trades": 156,
+          "avg_r": 0.257
+        }
+      },
+      "neighbours_test_avg_r": [
+        0.258,
+        0.18,
+        0.312,
+        0.107,
+        0.111,
+        0.176
+      ],
+      "neighbours_positive": "6/6"
+    },
+    {
+      "set": "trend-20-50-k2-tnone-h120-btc",
+      "train": {
+        "trades": 840,
+        "win_rate": 0.26904761904761904,
+        "profit_factor": 1.5016228416946347,
+        "avg_r": 0.3220596702128017,
+        "total_return": 9.60740056788248,
+        "max_drawdown": 0.6297716974997609
+      },
+      "test": {
+        "trades": 631,
+        "win_rate": 0.25673534072900156,
+        "profit_factor": 1.3122656712389769,
+        "avg_r": 0.20906195895846713,
+        "total_return": 1.7448941386209635,
+        "max_drawdown": 0.553730260397978
+      },
+      "test_harsh_costs": {
+        "trades": 631,
+        "win_rate": 0.25039619651347067,
+        "profit_factor": 1.2761678685824371,
+        "avg_r": 0.1887593839253765,
+        "total_return": 1.4158726653291471,
+        "max_drawdown": 0.576094959603533
+      },
+      "years": {
+        "2021": {
+          "trades": 206,
+          "avg_r": 0.474
+        },
+        "2022": {
+          "trades": 254,
+          "avg_r": 0.089
+        },
+        "2023": {
+          "trades": 235,
+          "avg_r": 0.604
+        },
+        "2024": {
+          "trades": 272,
+          "avg_r": 0.441
+        },
+        "2025": {
+          "trades": 282,
+          "avg_r": -0.014
+        },
+        "2026": {
+          "trades": 225,
+          "avg_r": 0.101
+        }
+      },
+      "neighbours_test_avg_r": [
+        0.222,
+        0.034,
+        0.058,
+        0.123,
+        0.18,
+        0.312
+      ],
+      "neighbours_positive": "6/6"
+    },
+    {
+      "set": "trend-20-50-k2-tnone-h120-any",
+      "train": {
+        "trades": 1578,
+        "win_rate": 0.2579214195183777,
+        "profit_factor": 1.4837537233248437,
+        "avg_r": 0.30855030583554277,
+        "total_return": 59.51811238500178,
+        "max_drawdown": 0.5952899132624823
+      },
+      "test": {
+        "trades": 1238,
+        "win_rate": 0.24798061389337642,
+        "profit_factor": 1.1833664515422453,
+        "avg_r": 0.12256432693711865,
+        "total_return": 1.8826089211634396,
+        "max_drawdown": 0.6586353433775731
+      },
+      "test_harsh_costs": {
+        "trades": 1238,
+        "win_rate": 0.24394184168012925,
+        "profit_factor": 1.1541350485393131,
+        "avg_r": 0.10494341952349763,
+        "total_return": 1.3190897312115282,
+        "max_drawdown": 0.6678070156083986
+      },
+      "years": {
+        "2021": {
+          "trades": 422,
+          "avg_r": 0.674
+        },
+        "2022": {
+          "trades": 437,
+          "avg_r": 0.072
+        },
+        "2023": {
+          "trades": 461,
+          "avg_r": 0.31
+        },
+        "2024": {
+          "trades": 517,
+          "avg_r": 0.233
+        },
+        "2025": {
+          "trades": 544,
+          "avg_r": -0.063
+        },
+        "2026": {
+          "trades": 443,
+          "avg_r": 0.221
+        }
+      },
+      "neighbours_test_avg_r": [
+        0.11,
+        0.038,
+        0.069,
+        0.209,
+        0.089,
+        0.184
+      ],
+      "neighbours_positive": "6/6"
+    },
+    {
+      "set": "trend-10-100-k3-tnone-h120-btc",
+      "train": {
+        "trades": 769,
+        "win_rate": 0.2795838751625488,
+        "profit_factor": 1.6482162968853917,
+        "avg_r": 0.2990940599289364,
+        "total_return": 7.224283318716028,
+        "max_drawdown": 0.3047172197432012
+      },
+      "test": {
+        "trades": 600,
+        "win_rate": 0.26166666666666666,
+        "profit_factor": 1.5575342822207148,
+        "avg_r": 0.2579695766765746,
+        "total_return": 2.9852195940407653,
+        "max_drawdown": 0.39831864220981406
+      },
+      "test_harsh_costs": {
+        "trades": 600,
+        "win_rate": 0.26,
+        "profit_factor": 1.5207490625659894,
+        "avg_r": 0.24564622803683647,
+        "total_return": 2.702023993973077,
+        "max_drawdown": 0.4128318442463864
+      },
+      "years": {
+        "2021": {
+          "trades": 186,
+          "avg_r": 0.462
+        },
+        "2022": {
+          "trades": 231,
+          "avg_r": 0.113
+        },
+        "2023": {
+          "trades": 217,
+          "avg_r": 0.489
+        },
+        "2024": {
+          "trades": 257,
+          "avg_r": 0.355
+        },
+        "2025": {
+          "trades": 273,
+          "avg_r": 0.193
+        },
+        "2026": {
+          "trades": 206,
+          "avg_r": 0.119
+        }
+      },
+      "neighbours_test_avg_r": [
+        0.136,
+        0.261,
+        0.096,
+        0.105,
+        0.156,
+        0.309
+      ],
+      "neighbours_positive": "6/6"
+    },
+    {
+      "set": "breakout-55-0-k2-tnone-h120-any",
+      "train": {
+        "trades": 1217,
+        "win_rate": 0.25472473294987674,
+        "profit_factor": 1.3970118073525333,
+        "avg_r": 0.28572348525656377,
+        "total_return": 14.349345846629767,
+        "max_drawdown": 0.6014151906561476
+      },
+      "test": {
+        "trades": 937,
+        "win_rate": 0.26147278548559233,
+        "profit_factor": 1.1417015611399748,
+        "avg_r": 0.09925855823191519,
+        "total_return": 0.746771030326751,
+        "max_drawdown": 0.6252517649878708
+      },
+      "test_harsh_costs": {
+        "trades": 938,
+        "win_rate": 0.25692963752665243,
+        "profit_factor": 1.109342587053881,
+        "avg_r": 0.07778517829679436,
+        "total_return": 0.4342498408022666,
+        "max_drawdown": 0.6556070607934182
+      },
+      "years": {
+        "2021": {
+          "trades": 329,
+          "avg_r": 0.616
+        },
+        "2022": {
+          "trades": 355,
+          "avg_r": -0.015
+        },
+        "2023": {
+          "trades": 351,
+          "avg_r": 0.392
+        },
+        "2024": {
+          "trades": 378,
+          "avg_r": 0.323
+        },
+        "2025": {
+          "trades": 397,
+          "avg_r": -0.086
+        },
+        "2026": {
+          "trades": 347,
+          "avg_r": 0.061
+        }
+      },
+      "neighbours_test_avg_r": [
+        0.088,
+        0.053,
+        0.069,
+        0.167,
+        0.092
+      ],
+      "neighbours_positive": "5/5"
+    },
+    {
+      "set": "breakout-55-0-k2-tnone-h120-btc",
+      "train": {
+        "trades": 942,
+        "win_rate": 0.267515923566879,
+        "profit_factor": 1.3914655991389993,
+        "avg_r": 0.28009382694099616,
+        "total_return": 7.963419992889326,
+        "max_drawdown": 0.5284382176922732
+      },
+      "test": {
+        "trades": 720,
+        "win_rate": 0.25972222222222224,
+        "profit_factor": 1.2376957942413647,
+        "avg_r": 0.16710887739009758,
+        "total_return": 1.3886519591825572,
+        "max_drawdown": 0.629671188101212
+      },
+      "test_harsh_costs": {
+        "trades": 721,
+        "win_rate": 0.2538141470180305,
+        "profit_factor": 1.2031227472208132,
+        "avg_r": 0.14480798504897469,
+        "total_return": 1.0440963976005349,
+        "max_drawdown": 0.6635424994028265
+      },
+      "years": {
+        "2021": {
+          "trades": 240,
+          "avg_r": 0.348
+        },
+        "2022": {
+          "trades": 282,
+          "avg_r": 0.104
+        },
+        "2023": {
+          "trades": 277,
+          "avg_r": 0.557
+        },
+        "2024": {
+          "trades": 296,
+          "avg_r": 0.321
+        },
+        "2025": {
+          "trades": 323,
+          "avg_r": -0.048
+        },
+        "2026": {
+          "trades": 245,
+          "avg_r": 0.162
+        }
+      },
+      "neighbours_test_avg_r": [
+        0.163,
+        0.085,
+        0.107,
+        0.099,
+        0.135
+      ],
+      "neighbours_positive": "5/5"
+    }
+  ],
+  "learning": {
+    "memory_6m": {
+      "test": {
+        "trades": 680,
+        "win_rate": 0.23676470588235293,
+        "profit_factor": 0.6883742706235758,
+        "avg_r": -0.1978589020622482,
+        "total_return": -0.7593631474231841,
+        "max_drawdown": 0.7652687221200593
+      },
+      "years": {
+        "2024": {
+          "trades": 161,
+          "avg_r": -0.077
+        },
+        "2025": {
+          "trades": 239,
+          "avg_r": -0.073
+        },
+        "2026": {
+          "trades": 280,
+          "avg_r": -0.374
+        }
+      },
+      "log": [
+        {
+          "month": "2024-07",
+          "set": "trend-20-100-k3-tnone-h120-btc",
+          "recent_avg_r": 0.33,
+          "dropped": [
+            "XRPUSDT"
+          ],
+          "trades": 14
+        },
+        {
+          "month": "2024-08",
+          "set": "trend-20-100-k3-tnone-h120-btc",
+          "recent_avg_r": 0.279,
+          "dropped": [],
+          "trades": 22
+        },
+        {
+          "month": "2024-09",
+          "set": "trend-10-100-k2-t2-h120-any",
+          "recent_avg_r": 0.224,
+          "dropped": [
+            "SOLUSDT",
+            "XRPUSDT"
+          ],
+          "trades": 30
+        },
+        {
+          "month": "2024-10",
+          "set": "trend-10-100-k2-t2-h120-any",
+          "recent_avg_r": 0.352,
+          "dropped": [
+            "TRXUSDT"
+          ],
+          "trades": 57
+        },
+        {
+          "month": "2024-11",
+          "set": "trend-10-100-k2-t3-h120-any",
+          "recent_avg_r": 0.207,
+          "dropped": [
+            "LTCUSDT"
+          ],
+          "trades": 25
+        },
+        {
+          "month": "2024-12",
+          "set": "trend-20-50-k2-tnone-h120-btc",
+          "recent_avg_r": 0.932,
+          "dropped": [
+            "BNBUSDT"
+          ],
+          "trades": 13
+        },
+        {
+          "month": "2025-01",
+          "set": "trend-20-100-k2-tnone-h120-btc",
+          "recent_avg_r": 0.978,
+          "dropped": [],
+          "trades": 30
+        },
+        {
+          "month": "2025-02",
+          "set": "trend-20-100-k2-tnone-h120-btc",
+          "recent_avg_r": 0.713,
+          "dropped": [
+            "BNBUSDT",
+            "LTCUSDT"
+          ],
+          "trades": 6
+        },
+        {
+          "month": "2025-03",
+          "set": "trend-20-100-k2-tnone-h120-btc",
+          "recent_avg_r": 0.791,
+          "dropped": [
+            "LTCUSDT"
+          ],
+          "trades": 17
+        },
+        {
+          "month": "2025-04",
+          "set": "trend-20-100-k2-tnone-h120-btc",
+          "recent_avg_r": 1.028,
+          "dropped": [
+            "BNBUSDT"
+          ],
+          "trades": 8
+        },
+        {
+          "month": "2025-05",
+          "set": "trend-20-100-k2-tnone-h120-btc",
+          "recent_avg_r": 1.347,
+          "dropped": [],
+          "trades": 11
+        },
+        {
+          "month": "2025-06",
+          "set": "trend-10-100-k2-t3-h120-btc",
+          "recent_avg_r": 0.333,
+          "dropped": [
+            "TRXUSDT"
+          ],
+          "trades": 26
+        },
+        {
+          "month": "2025-07",
+          "set": "trend-10-100-k2-t3-h120-btc",
+          "recent_avg_r": 0.189,
+          "dropped": [
+            "TRXUSDT"
+          ],
+          "trades": 15
+        },
+        {
+          "month": "2025-08",
+          "set": "trend-20-100-k3-tnone-h120-btc",
+          "recent_avg_r": 1.066,
+          "dropped": [],
+          "trades": 24
+        },
+        {
+          "month": "2025-09",
+          "set": "trend-20-100-k3-tnone-h120-btc",
+          "recent_avg_r": 1.001,
+          "dropped": [],
+          "trades": 16
+        },
+        {
+          "month": "2025-10",
+          "set": "trend-20-100-k3-tnone-h120-btc",
+          "recent_avg_r": 0.916,
+          "dropped": [],
+          "trades": 25
+        },
+        {
+          "month": "2025-11",
+          "set": "trend-10-50-k2-tnone-h120-btc",
+          "recent_avg_r": 0.384,
+          "dropped": [
+            "AVAXUSDT",
+            "SOLUSDT",
+            "SUIUSDT"
+          ],
+          "trades": 14
+        },
+        {
+          "month": "2025-12",
+          "set": "trend-10-50-k2-tnone-h120-btc",
+          "recent_avg_r": 0.521,
+          "dropped": [],
+          "trades": 47
+        },
+        {
+          "month": "2026-01",
+          "set": "trend-10-50-k2-tnone-h120-btc",
+          "recent_avg_r": 0.404,
+          "dropped": [
+            "BNBUSDT",
+            "XRPUSDT"
+          ],
+          "trades": 23
+        },
+        {
+          "month": "2026-02",
+          "set": "breakout-55-0-k2-t3-h120-any",
+          "recent_avg_r": 0.239,
+          "dropped": [
+            "LTCUSDT",
+            "TRXUSDT"
+          ],
+          "trades": 36
+        },
+        {
+          "month": "2026-03",
+          "set": "trend-20-100-k2-tnone-h120-any",
+          "recent_avg_r": 0.315,
+          "dropped": [
+            "BTCUSDT",
+            "ETHUSDT",
+            "LTCUSDT"
+          ],
+          "trades": 33
+        },
+        {
+          "month": "2026-04",
+          "set": "trend-10-100-k3-tnone-h120-any",
+          "recent_avg_r": 0.133,
+          "dropped": [
+            "ADAUSDT",
+            "LINKUSDT",
+            "LTCUSDT",
+            "TRXUSDT"
+          ],
+          "trades": 38
+        },
+        {
+          "month": "2026-05",
+          "set": "reversion-2-10-k3-tnone-h6-btc",
+          "recent_avg_r": 0.001,
+          "dropped": [
+            "ADAUSDT",
+            "AVAXUSDT",
+            "DOGEUSDT",
+            "LINKUSDT",
+            "SUIUSDT",
+            "TRXUSDT"
+          ],
+          "trades": 32
+        },
+        {
+          "month": "2026-06",
+          "set": "trend-20-100-k3-tnone-h120-btc",
+          "recent_avg_r": 0.028,
+          "dropped": [
+            "ADAUSDT",
+            "BNBUSDT"
+          ],
+          "trades": 4
+        },
+        {
+          "month": "2026-07",
+          "set": "trend-20-100-k3-tnone-h120-any",
+          "recent_avg_r": 0.301,
+          "dropped": [
+            "BNBUSDT",
+            "LINKUSDT"
+          ],
+          "trades": 41
+        },
+        {
+          "month": "2026-08",
+          "set": null,
+          "reason": "nothing earned recently"
+        },
+        {
+          "month": "2026-09",
+          "set": "breakout-20-0-k2-tnone-h120-btc",
+          "recent_avg_r": 0.192,
+          "dropped": [
+            "AVAXUSDT",
+            "ETHUSDT",
+            "LINKUSDT"
+          ],
+          "trades": 29
+        },
+        {
+          "month": "2026-10",
+          "set": "breakout-20-0-k2-tnone-h120-btc",
+          "recent_avg_r": 0.303,
+          "dropped": [
+            "ETHUSDT",
+            "LINKUSDT"
+          ],
+          "trades": 44
+        }
+      ]
+    },
+    "memory_12m": {
+      "test": {
+        "trades": 518,
+        "win_rate": 0.2277992277992278,
+        "profit_factor": 0.8499520085890832,
+        "avg_r": -0.09879652655564373,
+        "total_return": -0.4601727705612014,
+        "max_drawdown": 0.6859962565225459
+      },
+      "years": {
+        "2024": {
+          "trades": 109,
+          "avg_r": -0.226
+        },
+        "2025": {
+          "trades": 231,
+          "avg_r": -0.204
+        },
+        "2026": {
+          "trades": 178,
+          "avg_r": 0.115
+        }
+      },
+      "log": [
+        {
+          "month": "2024-07",
+          "set": "trend-20-50-k2-tnone-h120-btc",
+          "recent_avg_r": 0.616,
+          "dropped": [
+            "TRXUSDT",
+            "XRPUSDT"
+          ],
+          "trades": 12
+        },
+        {
+          "month": "2024-08",
+          "set": "trend-20-100-k3-tnone-h120-btc",
+          "recent_avg_r": 0.651,
+          "dropped": [
+            "TRXUSDT"
+          ],
+          "trades": 22
+        },
+        {
+          "month": "2024-09",
+          "set": "trend-10-100-k2-tnone-h120-btc",
+          "recent_avg_r": 0.607,
+          "dropped": [
+            "SUIUSDT",
+            "TRXUSDT",
+            "XRPUSDT"
+          ],
+          "trades": 19
+        },
+        {
+          "month": "2024-10",
+          "set": "trend-10-100-k2-tnone-h120-btc",
+          "recent_avg_r": 0.609,
+          "dropped": [
+            "LTCUSDT",
+            "SUIUSDT",
+            "TRXUSDT",
+            "XRPUSDT"
+          ],
+          "trades": 24
+        },
+        {
+          "month": "2024-11",
+          "set": "trend-10-100-k2-t2-h120-any",
+          "recent_avg_r": 0.099,
+          "dropped": [
+            "BNBUSDT",
+            "LTCUSDT",
+            "SOLUSDT",
+            "XRPUSDT"
+          ],
+          "trades": 17
+        },
+        {
+          "month": "2024-12",
+          "set": "trend-20-50-k2-tnone-h120-btc",
+          "recent_avg_r": 0.51,
+          "dropped": [
+            "SOLUSDT"
+          ],
+          "trades": 15
+        },
+        {
+          "month": "2025-01",
+          "set": "trend-20-100-k2-tnone-h120-btc",
+          "recent_avg_r": 0.526,
+          "dropped": [
+            "SOLUSDT"
+          ],
+          "trades": 27
+        },
+        {
+          "month": "2025-02",
+          "set": "trend-10-50-k2-tnone-h120-btc",
+          "recent_avg_r": 0.429,
+          "dropped": [
+            "LTCUSDT",
+            "SUIUSDT",
+            "TRXUSDT"
+          ],
+          "trades": 19
+        },
+        {
+          "month": "2025-03",
+          "set": "breakout-20-0-k2-tnone-h120-any",
+          "recent_avg_r": 0.197,
+          "dropped": [
+            "LTCUSDT"
+          ],
+          "trades": 72
+        },
+        {
+          "month": "2025-04",
+          "set": "trend-20-50-k2-tnone-h120-btc",
+          "recent_avg_r": 0.232,
+          "dropped": [
+            "BNBUSDT",
+            "LTCUSDT",
+            "SOLUSDT"
+          ],
+          "trades": 16
+        },
+        {
+          "month": "2025-05",
+          "set": "trend-20-100-k2-tnone-h120-btc",
+          "recent_avg_r": 0.292,
+          "dropped": [
+            "BNBUSDT",
+            "BTCUSDT",
+            "LTCUSDT",
+            "SOLUSDT"
+          ],
+          "trades": 9
+        },
+        {
+          "month": "2025-06",
+          "set": "trend-20-100-k2-tnone-h120-btc",
+          "recent_avg_r": 0.519,
+          "dropped": [
+            "BNBUSDT",
+            "BTCUSDT",
+            "SOLUSDT"
+          ],
+          "trades": 14
+        },
+        {
+          "month": "2025-07",
+          "set": "trend-20-100-k2-tnone-h120-btc",
+          "recent_avg_r": 0.472,
+          "dropped": [
+            "AVAXUSDT",
+            "BNBUSDT",
+            "BTCUSDT",
+            "LINKUSDT",
+            "SOLUSDT"
+          ],
+          "trades": 7
+        },
+        {
+          "month": "2025-08",
+          "set": "trend-20-100-k2-tnone-h120-btc",
+          "recent_avg_r": 0.805,
+          "dropped": [
+            "BTCUSDT",
+            "LTCUSDT",
+            "SOLUSDT"
+          ],
+          "trades": 15
+        },
+        {
+          "month": "2025-09",
+          "set": "trend-20-100-k2-tnone-h120-btc",
+          "recent_avg_r": 0.83,
+          "dropped": [
+            "BTCUSDT",
+            "LTCUSDT",
+            "SOLUSDT"
+          ],
+          "trades": 12
+        },
+        {
+          "month": "2025-10",
+          "set": "trend-20-100-k2-tnone-h120-btc",
+          "recent_avg_r": 0.881,
+          "dropped": [
+            "BTCUSDT"
+          ],
+          "trades": 21
+        },
+        {
+          "month": "2025-11",
+          "set": "trend-20-100-k2-tnone-h120-btc",
+          "recent_avg_r": 0.744,
+          "dropped": [
+            "BTCUSDT",
+            "DOGEUSDT",
+            "SOLUSDT"
+          ],
+          "trades": 8
+        },
+        {
+          "month": "2025-12",
+          "set": "trend-20-100-k3-tnone-h120-btc",
+          "recent_avg_r": 0.215,
+          "dropped": [
+            "AVAXUSDT",
+            "BTCUSDT",
+            "LTCUSDT",
+            "TRXUSDT"
+          ],
+          "trades": 11
+        },
+        {
+          "month": "2026-01",
+          "set": "trend-20-100-k3-tnone-h120-btc",
+          "recent_avg_r": 0.212,
+          "dropped": [
+            "AVAXUSDT",
+            "BTCUSDT",
+            "LTCUSDT",
+            "TRXUSDT"
+          ],
+          "trades": 3
+        },
+        {
+          "month": "2026-02",
+          "set": "trend-20-100-k3-tnone-h120-btc",
+          "recent_avg_r": 0.38,
+          "dropped": [
+            "AVAXUSDT",
+            "BTCUSDT",
+            "TRXUSDT"
+          ],
+          "trades": 3
+        },
+        {
+          "month": "2026-03",
+          "set": "trend-20-100-k3-tnone-h120-btc",
+          "recent_avg_r": 0.537,
+          "dropped": [
+            "AVAXUSDT"
+          ],
+          "trades": 23
+        },
+        {
+          "month": "2026-04",
+          "set": "trend-20-100-k3-tnone-h120-btc",
+          "recent_avg_r": 0.397,
+          "dropped": [
+            "AVAXUSDT"
+          ],
+          "trades": 20
+        },
+        {
+          "month": "2026-05",
+          "set": "trend-20-100-k3-tnone-h120-btc",
+          "recent_avg_r": 0.205,
+          "dropped": [
+            "AVAXUSDT",
+            "LINKUSDT",
+            "LTCUSDT",
+            "SUIUSDT"
+          ],
+          "trades": 12
+        },
+        {
+          "month": "2026-06",
+          "set": "trend-20-100-k3-tnone-h120-btc",
+          "recent_avg_r": 0.219,
+          "dropped": [
+            "AVAXUSDT",
+            "LTCUSDT",
+            "SUIUSDT"
+          ],
+          "trades": 5
+        },
+        {
+          "month": "2026-07",
+          "set": "trend-20-100-k3-tnone-h120-any",
+          "recent_avg_r": 0.23,
+          "dropped": [
+            "LTCUSDT"
+          ],
+          "trades": 46
+        },
+        {
+          "month": "2026-08",
+          "set": "trend-20-100-k3-tnone-h120-any",
+          "recent_avg_r": 0.041,
+          "dropped": [
+            "BNBUSDT",
+            "LINKUSDT",
+            "LTCUSDT",
+            "SUIUSDT",
+            "XRPUSDT"
+          ],
+          "trades": 22
+        },
+        {
+          "month": "2026-09",
+          "set": "breakout-55-0-k2-t3-h120-any",
+          "recent_avg_r": 0.108,
+          "dropped": [
+            "DOGEUSDT",
+            "ETHUSDT",
+            "LINKUSDT",
+            "TRXUSDT"
+          ],
+          "trades": 32
+        },
+        {
+          "month": "2026-10",
+          "set": "trend-20-100-k3-tnone-h120-any",
+          "recent_avg_r": 0.175,
+          "dropped": [
+            "ADAUSDT",
+            "AVAXUSDT",
+            "BNBUSDT",
+            "LTCUSDT",
+            "SUIUSDT"
+          ],
+          "trades": 12
+        }
+      ]
+    }
+  },
+  "btc_buy_hold_test": 0.222437729041699,
+  "seconds": 827
+}

@@ -12,3 +12,4 @@ dist/
 *.jks
 *.keystore
 server/web/
+research/data/
