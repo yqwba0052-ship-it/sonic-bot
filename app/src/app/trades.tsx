@@ -23,9 +23,9 @@ function Learned({ insights }: { insights: Insights | null }) {
     <Card>
       <Body>ماذا تعلّم البوت من صفقاته</Body>
       <Body color={colors.muted}>
-        R تعني نتيجة الصفقة مقارنة بما خاطر به: ‎+1R ربح بقدر المخاطرة، و‎-1R خسارة بقدرها.
-        المتوقع من الاختبار حوالي ‎+{insights.expected_avg_r}R للصفقة في المتوسط، مع سلاسل
-        خسائر طبيعية.
+        النتائج هنا بوحدة المخاطرة: الرقم 1 يعني ربحًا بقدر ما خاطر به البوت، والرقم 1- يعني
+        خسارة بقدره. المتوقع من الاختبار حوالي {insights.expected_avg_r} في المتوسط لكل صفقة،
+        مع سلاسل خسائر طبيعية.
       </Body>
       <Row
         label={`متوسط آخر ${insights.recent_trades} صفقة`}
@@ -35,7 +35,7 @@ function Learned({ insights }: { insights: Insights | null }) {
       <Body color={colors.muted}>
         {need > 0
           ? `يحتاج ${need} صفقة أخرى قبل أن يحكم هل السوق تغير.`
-          : `يتوقف تلقائيًا إذا نزل المتوسط تحت ${insights.drift_floor}R، وهو أسوأ من أي فترة في الاختبار.`}
+          : `يتوقف تلقائيًا إذا نزل المتوسط تحت ${insights.drift_floor}، وهو أسوأ من أي فترة في الاختبار.`}
       </Body>
       {insights.coins.map((coin) => (
         <Row
