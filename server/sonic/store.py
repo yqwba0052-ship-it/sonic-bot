@@ -38,6 +38,11 @@ class Store:
         self.db = sqlite3.connect(path, check_same_thread=False)
         self.db.row_factory = sqlite3.Row
         self.db.executescript(SCHEMA)
+        columns = {row["name"] for row in self.db.execute("PRAGMA table_info(trades)")}
+        for name in ("risk_usdt", "r"):
+            if name not in columns:
+                self.db.execute(f"ALTER TABLE trades ADD COLUMN {name} REAL")
+        self.db.commit()
 
     def get(self, key: str, default: Any = None) -> Any:
         row = self.db.execute("SELECT value FROM kv WHERE key = ?", (key,)).fetchone()
@@ -82,8 +87,9 @@ class Store:
         self, trade_id: int, closed_ms: int, exit_price: float, pnl: float, fees: float
     ) -> None:
         self.db.execute(
-            "UPDATE trades SET closed_ms = ?, exit_price = ?, pnl = ?, fees = ? WHERE id = ?",
-            (closed_ms, exit_price, pnl, fees, trade_id),
+            "UPDATE trades SET closed_ms = ?, exit_price = ?, pnl = ?, fees = ?, "
+            "r = CASE WHEN risk_usdt > 0 THEN ? / risk_usdt END WHERE id = ?",
+            (closed_ms, exit_price, pnl, fees, pnl, trade_id),
         )
         self.db.commit()
 
@@ -100,3 +106,20 @@ class Store:
             "SELECT COALESCE(SUM(pnl), 0) AS total FROM trades WHERE closed_ms >= ?", (since_ms,)
         ).fetchone()
         return float(row["total"])
+
+    def closed_r(self, limit: int) -> list[float]:
+        """R of the most recent closed trades, newest first."""
+        rows = self.db.execute(
+            "SELECT r FROM trades WHERE closed_ms IS NOT NULL AND r IS NOT NULL "
+            "ORDER BY closed_ms DESC, id DESC LIMIT ?",
+            (limit,),
+        )
+        return [float(row["r"]) for row in rows]
+
+    def coin_stats(self) -> list[dict[str, Any]]:
+        rows = self.db.execute(
+            "SELECT symbol, COUNT(*) AS trades, AVG(r) AS avg_r, SUM(pnl) AS pnl, "
+            "SUM(CASE WHEN pnl > 0 THEN 1 ELSE 0 END) AS wins FROM trades "
+            "WHERE closed_ms IS NOT NULL GROUP BY symbol ORDER BY symbol"
+        )
+        return [dict(row) for row in rows]

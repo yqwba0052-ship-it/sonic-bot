@@ -19,11 +19,16 @@ const FIELDS: { key: NumberKey; label: string; hint: string }[] = [
     label: 'أقصى خسارة يومية (USDT)',
     hint: 'لازم تكون أقل من المبلغ أو تساويه. عند الوصول إليها يتوقف البوت لبقية اليوم.',
   },
-  { key: 'leverage', label: 'الرافعة المالية', hint: 'من 1 إلى 5.' },
-  { key: 'risk_per_trade_pct', label: 'المخاطرة في الصفقة (%)', hint: 'من 0.1 إلى 5.' },
-  { key: 'stop_loss_pct', label: 'وقف الخسارة (%)', hint: 'من 0.2 إلى 10.' },
-  { key: 'take_profit_pct', label: 'جني الربح (%)', hint: 'من 0.2 إلى 30.' },
+  { key: 'leverage', label: 'الرافعة المالية القصوى', hint: 'من 1 إلى 5. المختبر: 3.' },
+  {
+    key: 'risk_per_trade_pct',
+    label: 'المخاطرة في الصفقة (%)',
+    hint: 'من 0.25 إلى 2. المختبر: 1. الوقف يحدده السوق (3 أضعاف متوسط الحركة).',
+  },
+  { key: 'max_open', label: 'أقصى صفقات مفتوحة معًا', hint: 'من 1 إلى 6. المختبر: 3.' },
 ];
+
+const MAX_RISK = 0.02; // same small-account rule as the server
 
 function initial(limits: Limits) {
   return Object.fromEntries(FIELDS.map(({ key }) => [key, String(limits[key])])) as Record<
@@ -38,13 +43,11 @@ function parse(values: Record<NumberKey, string>) {
   ) as Record<NumberKey, number>;
 }
 
-/** Same rule as the server: the stop risks the set share, margin stays inside the amount. */
-function maxOrder(numbers: Record<NumberKey, number>): number {
-  const { capital_usdt, risk_per_trade_pct, stop_loss_pct, leverage } = numbers;
-  if (![capital_usdt, risk_per_trade_pct, stop_loss_pct, leverage].every(Number.isFinite)) return 0;
-  if (stop_loss_pct <= 0) return 0;
-  const byRisk = (capital_usdt * risk_per_trade_pct) / 100 / (stop_loss_pct / 100);
-  return Math.max(0, Math.min(byRisk, capital_usdt * leverage));
+/** Same rule as the server: the smallest order's stop must fit in 2% of the amount,
+ * and its margin inside the amount. */
+function minAmount(market: Market, leverage: number): number {
+  const lev = Number.isFinite(leverage) && leverage > 0 ? leverage : 1;
+  return Math.max((market.min_order_usdt * market.stop_pct) / MAX_RISK, market.min_order_usdt / lev);
 }
 
 export default function SafetyScreen() {
@@ -76,8 +79,8 @@ function LimitsForm({ limits }: { limits: Limits }) {
   }, [call]);
 
   const numbers = parse(values);
-  const largest = maxOrder(numbers);
-  const fits = (market: Market) => market.min_order_usdt <= largest;
+  const fits = (market: Market) =>
+    minAmount(market, numbers.leverage) <= numbers.capital_usdt;
 
   const toggle = (market: Market) => {
     if (locked) return;
@@ -103,9 +106,10 @@ function LimitsForm({ limits }: { limits: Limits }) {
       return;
     }
     // Recomputed here from the values being saved, not taken from an earlier render.
-    const limit = maxOrder(numbers);
     const tooSmall = markets.filter(
-      (market) => symbols.includes(market.symbol) && market.min_order_usdt > limit
+      (market) =>
+        symbols.includes(market.symbol) &&
+        minAmount(market, numbers.leverage) > numbers.capital_usdt
     );
     if (tooSmall.length > 0) {
       const names = tooSmall.map((market) => coinName(market.symbol)).join('، ');
@@ -146,8 +150,8 @@ function LimitsForm({ limits }: { limits: Limits }) {
       <Card>
         <Body>العملات التي يتداول فيها البوت</Body>
         <Body color={colors.muted}>
-          أكبر صفقة يسمح بها مبلغك وحدودك: {largest.toFixed(2)} USDT. العملة الرمادية أقل صفقة
-          فيها أكبر من ذلك.
+          تحت كل عملة أقل مبلغ يكفيها اليوم، حسب أقل صفقة في Binance ومسافة الوقف الحالية.
+          العملة الرمادية تحتاج مبلغًا أكبر من مبلغك.
         </Body>
         {markets === null ? <Body color={colors.muted}>جاري جلب العملات من Binance…</Body> : null}
         {markets?.length === 0 ? (
@@ -176,8 +180,8 @@ function LimitsForm({ limits }: { limits: Limits }) {
                 </Text>
                 <Text style={[styles.coinHint, ok ? null : styles.lossText]}>
                   {ok
-                    ? `أقل صفقة ${market.min_order_usdt}$`
-                    : `تحتاج ${market.min_order_usdt}$`}
+                    ? `يكفيها ${Math.ceil(minAmount(market, numbers.leverage))}$`
+                    : `تحتاج ${Math.ceil(minAmount(market, numbers.leverage))}$`}
                 </Text>
               </Pressable>
             );

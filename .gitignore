@@ -13,3 +13,4 @@ dist/
 *.keystore
 server/web/
 research/data/
+server/downloads/

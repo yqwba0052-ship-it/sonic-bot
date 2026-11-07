@@ -15,8 +15,8 @@ from .risk import Limits
 from .store import Store
 
 MAX_FAILURES = 3
-HISTORY_BARS = 100
 DAY_MS = 86_400_000
+MARKETS_TTL_MS = 10 * 60 * 1000
 
 
 class Engine:
@@ -38,11 +38,13 @@ class Engine:
         self.unrealized = 0.0
         self.balance = 0.0
         self.live: dict[str, Any] = {}
-        self.minimums: dict[str, float] = {}
+        self.markets_cache: tuple[int, list[dict[str, Any]]] | None = None
         self.limits = Limits(**store.get("limits", {}))
         self.halted: str = store.get("halted", "")
         # Never resume trading by itself after a restart.
         self.running = False
+
+    # ---------- small helpers
 
     def now_ms(self) -> int:
         return int(self.clock() * 1000)
@@ -53,6 +55,11 @@ class Engine:
     def day_start_ms(self) -> int:
         now = self.now_ms()
         return now - now % DAY_MS
+
+    def last_closed_bar(self) -> int:
+        """Open time of the newest fully closed 4-hour bar."""
+        now = self.now_ms()
+        return now - now % strategy.BAR_MS - strategy.BAR_MS
 
     def realized_today(self) -> float:
         return self.store.realized_since(self.day_start_ms())
@@ -80,6 +87,11 @@ class Engine:
             self.store.put("halted", reason)
             self.log("critical", reason, detail)
 
+    def _client_id(self) -> str:
+        return f"sb{uuid.uuid4().hex[:24]}"
+
+    # ---------- owner actions
+
     async def start(self) -> None:
         async with self.lock:
             if self.halted:
@@ -99,6 +111,9 @@ class Engine:
                     raise ValueError("daily_loss_still_breached")
             if self.halted == "budget_used" and self.budget_left() <= 0:
                 raise ValueError("budget_still_used")
+            if self.halted == "strategy_drift":
+                # The owner looked at it; judge only trades from now on.
+                self.store.put("drift_reset_ms", self.now_ms())
             self.halted = ""
             self.failures = 0
             self.store.put("halted", "")
@@ -125,17 +140,17 @@ class Engine:
         for symbol, position in (await self.exchange.positions()).items():
             await self.exchange.close_market(symbol, position.qty, self._client_id())
 
-    def _client_id(self) -> str:
-        return f"sb{uuid.uuid4().hex[:24]}"
+    # ---------- loop
 
     async def tick(self) -> None:
         async with self.lock:
             try:
                 await self._sync()
-                await self._refresh_minimums()
                 await self._guard()
-                if self.running and not self.halted:
-                    await self._entries()
+                bar = self.last_closed_bar()
+                if bar > int(self.store.get("last_bar_ms", 0)):
+                    await self._on_bar()
+                    self.store.put("last_bar_ms", bar)
                 self.failures = 0
                 self.last_error = ""
             except Exception as error:  # noqa: BLE001 - every failure must reach the halt counter
@@ -166,28 +181,6 @@ class Engine:
             if symbol not in tracked:
                 self.halt("unknown_position", symbol)
 
-    async def markets(self) -> list[dict[str, Any]]:
-        prices = await self.exchange.prices()
-        result = []
-        for symbol in risk.ALLOWED_SYMBOLS:
-            filters = await self.exchange.filters(symbol)
-            price = prices[symbol]
-            minimum = round(max(filters.min_notional, filters.min_qty * price), 2)
-            result.append({"symbol": symbol, "price": price, "min_order_usdt": minimum})
-        return result
-
-    async def unaffordable(self, limits: Limits) -> list[str]:
-        """Chosen coins whose smallest order is larger than the new amount allows."""
-        largest = risk.max_order_usdt(limits, limits.capital_usdt)
-        minimums = {item["symbol"]: item["min_order_usdt"] for item in await self.markets()}
-        return [symbol for symbol in limits.symbols if minimums[symbol] > largest]
-
-    async def _refresh_minimums(self) -> None:
-        for symbol in self.limits.symbols:
-            filters = await self.exchange.filters(symbol)
-            price = await self.exchange.price(symbol)
-            self.minimums[symbol] = round(max(filters.min_notional, filters.min_qty * price), 2)
-
     async def _guard(self) -> None:
         if self.budget_left() <= 0:
             if self.halted != "budget_used":
@@ -197,37 +190,79 @@ class Engine:
                 await self._close_all()
                 await self._sync()
             return
-        if not risk.daily_loss_breached(self.limits, self.realized_today(), self.unrealized):
+        if risk.daily_loss_breached(self.limits, self.realized_today(), self.unrealized):
+            if self.halted != "daily_loss_limit":
+                self.running = False
+                self.halted = ""
+                self.halt("daily_loss_limit", f"limit {self.limits.max_daily_loss_usdt}")
+                await self._close_all()
+                await self._sync()
             return
-        if self.halted != "daily_loss_limit":
-            self.running = False
-            self.halted = ""
-            self.halt("daily_loss_limit", f"limit {self.limits.max_daily_loss_usdt}")
-            await self._close_all()
-            await self._sync()
+        recent = self.recent_r()
+        if (
+            len(recent) >= strategy.DRIFT_WINDOW
+            and sum(recent) / len(recent) < strategy.DRIFT_FLOOR
+            and not self.halted
+        ):
+            # Open trades keep their stops; only new entries stop.
+            self.halt("strategy_drift", f"avg R {sum(recent) / len(recent):+.2f}")
 
-    async def _entries(self) -> None:
+    def recent_r(self) -> list[float]:
+        since = int(self.store.get("drift_reset_ms", 0))
+        rows = self.store.db.execute(
+            "SELECT r FROM trades WHERE closed_ms IS NOT NULL AND r IS NOT NULL "
+            "AND closed_ms >= ? ORDER BY closed_ms DESC, id DESC LIMIT ?",
+            (since, strategy.DRIFT_WINDOW),
+        )
+        return [float(row["r"]) for row in rows]
+
+    async def _bars(self, symbol: str) -> list[strategy.Bar]:
+        return await self.exchange.bars(symbol, strategy.INTERVAL, strategy.HISTORY_BARS)
+
+    async def _on_bar(self) -> None:
+        """Runs once per closed 4-hour bar: exits first, then entries."""
+        now = self.now_ms()
+        for trade in self.store.open_trades():
+            bars = await self._bars(trade["symbol"])
+            held_bars = (now - trade["opened_ms"]) // strategy.BAR_MS
+            reason = ""
+            if strategy.exit_due(bars, trade["side"]):
+                reason = "trade_exit_signal"
+            elif held_bars >= strategy.MAX_HOLD_BARS:
+                reason = "trade_exit_time"
+            if reason:
+                qty = trade["qty"] if trade["side"] == "BUY" else -trade["qty"]
+                await self.exchange.close_market(trade["symbol"], qty, self._client_id())
+                self.log("info", reason, trade["symbol"])
+        await self._sync()
+        if not self.running or self.halted:
+            return
+        btc_up = strategy.btc_uptrend(await self._bars("BTCUSDT"))
         open_trades = self.store.open_trades()
         used = {trade["symbol"] for trade in open_trades}
         margin = sum(trade["margin"] for trade in open_trades)
         for symbol in self.limits.symbols:
+            if len(used) >= self.limits.max_open:
+                break
             if symbol in used:
                 continue
-            bars = await self.exchange.bars(symbol, self.settings.interval, HISTORY_BARS)
-            if not bars or self.store.get(f"bar:{symbol}") == bars[-1][0]:
-                continue
-            side = strategy.signal([close for _, close in bars])
-            self.store.put(f"bar:{symbol}", bars[-1][0])
+            bars = await self._bars(symbol)
+            side = strategy.entry_signal(bars, btc_up)
             if side is None:
                 continue
-            margin += await self._open(symbol, side, margin)
+            added = await self._open(symbol, side, strategy.stop_distance(bars), margin)
+            if added:
+                used.add(symbol)
+                margin += added
             if self.halted:
                 return
 
-    async def _open(self, symbol: str, side: str, margin: float) -> float:
+    async def _open(self, symbol: str, side: str, stop_dist: float, margin: float) -> float:
         filters = await self.exchange.filters(symbol)
         price = await self.exchange.price(symbol)
-        size = risk.size_position(self.limits, price, margin, filters, self.trading_budget())
+        size = risk.size_position(
+            self.limits, price, stop_dist, margin, filters, self.trading_budget()
+        )
         if not size.qty:
             self.log("warning", "trade_skipped", f"{symbol} {size.reason}")
             return 0.0
@@ -235,30 +270,91 @@ class Engine:
         opened_ms = self.now_ms()
         fill = await self.exchange.open_market(symbol, side, size.qty, self._client_id())
         used_margin = fill.qty * fill.price / self.limits.leverage
-        stop, target = risk.protection_prices(side, fill.price, self.limits, filters.tick_size)
+        stop = risk.stop_price(side, fill.price, stop_dist, filters.tick_size)
         trade_id = self.store.open_trade(
             symbol=symbol,
             side=side,
             qty=fill.qty,
             entry_price=fill.price,
             stop_price=stop,
-            target_price=target,
+            target_price=0.0,
             margin=used_margin,
             opened_ms=opened_ms,
+            risk_usdt=fill.qty * abs(fill.price - stop),
         )
         self.log("info", "trade_opened", f"{side} {symbol} {fill.qty} @ {fill.price}")
         try:
-            await self.exchange.protect(symbol, side, stop, target)
+            await self.exchange.protect(symbol, side, stop, None)
         except Exception as error:  # noqa: BLE001 - an unprotected position must not stay open
             self.halt("protection_failed", str(error)[:300])
             signed = fill.qty if side == "BUY" else -fill.qty
             await self.exchange.close_market(symbol, signed, self._client_id())
             await self._sync()
             return 0.0
-        self.store.set_protection(trade_id, stop, target)
+        self.store.set_protection(trade_id, stop, 0.0)
         return used_margin
 
+    # ---------- information for the app
+
+    async def markets(self) -> list[dict[str, Any]]:
+        """Each coin with its smallest order, today's stop distance, and the smallest amount
+        that can trade it under the small-account rule. Cached for ten minutes."""
+        now = self.now_ms()
+        if self.markets_cache and now - self.markets_cache[0] < MARKETS_TTL_MS:
+            return self.markets_cache[1]
+        prices = await self.exchange.prices()
+        all_bars = await asyncio.gather(*(self._bars(s) for s in risk.ALLOWED_SYMBOLS))
+        result = []
+        for symbol, bars in zip(risk.ALLOWED_SYMBOLS, all_bars, strict=True):
+            filters = await self.exchange.filters(symbol)
+            price = prices[symbol]
+            minimum = round(filters.min_order(price), 2)
+            stop_pct = strategy.stop_distance(bars) / price if bars else 0.0
+            result.append({
+                "symbol": symbol,
+                "price": price,
+                "min_order_usdt": minimum,
+                "stop_pct": round(stop_pct, 4),
+                "min_amount_usdt": round(
+                    risk.min_amount_for(minimum, stop_pct, self.limits.leverage), 2
+                ),
+            })
+        self.markets_cache = (now, result)
+        return result
+
+    async def unaffordable(self, limits: Limits) -> list[str]:
+        """Chosen coins whose smallest trade needs more than the new amount."""
+        need = {item["symbol"]: item for item in await self.markets()}
+        return [
+            symbol
+            for symbol in limits.symbols
+            if risk.min_amount_for(
+                need[symbol]["min_order_usdt"], need[symbol]["stop_pct"], limits.leverage
+            )
+            > limits.capital_usdt
+        ]
+
+    def insights(self) -> dict[str, Any]:
+        """What the bot has learned from its own closed trades."""
+        recent = self.recent_r()
+        coins = self.store.coin_stats()
+        notes = []
+        for coin in coins:
+            if coin["trades"] >= 10 and (coin["avg_r"] or 0) < 0:
+                notes.append({"code": "coin_weak", "symbol": coin["symbol"],
+                              "trades": coin["trades"], "avg_r": coin["avg_r"]})
+        return {
+            "expected_avg_r": strategy.EXPECTED_AVG_R,
+            "drift_floor": strategy.DRIFT_FLOOR,
+            "window": strategy.DRIFT_WINDOW,
+            "recent_trades": len(recent),
+            "recent_avg_r": sum(recent) / len(recent) if recent else None,
+            "coins": coins,
+            "notes": notes,
+        }
+
     def status(self) -> dict[str, Any]:
+        cached = {item["symbol"]: item for item in (self.markets_cache or (0, []))[1]}
         return {
             "mode": self.settings.mode,
             "strategy": strategy.NAME,
@@ -272,8 +368,12 @@ class Engine:
             "open_trades": self.store.open_trades(),
             "limits": self.limits.model_dump(),
             "budget_left": self.budget_left(),
-            "max_order_usdt": risk.max_order_usdt(self.limits, self.trading_budget()),
-            "minimums": self.minimums,
+            "coin_min_amount": {
+                symbol: cached[symbol]["min_amount_usdt"]
+                for symbol in self.limits.symbols
+                if symbol in cached
+            },
+            "next_check_ms": self.last_closed_bar() + 2 * strategy.BAR_MS,
             "last_tick_ms": self.last_tick_ms,
             "last_error": self.last_error,
         }

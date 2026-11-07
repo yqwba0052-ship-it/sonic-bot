@@ -20,11 +20,16 @@ async def test_paper_trade_at_real_prices_opens_protects_and_closes() -> None:
         settings = Settings(mode="paper", token="t", db_path=":memory:", symbols=("BTCUSDT",))
         engine = Engine(store, exchange, settings)
         await engine.start()
+        engine.limits = engine.limits.model_copy(
+            update={"capital_usdt": 1000.0, "symbols": ["BTCUSDT"]}
+        )
+        price = await exchange.price("BTCUSDT")
         async with engine.lock:
-            used = await engine._open("BTCUSDT", "BUY", 0.0)
+            used = await engine._open("BTCUSDT", "BUY", price * 0.03, 0.0)
         trade = store.open_trades()[0]
         assert used > 0
-        assert trade["stop_price"] < trade["entry_price"] < trade["target_price"]
+        assert trade["stop_price"] < trade["entry_price"]
+        assert trade["risk_usdt"] > 0
         await engine.panic()
     closed = store.trades()[0]
     assert closed["closed_ms"] is not None

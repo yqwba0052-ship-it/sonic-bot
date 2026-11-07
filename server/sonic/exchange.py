@@ -18,11 +18,13 @@ import httpx
 
 from .risk import Filters
 from .store import Store
+from .strategy import Bar
 
 PUBLIC_URL = "https://fapi.binance.com"
 DEMO_URL = "https://demo-fapi.binance.com"
 FEE_RATE = 0.0005
 SLIPPAGE = 0.0002
+HOUR_MS = 3_600_000
 
 
 class ExchangeError(Exception):
@@ -55,12 +57,14 @@ class Exchange(Protocol):
     async def filters(self, symbol: str) -> Filters: ...
     async def price(self, symbol: str) -> float: ...
     async def prices(self) -> dict[str, float]: ...
-    async def bars(self, symbol: str, interval: str, limit: int) -> list[tuple[int, float]]: ...
+    async def bars(self, symbol: str, interval: str, limit: int) -> list[Bar]: ...
     async def balance(self) -> float: ...
     async def positions(self) -> dict[str, Position]: ...
     async def prepare(self, symbol: str, leverage: int) -> None: ...
     async def open_market(self, symbol: str, side: str, qty: float, client_id: str) -> Fill: ...
-    async def protect(self, symbol: str, side: str, stop: float, target: float) -> None: ...
+    async def protect(
+        self, symbol: str, side: str, stop: float, target: float | None
+    ) -> None: ...
     async def close_market(self, symbol: str, qty: float, client_id: str) -> None: ...
     async def closed_result(self, symbol: str, since_ms: int) -> Closed: ...
 
@@ -104,12 +108,15 @@ class PublicMarket:
         data = await self.get("/fapi/v1/ticker/price")
         return {item["symbol"]: float(item["price"]) for item in data}
 
-    async def bars(self, symbol: str, interval: str, limit: int) -> list[tuple[int, float]]:
-        """Return (open_time, close) for closed bars only."""
+    async def bars(self, symbol: str, interval: str, limit: int) -> list[Bar]:
+        """Closed bars only; the bar still forming is dropped."""
         data = await self.get(
             "/fapi/v1/klines", {"symbol": symbol, "interval": interval, "limit": limit + 1}
         )
-        return [(int(row[0]), float(row[4])) for row in data[:-1]]
+        return [
+            Bar(int(row[0]), float(row[1]), float(row[2]), float(row[3]), float(row[4]))
+            for row in data[:-1]
+        ]
 
 
 class PaperExchange:
@@ -131,7 +138,7 @@ class PaperExchange:
     async def price(self, symbol: str) -> float:
         return await self.market.price(symbol)
 
-    async def bars(self, symbol: str, interval: str, limit: int) -> list[tuple[int, float]]:
+    async def bars(self, symbol: str, interval: str, limit: int) -> list[Bar]:
         return await self.market.bars(symbol, interval, limit)
 
     async def prices(self) -> dict[str, float]:
@@ -149,11 +156,16 @@ class PaperExchange:
         fee = qty * price * FEE_RATE
         signed = qty if side == "BUY" else -qty
         self.state["balance"] -= fee
-        self.state["open"][symbol] = {"qty": signed, "entry": price, "fees": fee}
+        now = int(time.time() * 1000)
+        self.state["open"][symbol] = {
+            "qty": signed, "entry": price, "fees": fee, "checked_ms": now,
+        }
         self._save()
         return Fill(price, qty)
 
-    async def protect(self, symbol: str, side: str, stop: float, target: float) -> None:
+    async def protect(
+        self, symbol: str, side: str, stop: float, target: float | None
+    ) -> None:
         self.state["open"][symbol].update({"stop": stop, "target": target})
         self._save()
 
@@ -167,11 +179,33 @@ class PaperExchange:
         self.state["closed"][symbol] = {"exit": price, "pnl": gross - fees, "fees": fees}
         self._save()
 
+    async def _missed_stop(self, symbol: str, pos: dict[str, Any]) -> float | None:
+        """Fill price if a closed 1-hour bar since the last check touched the stop."""
+        stop = pos.get("stop")
+        if stop is None:
+            return None
+        since = int(pos.get("checked_ms", 0))
+        long = pos["qty"] > 0
+        for bar in await self.market.bars(symbol, "1h", 500):
+            if bar.t + HOUR_MS <= since:
+                continue
+            if long and bar.low <= stop:
+                return min(bar.o, stop)
+            if not long and bar.h >= stop:
+                return max(bar.o, stop)
+        return None
+
     async def positions(self) -> dict[str, Position]:
         result: dict[str, Position] = {}
         for symbol in list(self.state["open"]):
-            last = await self.market.price(symbol)
             pos = self.state["open"][symbol]
+            missed = await self._missed_stop(symbol, pos)
+            if missed is not None:
+                self._settle(symbol, missed)
+                continue
+            pos["checked_ms"] = int(time.time() * 1000)
+            self._save()
+            last = await self.market.price(symbol)
             long = pos["qty"] > 0
             stop, target = pos.get("stop"), pos.get("target")
             hit_stop = stop is not None and (last <= stop if long else last >= stop)
@@ -238,7 +272,7 @@ class BinanceDemo:
     async def price(self, symbol: str) -> float:
         return await self.market.price(symbol)
 
-    async def bars(self, symbol: str, interval: str, limit: int) -> list[tuple[int, float]]:
+    async def bars(self, symbol: str, interval: str, limit: int) -> list[Bar]:
         return await self.market.bars(symbol, interval, limit)
 
     async def prices(self) -> dict[str, float]:
@@ -299,9 +333,14 @@ class BinanceDemo:
         )
         return Fill(float(data["avgPrice"]), float(data["executedQty"]))
 
-    async def protect(self, symbol: str, side: str, stop: float, target: float) -> None:
+    async def protect(
+        self, symbol: str, side: str, stop: float, target: float | None
+    ) -> None:
         exit_side = "SELL" if side == "BUY" else "BUY"
-        for order_type, trigger in (("STOP_MARKET", stop), ("TAKE_PROFIT_MARKET", target)):
+        orders = [("STOP_MARKET", stop)]
+        if target is not None:
+            orders.append(("TAKE_PROFIT_MARKET", target))
+        for order_type, trigger in orders:
             await self.signed(
                 "POST",
                 "/fapi/v1/algoOrder",

@@ -6,12 +6,27 @@ export type Limits = {
   max_daily_loss_usdt: number;
   leverage: number;
   risk_per_trade_pct: number;
-  stop_loss_pct: number;
-  take_profit_pct: number;
+  max_open: number;
   symbols: string[];
 };
 
-export type Market = { symbol: string; price: number; min_order_usdt: number };
+export type Market = {
+  symbol: string;
+  price: number;
+  min_order_usdt: number;
+  stop_pct: number;
+  min_amount_usdt: number;
+};
+
+export type Insights = {
+  expected_avg_r: number;
+  drift_floor: number;
+  window: number;
+  recent_trades: number;
+  recent_avg_r: number | null;
+  coins: { symbol: string; trades: number; avg_r: number | null; pnl: number; wins: number }[];
+  notes: { code: string; symbol: string; trades: number; avg_r: number }[];
+};
 
 export type Trade = {
   id: number;
@@ -26,6 +41,7 @@ export type Trade = {
   exit_price: number | null;
   pnl: number | null;
   fees: number | null;
+  r: number | null;
 };
 
 export type BotEvent = { id: number; at_ms: number; level: string; code: string; detail: string };
@@ -43,8 +59,8 @@ export type Status = {
   open_trades: Trade[];
   limits: Limits;
   budget_left: number;
-  max_order_usdt: number;
-  minimums: Record<string, number>;
+  coin_min_amount: Record<string, number>;
+  next_check_ms: number;
   last_tick_ms: number;
   last_error: string;
 };

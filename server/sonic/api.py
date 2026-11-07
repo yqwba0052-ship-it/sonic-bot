@@ -10,6 +10,7 @@ from pathlib import Path
 from typing import Annotated, Any
 
 from fastapi import Body, Depends, FastAPI, Header, HTTPException, Query
+from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
 from pydantic import ValidationError
 
@@ -70,6 +71,11 @@ def create_app(engine: Engine, token: str, background: bool = True) -> FastAPI:
             raise HTTPException(status_code=409, detail=str(error)) from error
         return limits.model_dump()
 
+    @app.get("/insights", dependencies=secured)
+    async def insights() -> dict[str, Any]:
+        """What the bot learned from its own closed trades."""
+        return engine.insights()
+
     @app.get("/markets", dependencies=secured)
     async def markets() -> list[dict[str, Any]]:
         """Each coin the owner can pick, with the smallest order Binance accepts for it."""
@@ -100,6 +106,15 @@ def create_app(engine: Engine, token: str, background: bool = True) -> FastAPI:
         except ValueError as error:
             raise HTTPException(status_code=409, detail=str(error)) from error
         return engine.status()
+
+    apk = Path(__file__).resolve().parent.parent / "downloads" / "sonic.apk"
+
+    @app.get("/sonic.apk", include_in_schema=False)
+    async def download_apk() -> FileResponse:
+        if not apk.is_file():
+            raise HTTPException(status_code=404, detail="apk_not_built")
+        return FileResponse(apk, media_type="application/vnd.android.package-archive",
+                            filename="sonic.apk")
 
     web = Path(__file__).resolve().parent.parent / "web"
     if web.is_dir():

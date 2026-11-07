@@ -2,7 +2,7 @@ import { useState } from 'react';
 
 import { Body, Button, Card, colors, ConfirmButton, Row, Screen } from '@/components/ui';
 import { errorCode, useBot } from '@/lib/bot-context';
-import { coinName, message, money, signed } from '@/lib/text';
+import { coinName, message, money, signed, when } from '@/lib/text';
 
 const MODE_LABEL = { paper: 'رصيد وهمي بأسعار حقيقية', demo: 'حساب Binance التجريبي' };
 
@@ -49,7 +49,7 @@ export default function StatusScreen() {
         <>
           <Card tone={colors.warn}>
             <Body color={colors.warn}>
-              {MODE_LABEL[status.mode]}. الاستراتيجية تجريبية وغير مثبتة الربح.
+              {MODE_LABEL[status.mode]}. الاستراتيجية: تتبع الاتجاه على شموع 4 ساعات. ربحت في اختبار 2021–2026، لكن النتائج الماضية لا تضمن المستقبل.
             </Body>
           </Card>
           <Card>
@@ -64,14 +64,22 @@ export default function StatusScreen() {
             />
             <Row label="العملات" value={status.limits.symbols.map(coinName).join('، ')} />
             <Row label="حد الخسارة اليومي" value={money(status.limits.max_daily_loss_usdt)} />
+            <Row label="الفحص القادم" value={when(status.next_check_ms)} />
           </Card>
+          {status.limits.capital_usdt < 30 ? (
+            <Card tone={colors.warn}>
+              <Body color={colors.warn}>
+                المبلغ أقل من 30$، وهو أقل مبلغ نجح في الاختبار. سيتخطى البوت صفقات كثيرة.
+              </Body>
+            </Card>
+          ) : null}
           {status.limits.symbols
-            .filter((symbol) => (status.minimums[symbol] ?? 0) > status.max_order_usdt)
+            .filter((symbol) => (status.coin_min_amount[symbol] ?? 0) > status.budget_left)
             .map((symbol) => (
               <Card key={symbol} tone={colors.warn}>
                 <Body color={colors.warn}>
-                  {coinName(symbol)}: أقل صفقة {status.minimums[symbol]}$ وأكبر صفقة لمبلغك{' '}
-                  {status.max_order_usdt.toFixed(2)}$، فلن يتداول البوت فيها.
+                  {coinName(symbol)} تحتاج اليوم {status.coin_min_amount[symbol]}$ على الأقل،
+                  فلن يتداول البوت فيها بالمبلغ المتبقي.
                 </Body>
               </Card>
             ))}

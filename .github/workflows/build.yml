@@ -20,6 +20,20 @@ jobs:
       - run: ruff check .
       - run: pytest -q
 
+  research:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: research
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-python@v6
+        with:
+          python-version: "3.13"
+      - run: pip install numpy pytest ruff fastapi httpx pydantic
+      - run: ruff check .
+      - run: pytest -q
+
   android:
     runs-on: ubuntu-latest
     defaults:

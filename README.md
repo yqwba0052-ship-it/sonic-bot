@@ -1,39 +1,58 @@
 # Sonic bot
 
-First version: a trading server and a phone app. Only simulated and Binance demo trading exist.
-The strategy is a system test (`demo-ema-9-21`), not a proven profitable strategy.
+A trading server and a phone app. Only paper (simulated money at real prices) and Binance
+demo trading exist; the signed client refuses every URL except the demo one.
+
+## Strategy (from `research/`)
+
+`trend-20-100-4h`: 20/100 EMA cross on 4-hour bars, buys only while BTC is above its 300-bar EMA
+and sells only while below, stop at 3 x ATR(14), exit when the EMAs cross back or after 20 days.
+
+Tested 2021-01..2026-10 on 12 coins with fees, slippage and funding
+(`research/reports/phase2.json`). Results:
+
+- It was profitable in every year.
+- It wins about 3 trades in 10, so long losing runs are normal.
+- At 1% risk per trade, the deepest drop was 23-33%.
+
+The bot's decisions match the backtest bar for bar (`research/tests/test_bot_matches_research.py`).
+
+## Safety
+
+- **Amount:** a hard total-loss budget. Losing it closes everything and halts the bot.
+- **Daily loss limit:** reaching it halts the bot for the rest of the day.
+- **Open trades:** at most `max_open` (default 3) at the same time.
+- **Coins:** coins whose smallest Binance order needs more than the amount are refused.
+- **Drift alarm:** if the average of the last 30 trades falls below -0.80R (worse than any period
+  in 6 years of history), new entries stop until the owner looks.
+- **Restarts:** the bot never resumes by itself after a restart; press Start in the app.
+- **Smallest amount:** 30 USDT is the smallest tested amount that kept working
+  (`research/reports/capital.json`).
 
 ## Run
 
-1. Double-click `server/start_server.cmd`. Allow Python on private networks if Windows asks.
-2. The window prints the server address and the access token.
-3. Put the phone on the same Wi-Fi and open that address in the browser.
-4. In the Connection tab, enter the token.
+1. Double-click `server/start_server.cmd`. The window shows the address and the access token.
+2. Once, run `server/allow_phone_access.cmd`, so the phone on the home Wi-Fi can connect (asks for
+   administrator approval). `allow_phone_access_off.cmd` undoes it.
+3. Optional: `server/autostart_on.cmd` starts the server at Windows sign-in.
+4. Phone: open `http://LAPTOP-IP:8787/sonic.apk` to install the app, or use the same address in
+   the browser. Then enter the token in the Connection tab.
 
-## Modes
+Paper trades are checked against 1-hour bars after the laptop wakes, so a stop touched during
+sleep still counts. The bot can only act while the laptop is on.
 
-Set in `server/.env`:
+## Modes (`server/.env`)
 
-- `SONIC_MODE=paper`: real public prices, simulated money, fees and slippage. This is the default.
-- `SONIC_MODE=demo`: Binance demo futures. Also needs `BINANCE_DEMO_KEY` and `BINANCE_DEMO_SECRET`.
-  The demo account must use one-way position mode.
-
-Real-money trading is not implemented. The signed client refuses any URL except the demo URL.
+- `SONIC_MODE=paper` is the default.
+- `SONIC_MODE=demo` needs `BINANCE_DEMO_KEY` and `BINANCE_DEMO_SECRET`, from a Binance demo account
+  in one-way position mode.
 
 ## Checks
 
 ```
-cd server
-.venv\Scripts\python -m ruff check .
-.venv\Scripts\python -m pytest -q
-.venv\Scripts\python -m pytest -q -m live -o addopts=""
-cd ..\app
-npx tsc --noEmit
-npx eslint src
-npx expo export --platform web --output-dir ../server/web
+cd server   && .venv\Scripts\python -m ruff check . && .venv\Scripts\python -m pytest -q
+cd research && ..\server\.venv\Scripts\python -m pytest -q
+cd app      && npx tsc --noEmit && npx eslint src
 ```
 
-## Android APK
-
-A local Windows build fails on the Windows path limit in React Native C++ code, even from `C:\sb`.
-Build on Linux, such as GitHub Actions or EAS.
+CI (`.github/workflows/build.yml`) runs the server tests and builds the signed APK on Linux.

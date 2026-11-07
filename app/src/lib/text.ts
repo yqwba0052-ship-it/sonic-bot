@@ -24,6 +24,10 @@ const MESSAGES: Record<string, string> = {
   trade_closed: 'أُقفلت صفقة',
   trade_skipped: 'لم تُفتح صفقة',
   tick_failed: 'فشلت دورة فحص',
+  trade_exit_signal: 'أُقفلت صفقة لأن الاتجاه انعكس',
+  trade_exit_time: 'أُقفلت صفقة بعد 20 يومًا',
+  strategy_drift:
+    'نتائج آخر 30 صفقة أسوأ من أي فترة في 6 سنوات من الاختبار. توقف البوت عن فتح صفقات جديدة، والصفقات المفتوحة باقية بوقفها. راجع النتائج قبل إعادة التفعيل.',
 };
 
 export function coinName(symbol: string): string {
