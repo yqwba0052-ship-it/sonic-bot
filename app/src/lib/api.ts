@@ -7,6 +7,7 @@ export type Limits = {
   leverage: number;
   risk_per_trade_pct: number;
   max_open: number;
+  allow_shorts: boolean;
   symbols: string[];
 };
 

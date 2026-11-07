@@ -63,6 +63,10 @@ export default function StatusScreen() {
               color={status.budget_left < status.limits.capital_usdt ? colors.warn : undefined}
             />
             <Row label="العملات" value={status.limits.symbols.map(coinName).join('، ')} />
+            <Row
+              label="نوع الصفقات"
+              value={status.limits.allow_shorts ? 'شراء وبيع' : 'شراء فقط'}
+            />
             <Row label="حد الخسارة اليومي" value={money(status.limits.max_daily_loss_usdt)} />
             <Row label="الفحص القادم" value={when(status.next_check_ms)} />
           </Card>

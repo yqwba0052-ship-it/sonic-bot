@@ -6,7 +6,7 @@ import type { Limits, Market } from '@/lib/api';
 import { errorCode, useBot } from '@/lib/bot-context';
 import { coinName, message } from '@/lib/text';
 
-type NumberKey = Exclude<keyof Limits, 'symbols'>;
+type NumberKey = Exclude<keyof Limits, 'symbols' | 'allow_shorts'>;
 
 const FIELDS: { key: NumberKey; label: string; hint: string }[] = [
   {
@@ -68,6 +68,7 @@ function LimitsForm({ limits }: { limits: Limits }) {
   const { status, online, call } = useBot();
   const [values, setValues] = useState(() => initial(limits));
   const [symbols, setSymbols] = useState<string[]>(limits.symbols);
+  const [allowShorts, setAllowShorts] = useState<boolean>(limits.allow_shorts);
   const [markets, setMarkets] = useState<Market[] | null>(null);
   const [notice, setNotice] = useState<{ text: string; color: string } | null>(null);
   const locked = Boolean(status?.running);
@@ -120,7 +121,7 @@ function LimitsForm({ limits }: { limits: Limits }) {
       return;
     }
     try {
-      await call('/limits', 'PUT', { ...numbers, symbols });
+      await call('/limits', 'PUT', { ...numbers, symbols, allow_shorts: allowShorts });
       setNotice({ text: 'حُفظت الحدود، وبدأ حساب المبلغ من الآن.', color: colors.gain });
     } catch (failure) {
       setNotice({ text: message(errorCode(failure)), color: colors.loss });
@@ -146,6 +147,21 @@ function LimitsForm({ limits }: { limits: Limits }) {
             onChangeText={(text) => setValues({ ...values, [key]: text })}
           />
         ))}
+      </Card>
+      <Card>
+        <Pressable
+          accessibilityRole="switch"
+          accessibilityState={{ checked: allowShorts, disabled: locked }}
+          accessibilityLabel="السماح بصفقات البيع"
+          onPress={() => !locked && setAllowShorts((value) => !value)}
+          style={[styles.coin, allowShorts && styles.selectedBlocked]}>
+          <Text style={styles.coinName}>
+            {allowShorts ? '✓ ' : ''}السماح بصفقات البيع (Short)
+          </Text>
+          <Text style={styles.coinHint}>
+            مطفأ وهو الموصى به: صفقات البيع خسرت في 2024–2026، وصفقات الشراء ربحت كل سنة.
+          </Text>
+        </Pressable>
       </Card>
       <Card>
         <Body>العملات التي يتداول فيها البوت</Body>

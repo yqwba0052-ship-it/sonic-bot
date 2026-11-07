@@ -45,6 +45,8 @@ class Limits(BaseModel):
     leverage: int = Field(default=3, ge=1, le=5)
     risk_per_trade_pct: float = Field(default=1.0, ge=0.25, le=2)
     max_open: int = Field(default=3, ge=1, le=6)
+    # Shorts lost money in 2024-2026 while longs won every year; off unless the owner opts in.
+    allow_shorts: bool = False
     symbols: list[str] = Field(default_factory=lambda: list(SMALL_ACCOUNT_SYMBOLS), min_length=1)
 
     @model_validator(mode="after")

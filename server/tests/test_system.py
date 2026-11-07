@@ -462,3 +462,18 @@ async def test_paper_catches_a_stop_touched_while_the_laptop_slept() -> None:
     trade = engine.store.trades()[0]
     assert trade["closed_ms"] is not None
     assert trade["exit_price"] == pytest.approx(stop * (1 - 0.0002))
+
+
+async def test_no_shorts_unless_the_owner_allows_them() -> None:
+    engine, _, market, clock = build()
+    market.coin = list(DOWN_CROSS)
+    market.btc = list(BTC_DOWN)
+    await engine.start()
+    await engine.tick()
+    assert engine.store.open_trades() == []
+    await engine.stop()
+    await engine.set_limits(engine.limits.model_copy(update={"allow_shorts": True}))
+    await engine.start()
+    clock.next_bar()
+    await engine.tick()
+    assert engine.store.open_trades()[0]["side"] == "SELL"

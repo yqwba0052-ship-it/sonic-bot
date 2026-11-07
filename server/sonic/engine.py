@@ -248,7 +248,7 @@ class Engine:
                 continue
             bars = await self._bars(symbol)
             side = strategy.entry_signal(bars, btc_up)
-            if side is None:
+            if side is None or (side == "SELL" and not self.limits.allow_shorts):
                 continue
             added = await self._open(symbol, side, strategy.stop_distance(bars), margin)
             if added:
