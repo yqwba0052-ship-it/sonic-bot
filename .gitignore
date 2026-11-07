@@ -1,0 +1,14 @@
+.env
+*.db
+*.db-wal
+*.db-shm
+.venv/
+__pycache__/
+.pytest_cache/
+.ruff_cache/
+node_modules/
+dist/
+*.apk
+*.jks
+*.keystore
+server/web/
