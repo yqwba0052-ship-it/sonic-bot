@@ -22,6 +22,18 @@ Tested 2021-01..2026-10 on 12 coins with fees, slippage and funding
 
 The bot's decisions match the backtest bar for bar (`research/tests/test_bot_matches_research.py`).
 
+## Paper-trading replay of the real engine
+
+`python -m sonic_research.engine_replay START END` (in `research/`) runs the server's own engine,
+paper exchange, sizing and limits hour by hour on past Binance prices.
+
+| Period | Trades | Winning | $30 became | Deepest drop | Engine errors |
+|---|---|---|---|---|---|
+| 2025-07..2026-10 | 57 | 79% | $37.19 | 8% | 0 |
+| 2022 (bear market) | 22 | 82% | $30.31 | 9.5% | 0 |
+
+Past results are no promise.
+
 ## Safety
 
 - **Amount:** a hard total-loss budget. Losing it closes everything and halts the bot.

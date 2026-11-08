@@ -586,3 +586,32 @@ def test_host_comes_from_the_environment(tmp_path, monkeypatch) -> None:
     loaded = load_settings(tmp_path)
     assert loaded.host == "127.0.0.1"
     assert "SONIC_TOKEN=" in (tmp_path / ".env").read_text(encoding="utf-8")
+
+
+async def test_resaving_limits_keeps_past_losses() -> None:
+    engine, _, _, clock = build()
+    await engine.set_limits(Limits())
+    old = engine.store.open_trade(
+        symbol="XRPUSDT", side="BUY", qty=1, entry_price=1, stop_price=0.9, target_price=0,
+        margin=1, opened_ms=0, risk_usdt=1,
+    )
+    clock.next_bar()
+    engine.store.close_trade(old, engine.now_ms(), 0.9, -5.0, 0.1)
+    clock.next_bar()
+    await engine.set_limits(Limits(max_open=2))  # same amount, other limit changed
+    assert engine.budget_left() == pytest.approx(25.0)
+    await engine.set_limits(Limits(capital_usdt=40, max_daily_loss_usdt=6))  # a new amount
+    assert engine.budget_left() == pytest.approx(40.0)
+    assert any(e["code"] == "budget_restarted" for e in engine.store.events(5))
+
+
+async def test_status_tells_what_the_last_scan_found() -> None:
+    engine, _, market, clock = build()
+    await engine.tick()
+    assert engine.status()["last_scan"]["market"] == "not_running"
+    await engine.start()
+    clock.next_bar()
+    await engine.tick()
+    scan = engine.status()["last_scan"]
+    assert scan["market"] == "btc_up"
+    assert scan["signals"] == 1 and scan["opened"] == 1

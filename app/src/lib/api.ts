@@ -65,6 +65,7 @@ export type Status = {
   budget_left: number;
   coin_min_amount: Record<string, number>;
   next_check_ms: number;
+  last_scan: { at_ms: number; market: string; coins: number; signals: number; opened: number } | null;
   keep_awake: boolean;
   keep_awake_supported: boolean;
   last_tick_ms: number;

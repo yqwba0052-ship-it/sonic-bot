@@ -86,11 +86,11 @@ def _rows(data: bytes) -> list[list[str]]:
     return [row for row in csv.reader(io.StringIO(text)) if row and row[0][:1].isdigit()]
 
 
-def load_bars(symbol: str, months: list[str]) -> Bars:
+def load_bars(symbol: str, months: list[str], interval: str = INTERVAL) -> Bars:
     rows: list[list[str]] = []
     for month in months:
-        name = f"{symbol}-{INTERVAL}-{month}.zip"
-        data = _fetch(f"{BASE}/klines/{symbol}/{INTERVAL}/{name}", DATA_DIR / "klines" / name)
+        name = f"{symbol}-{interval}-{month}.zip"
+        data = _fetch(f"{BASE}/klines/{symbol}/{interval}/{name}", DATA_DIR / "klines" / name)
         if data:
             rows.extend(_rows(data))
     rows.sort(key=lambda row: int(row[0]))

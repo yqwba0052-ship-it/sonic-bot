@@ -1,10 +1,18 @@
 import { useState } from 'react';
 
 import { Body, Button, Card, colors, ConfirmButton, Row, Screen } from '@/components/ui';
+import type { Status } from '@/lib/api';
 import { errorCode, useBot } from '@/lib/bot-context';
 import { coinName, message, money, signed, when } from '@/lib/text';
 
 const MODE_LABEL = { paper: 'رصيد وهمي بأسعار حقيقية', demo: 'حساب Binance التجريبي' };
+
+function scanText(scan: NonNullable<Status['last_scan']>): string {
+  if (scan.market === 'not_running') return 'البوت كان متوقفًا';
+  if (scan.market === 'btc_down') return 'BTC هابط: لا شراء الآن';
+  if (scan.signals === 0) return `${scan.coins} عملات: لا إشارة`;
+  return `إشارات ${scan.signals}، فُتح ${scan.opened}`;
+}
 
 function pnlColor(value: number) {
   if (value > 0) return colors.gain;
@@ -54,7 +62,10 @@ export default function StatusScreen() {
           </Card>
           <Card>
             <Row label="حالة البوت" value={state} color={stateColor} />
-            <Row label="الرصيد" value={money(status.balance)} />
+            <Row
+              label={status.mode === 'paper' ? 'رصيد المحفظة الوهمية كلها' : 'رصيد المحفظة'}
+              value={money(status.balance)}
+            />
             <Row label="ربح أو خسارة اليوم" value={signed(today)} color={pnlColor(today)} />
             <Row label="المبلغ المخصص" value={money(status.limits.capital_usdt)} />
             <Row
@@ -69,6 +80,12 @@ export default function StatusScreen() {
             />
             <Row label="حد الخسارة اليومي" value={money(status.limits.max_daily_loss_usdt)} />
             <Row label="الفحص القادم" value={when(status.next_check_ms)} />
+            {status.last_scan ? (
+              <Row label={`آخر فحص ${when(status.last_scan.at_ms)}`} value={scanText(status.last_scan)} />
+            ) : null}
+            <Body color={colors.muted}>
+              البوت يستخدم المبلغ المخصص فقط، وليس رصيد المحفظة كله.
+            </Body>
           </Card>
           {status.limits.capital_usdt < 30 ? (
             <Card tone={colors.warn}>

@@ -9,6 +9,7 @@ from __future__ import annotations
 import hashlib
 import hmac
 import time
+from collections.abc import Callable
 from contextlib import suppress
 from dataclasses import dataclass
 from typing import Any, Protocol
@@ -128,8 +129,15 @@ class PublicMarket:
 class PaperExchange:
     """Simulated fills at real prices, with fees and slippage. State survives restarts."""
 
-    def __init__(self, market: Any, store: Store, start_balance: float) -> None:
+    def __init__(
+        self,
+        market: Any,
+        store: Store,
+        start_balance: float,
+        clock: Callable[[], float] = time.time,
+    ) -> None:
         self.market = market
+        self.clock = clock
         self.store = store
         self.state: dict[str, Any] = store.get(
             "paper", {"balance": start_balance, "open": {}, "closed": {}}
@@ -162,7 +170,7 @@ class PaperExchange:
         fee = qty * price * FEE_RATE
         signed = qty if side == "BUY" else -qty
         self.state["balance"] -= fee
-        now = int(time.time() * 1000)
+        now = int(self.clock() * 1000)
         self.state["open"][symbol] = {
             "qty": signed, "entry": price, "fees": fee, "checked_ms": now,
         }
@@ -243,7 +251,7 @@ class PaperExchange:
             if await self._replay_missed(symbol, pos):
                 continue
             pos = self.state["open"][symbol]
-            pos["checked_ms"] = int(time.time() * 1000)
+            pos["checked_ms"] = int(self.clock() * 1000)
             self._save()
             last = await self.market.price(symbol)
             long = pos["qty"] > 0

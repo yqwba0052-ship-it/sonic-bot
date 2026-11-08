@@ -1,0 +1,54 @@
+{
+  "period": "2022-01..2022-12",
+  "seconds": 9,
+  "trades": 22,
+  "open_at_end": 0,
+  "win_rate": 0.8181818181818182,
+  "avg_r": 0.09756089938929012,
+  "pnl_usdt": 0.31,
+  "start_amount": 30.0,
+  "end_amount": 30.31,
+  "max_drop": 0.09498654483255597,
+  "scaled": 18,
+  "events": {
+    "trade_closed": 22,
+    "trade_skipped": 8,
+    "trade_scaled": 18,
+    "trade_opened": 22,
+    "trade_exit_signal": 3,
+    "started": 1,
+    "limits_changed": 1,
+    "budget_restarted": 1
+  },
+  "skipped": {
+    "amount_too_small": 6,
+    "capital_in_use": 2
+  },
+  "errors": [],
+  "by_coin": {
+    "SOLUSDT": [
+      1.0,
+      4
+    ],
+    "XRPUSDT": [
+      1.0,
+      4
+    ],
+    "DOGEUSDT": [
+      1.0,
+      3
+    ],
+    "ADAUSDT": [
+      1.0,
+      2
+    ],
+    "TRXUSDT": [
+      0.67,
+      6
+    ],
+    "BNBUSDT": [
+      0.33,
+      3
+    ]
+  }
+}

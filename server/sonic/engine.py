@@ -124,10 +124,13 @@ class Engine:
         async with self.lock:
             if self.running:
                 raise ValueError("stop_first")
+            new_amount = limits.capital_usdt != self.limits.capital_usdt
             self.limits = limits
             self.store.put("limits", limits.model_dump())
-            # Saving the amount starts a new budget from now.
-            self.store.put("budget_start_ms", self.now_ms())
+            # Only a new amount starts a new budget; re-saving other limits keeps past losses.
+            if new_amount or not self.store.get("budget_start_ms"):
+                self.store.put("budget_start_ms", self.now_ms())
+                self.log("info", "budget_restarted", f"amount {limits.capital_usdt}")
             self.log("info", "limits_changed", limits.model_dump_json())
 
     async def set_keep_awake(self, on: bool) -> None:
@@ -256,8 +259,10 @@ class Engine:
                 self.log("info", reason, trade["symbol"])
         await self._sync()
         if not self.running or self.halted:
+            self._record_scan("not_running", 0, 0)
             return
         btc_up = strategy.btc_uptrend(await self._bars("BTCUSDT"))
+        signals = opened = 0
         open_trades = self.store.open_trades()
         used = {trade["symbol"] for trade in open_trades}
         margin = sum(trade["margin"] for trade in open_trades)
@@ -270,12 +275,24 @@ class Engine:
             side = strategy.entry_signal(bars, btc_up)
             if side is None or (side == "SELL" and not self.limits.allow_shorts):
                 continue
+            signals += 1
             added = await self._open(symbol, side, strategy.stop_distance(bars), margin)
             if added:
                 used.add(symbol)
                 margin += added
+                opened += 1
             if self.halted:
-                return
+                break
+        self._record_scan("btc_up" if btc_up else "btc_down", signals, opened)
+
+    def _record_scan(self, market: str, signals: int, opened: int) -> None:
+        self.store.put("last_scan", {
+            "at_ms": self.now_ms(),
+            "market": market,
+            "coins": len(self.limits.symbols),
+            "signals": signals,
+            "opened": opened,
+        })
 
     async def _open(self, symbol: str, side: str, stop_dist: float, margin: float) -> float:
         filters = await self.exchange.filters(symbol)
@@ -409,6 +426,7 @@ class Engine:
                 if symbol in cached
             },
             "next_check_ms": self.last_closed_bar() + 2 * strategy.BAR_MS,
+            "last_scan": self.store.get("last_scan"),
             "keep_awake": self.keep_awake,
             "keep_awake_supported": awake.supported(),
             "last_tick_ms": self.last_tick_ms,
