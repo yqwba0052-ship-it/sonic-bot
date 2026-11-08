@@ -16,7 +16,7 @@ from sonic_research.strategies import Params, btc_trend, build
 sys.path.insert(0, str(Path(__file__).resolve().parents[2] / "server"))
 from sonic import strategy as bot  # noqa: E402
 
-BEST = Params("trend", 20, 100, 3.0, None, 120, True)
+BEST = Params("trend", 20, 100, 2.5, None, 240, True)  # the bot's live settings
 
 pytestmark = pytest.mark.skipif(
     not (DATA_DIR / "klines").exists(), reason="history not downloaded"

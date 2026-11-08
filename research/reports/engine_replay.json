@@ -1,54 +1,63 @@
 {
-  "period": "2022-01..2022-12",
-  "seconds": 9,
-  "trades": 22,
+  "period": "2023-01..2024-06",
+  "seconds": 16,
+  "trades": 107,
   "open_at_end": 0,
-  "win_rate": 0.8181818181818182,
-  "avg_r": 0.09756089938929012,
-  "pnl_usdt": 0.31,
+  "win_rate": 0.794392523364486,
+  "avg_r": 0.3806750651657319,
+  "pnl_usdt": 16.53,
   "start_amount": 30.0,
-  "end_amount": 30.31,
-  "max_drop": 0.09498654483255597,
-  "scaled": 18,
+  "end_amount": 46.53,
+  "max_drop": 0.12267917330278366,
+  "scaled": 77,
   "events": {
-    "trade_closed": 22,
-    "trade_skipped": 8,
-    "trade_scaled": 18,
-    "trade_opened": 22,
-    "trade_exit_signal": 3,
+    "trade_closed": 107,
+    "trade_scaled": 77,
+    "trade_opened": 107,
+    "trade_exit_signal": 6,
+    "trade_skipped": 12,
+    "trade_exit_time": 3,
     "started": 1,
     "limits_changed": 1,
     "budget_restarted": 1
   },
   "skipped": {
-    "amount_too_small": 6,
-    "capital_in_use": 2
+    "amount_too_small": 8,
+    "capital_in_use": 4
   },
   "errors": [],
   "by_coin": {
     "SOLUSDT": [
-      1.0,
-      4
+      0.89,
+      18
     ],
     "XRPUSDT": [
-      1.0,
-      4
+      0.68,
+      19
     ],
     "DOGEUSDT": [
-      1.0,
-      3
+      0.95,
+      19
     ],
     "ADAUSDT": [
-      1.0,
-      2
+      0.77,
+      13
+    ],
+    "SUIUSDT": [
+      0.78,
+      9
     ],
     "TRXUSDT": [
-      0.67,
-      6
+      0.86,
+      14
     ],
     "BNBUSDT": [
-      0.33,
-      3
+      0.57,
+      14
+    ],
+    "AVAXUSDT": [
+      1.0,
+      1
     ]
   }
 }

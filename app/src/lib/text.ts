@@ -26,7 +26,7 @@ const MESSAGES: Record<string, string> = {
   trade_skipped: 'لم تُفتح صفقة',
   tick_failed: 'فشلت دورة فحص',
   trade_exit_signal: 'أُقفلت صفقة لأن الاتجاه انعكس',
-  trade_exit_time: 'أُقفلت صفقة بعد 20 يومًا',
+  trade_exit_time: 'أُقفلت صفقة بعد 40 يومًا',
   keep_awake_on: 'تفعيل منع النوم',
   keep_awake_off: 'إيقاف منع النوم',
   trade_scaled: 'أُخذ ربح نصف الصفقة، والوقف صار عند سعر الدخول',

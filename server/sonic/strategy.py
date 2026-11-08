@@ -3,13 +3,15 @@
 trend-20-100-k3-tnone-h120-btc on 4-hour bars:
 - enter when the 20-bar EMA crosses the 100-bar EMA on a closed bar;
 - buy only while BTC closes above its 300-bar EMA, sell only while it closes below;
-- stop at 3 x ATR(14) from the entry;
+- stop at 2.5 x ATR(14) from the entry;
 - half the position closes at +0.25 x the stop distance, then the rest's stop moves to the entry
   (owner's choice: most trades end in profit, smaller total; research/sonic_research/partial.py);
-- the rest exits when the EMAs cross back, or after 120 bars (20 days).
-Tested 2021-01..2026-10 with fees, slippage and funding: 78% of trades ended in profit (80% in
-the unseen 2024-07..2026-10 part); half of all months had 80%+ winning trades, the worst month
-40%. A $30 account grew to about $56, deepest drop 7%. Past results are no promise.
+- the rest exits when the EMAs cross back, or after 240 bars (40 days).
+Stop 2.5 ATR and 40 days came from research/sonic_research/improve.py (2026-11-09): better
+than 3 ATR / 20 days on both the training and the unseen years, neighbours agree.
+Tested 2021-01..2026-10 on the 8 small-account coins with fees, slippage and funding: 78% of
+trades ended in profit; a $30 account grew to about $104, deepest drop 7%. Past results are
+no promise.
 """
 
 from __future__ import annotations
@@ -22,20 +24,19 @@ BAR_MS = 4 * 3600 * 1000
 FAST = 20
 SLOW = 100
 ATR_PERIOD = 14
-ATR_K = 3.0
+ATR_K = 2.5
 REGIME_PERIOD = 300
-MAX_HOLD_BARS = 120
+MAX_HOLD_BARS = 240
 HISTORY_BARS = 1000
 
 HALF_AT_R = 0.25
 
-# Self-check for this exit style (longs only, half at 0.25R): the average R of the last 30
-# closed trades was never below -0.39 in 5.8 years (1st percentile -0.29). Worse than this
-# means the market no longer fits. History on the 8 small-account coins: 78% of trades ended
-# in profit, average +0.21R.
+# Self-check for this setup (longs only, half at 0.25R, stop 2.5 ATR, 40 days): the average R
+# of the last 30 closed trades was never below -0.23 in 5.8 years (1st percentile -0.20).
+# Worse than this means the market no longer fits. History: 78% winning, average +0.40R.
 DRIFT_WINDOW = 30
-DRIFT_FLOOR = -0.40
-EXPECTED_AVG_R = 0.21
+DRIFT_FLOOR = -0.30
+EXPECTED_AVG_R = 0.40
 EXPECTED_WIN_RATE = 0.78
 
 
