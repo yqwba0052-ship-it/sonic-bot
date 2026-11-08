@@ -14,7 +14,9 @@ from .exchange import Exchange
 from .risk import Limits
 from .store import Store
 
-MAX_FAILURES = 3
+# Halt only when the market feed has failed for this long without a break. Short outages
+# (Wi-Fi drops, waking from sleep) should not stop the bot; open trades keep their stops.
+FAILURE_HALT_MS = 30 * 60 * 1000
 DAY_MS = 86_400_000
 MARKETS_TTL_MS = 10 * 60 * 1000
 
@@ -33,6 +35,7 @@ class Engine:
         self.clock = clock
         self.lock = asyncio.Lock()
         self.failures = 0
+        self.failing_since_ms: int | None = None
         self.last_tick_ms = 0
         self.last_error = ""
         self.unrealized = 0.0
@@ -117,6 +120,7 @@ class Engine:
                 self.store.put("drift_reset_ms", self.now_ms())
             self.halted = ""
             self.failures = 0
+            self.failing_since_ms = None
             self.store.put("halted", "")
             self.log("info", "halt_cleared")
 
@@ -163,13 +167,19 @@ class Engine:
                 if bar > int(self.store.get("last_bar_ms", 0)):
                     await self._on_bar()
                     self.store.put("last_bar_ms", bar)
+                if self.failing_since_ms is not None:
+                    minutes = (self.now_ms() - self.failing_since_ms) // 60000
+                    self.log("info", "connection_restored", f"after {minutes} min")
                 self.failures = 0
+                self.failing_since_ms = None
                 self.last_error = ""
             except Exception as error:  # noqa: BLE001 - every failure must reach the halt counter
                 self.failures += 1
                 self.last_error = str(error)[:300]
-                self.log("error", "tick_failed", self.last_error)
-                if self.failures >= MAX_FAILURES:
+                if self.failing_since_ms is None:
+                    self.failing_since_ms = self.now_ms()
+                    self.log("error", "tick_failed", self.last_error)
+                if self.now_ms() - self.failing_since_ms >= FAILURE_HALT_MS:
                     self.halt("repeated_failures", self.last_error)
             self.last_tick_ms = self.now_ms()
 
@@ -431,6 +441,7 @@ class Engine:
             "keep_awake_supported": awake.supported(),
             "last_tick_ms": self.last_tick_ms,
             "last_error": self.last_error,
+            "failing_since_ms": self.failing_since_ms,
         }
 
     async def run_forever(self) -> None:

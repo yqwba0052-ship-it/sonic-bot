@@ -70,6 +70,7 @@ export type Status = {
   keep_awake_supported: boolean;
   last_tick_ms: number;
   last_error: string;
+  failing_since_ms: number | null;
 };
 
 export type Connection = { url: string; token: string };

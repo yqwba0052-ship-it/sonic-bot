@@ -115,8 +115,12 @@ export default function StatusScreen() {
               />
             </Card>
           ) : null}
-          {status.last_error ? (
+          {status.failing_since_ms ? (
             <Card tone={colors.warn}>
+              <Body color={colors.warn}>
+                الاتصال بالسوق متقطع منذ {when(status.failing_since_ms)}. البوت يعيد المحاولة
+                تلقائيًا، ويتوقف للأمان إذا استمر الانقطاع 30 دقيقة.
+              </Body>
               <Body color={colors.muted}>{status.last_error}</Body>
             </Card>
           ) : null}

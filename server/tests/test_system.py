@@ -336,16 +336,29 @@ async def test_order_that_timed_out_but_filled_halts_as_unknown_position() -> No
     assert engine.halted == "unknown_position"
 
 
-async def test_repeated_failures_halt() -> None:
-    engine, exchange, _, _ = build()
+async def test_short_outages_do_not_halt_but_long_ones_do() -> None:
+    engine, exchange, _, clock = build()
+    real_positions = exchange.positions
 
     async def down() -> dict:
         raise RuntimeError("network down")
 
     exchange.positions = down  # type: ignore[method-assign]
     await engine.start()
-    for _ in range(3):
+    for _ in range(20):  # 20 failed ticks within 29 minutes, e.g. waking from sleep
         await engine.tick()
+        clock.now += 85
+    assert engine.halted == ""
+    assert engine.status()["failing_since_ms"] is not None
+    assert sum(e["code"] == "tick_failed" for e in engine.store.events(50)) == 1
+    exchange.positions = real_positions  # type: ignore[method-assign]
+    await engine.tick()
+    assert engine.status()["failing_since_ms"] is None
+    assert any(e["code"] == "connection_restored" for e in engine.store.events(5))
+    exchange.positions = down  # type: ignore[method-assign]
+    await engine.tick()
+    clock.now += 31 * 60
+    await engine.tick()
     assert engine.halted == "repeated_failures"
 
 
