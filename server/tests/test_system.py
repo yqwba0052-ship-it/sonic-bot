@@ -559,3 +559,30 @@ async def test_demo_places_half_take_profit_and_moves_the_stop() -> None:
         "DELETE /fapi/v1/algoOpenOrders",
         "POST /fapi/v1/algoOrder",
     ]
+
+
+async def test_keep_awake_is_on_by_default_and_can_be_switched_off(monkeypatch) -> None:
+    from sonic import awake
+
+    calls: list[bool] = []
+    monkeypatch.setattr(awake, "set_keep_awake", lambda on: calls.append(on) or True)
+    engine, _, _, _ = build()
+    assert engine.keep_awake is True
+    with TestClient(create_app(engine, "secret", background=False)) as client:
+        headers = {"Authorization": "Bearer secret"}
+        bad = client.put("/settings", headers=headers, json={"keep_awake": "yes"})
+        assert bad.status_code == 422
+        body = client.put("/settings", headers=headers, json={"keep_awake": False}).json()
+        assert body["keep_awake"] is False
+    assert calls == [False]
+    restarted = Engine(engine.store, engine.exchange, settings())
+    assert restarted.keep_awake is False
+
+
+def test_host_comes_from_the_environment(tmp_path, monkeypatch) -> None:
+    from sonic.config import load_settings
+
+    monkeypatch.setenv("SONIC_HOST", "127.0.0.1")
+    loaded = load_settings(tmp_path)
+    assert loaded.host == "127.0.0.1"
+    assert "SONIC_TOKEN=" in (tmp_path / ".env").read_text(encoding="utf-8")

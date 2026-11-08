@@ -56,6 +56,7 @@ def load_settings(root: Path) -> Settings:
         mode=mode,
         token=token,
         db_path=str(root / "sonic.db"),
+        host=values.get("SONIC_HOST", "0.0.0.0"),
         port=int(values.get("SONIC_PORT", "8787")),
         demo_key=key,
         demo_secret=secret,

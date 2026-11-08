@@ -12,9 +12,11 @@ import {
 import {
   ApiError,
   type Connection,
-  loadConnection,
+  loadProfiles,
+  type Place,
+  type Profiles,
   request,
-  saveConnection,
+  saveProfiles,
   type Status,
 } from '@/lib/api';
 
@@ -22,11 +24,13 @@ const POLL_MS = 5000;
 
 type Bot = {
   ready: boolean;
+  profiles: Profiles;
+  switchTo: (place: Place) => Promise<void>;
   connection: Connection | null;
   status: Status | null;
   online: boolean;
   error: string;
-  connect: (connection: Connection) => Promise<void>;
+  connect: (connection: Connection, place: Place) => Promise<void>;
   call: <T>(path: string, method?: string, body?: unknown) => Promise<T>;
   refresh: () => Promise<void>;
 };
@@ -40,6 +44,7 @@ export function errorCode(error: unknown): string {
 export function BotProvider({ children }: { children: ReactNode }) {
   const [ready, setReady] = useState(false);
   const [connection, setConnection] = useState<Connection | null>(null);
+  const [profiles, setProfiles] = useState<Profiles>({ active: 'laptop' });
   const [status, setStatus] = useState<Status | null>(null);
   const [online, setOnline] = useState(false);
   const [error, setError] = useState('');
@@ -59,9 +64,11 @@ export function BotProvider({ children }: { children: ReactNode }) {
   }, []);
 
   useEffect(() => {
-    loadConnection().then((saved) => {
-      current.current = saved;
-      setConnection(saved);
+    loadProfiles().then((saved) => {
+      const active = saved[saved.active] ?? null;
+      current.current = active;
+      setProfiles(saved);
+      setConnection(active);
       setReady(true);
       refresh();
     });
@@ -70,14 +77,32 @@ export function BotProvider({ children }: { children: ReactNode }) {
   }, [refresh]);
 
   const connect = useCallback(
-    async (next: Connection) => {
+    async (next: Connection, place: Place) => {
       await request<Status>(next, '/status');
-      await saveConnection(next);
+      const updated: Profiles = { ...profiles, [place]: next, active: place };
+      await saveProfiles(updated);
+      setProfiles(updated);
       current.current = next;
       setConnection(next);
+      setStatus(null);
       await refresh();
     },
-    [refresh]
+    [profiles, refresh]
+  );
+
+  const switchTo = useCallback(
+    async (place: Place) => {
+      const target = profiles[place];
+      if (!target) return;
+      const updated: Profiles = { ...profiles, active: place };
+      await saveProfiles(updated);
+      setProfiles(updated);
+      current.current = target;
+      setConnection(target);
+      setStatus(null);
+      await refresh();
+    },
+    [profiles, refresh]
   );
 
   const call = useCallback(
@@ -92,8 +117,8 @@ export function BotProvider({ children }: { children: ReactNode }) {
   );
 
   const value = useMemo(
-    () => ({ ready, connection, status, online, error, connect, call, refresh }),
-    [ready, connection, status, online, error, connect, call, refresh]
+    () => ({ ready, profiles, switchTo, connection, status, online, error, connect, call, refresh }),
+    [ready, profiles, switchTo, connection, status, online, error, connect, call, refresh]
   );
   return <BotContext.Provider value={value}>{children}</BotContext.Provider>;
 }

@@ -71,6 +71,13 @@ def create_app(engine: Engine, token: str, background: bool = True) -> FastAPI:
             raise HTTPException(status_code=409, detail=str(error)) from error
         return limits.model_dump()
 
+    @app.put("/settings", dependencies=secured)
+    async def put_settings(body: Annotated[dict[str, Any], Body()]) -> dict[str, Any]:
+        if not isinstance(body.get("keep_awake"), bool):
+            raise HTTPException(status_code=422, detail="invalid_values")
+        await engine.set_keep_awake(body["keep_awake"])
+        return engine.status()
+
     @app.get("/insights", dependencies=secured)
     async def insights() -> dict[str, Any]:
         """What the bot learned from its own closed trades."""

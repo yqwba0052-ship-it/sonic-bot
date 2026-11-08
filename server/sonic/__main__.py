@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import os
 import socket
 from pathlib import Path
 
@@ -32,7 +33,9 @@ def main() -> None:
         exchange = PaperExchange(PublicMarket(client), store, settings.paper_balance)
     engine = Engine(store, exchange, settings)
     print(f"Mode: {settings.mode}")
-    print(f"Server address for the app: http://{lan_address()}:{settings.port}")
+    public_url = os.environ.get("SONIC_PUBLIC_URL", "")
+    address = public_url or f"http://{lan_address()}:{settings.port}"
+    print(f"Server address for the app: {address}")
     print(f"Token for the app: {settings.token}")
     uvicorn.run(create_app(engine, settings.token), host=settings.host, port=settings.port)
 

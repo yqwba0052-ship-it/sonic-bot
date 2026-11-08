@@ -65,29 +65,42 @@ export type Status = {
   budget_left: number;
   coin_min_amount: Record<string, number>;
   next_check_ms: number;
+  keep_awake: boolean;
+  keep_awake_supported: boolean;
   last_tick_ms: number;
   last_error: string;
 };
 
 export type Connection = { url: string; token: string };
+export type Place = 'laptop' | 'cloud';
+export type Profiles = { active: Place; laptop?: Connection; cloud?: Connection };
 
-const STORAGE_KEY = 'sonic.connection';
+const OLD_KEY = 'sonic.connection';
+const PROFILES_KEY = 'sonic.profiles';
 
-export async function loadConnection(): Promise<Connection | null> {
-  const raw =
-    Platform.OS === 'web'
-      ? globalThis.localStorage?.getItem(STORAGE_KEY)
-      : await SecureStore.getItemAsync(STORAGE_KEY);
-  return raw ? (JSON.parse(raw) as Connection) : null;
+async function readRaw(key: string): Promise<string | null> {
+  if (Platform.OS === 'web') return globalThis.localStorage?.getItem(key) ?? null;
+  return SecureStore.getItemAsync(key);
 }
 
-export async function saveConnection(connection: Connection): Promise<void> {
-  const raw = JSON.stringify(connection);
+async function writeRaw(key: string, value: string): Promise<void> {
   if (Platform.OS === 'web') {
-    globalThis.localStorage?.setItem(STORAGE_KEY, raw);
+    globalThis.localStorage?.setItem(key, value);
   } else {
-    await SecureStore.setItemAsync(STORAGE_KEY, raw);
+    await SecureStore.setItemAsync(key, value);
   }
+}
+
+/** Saved laptop and cloud connections; an older single connection becomes the laptop one. */
+export async function loadProfiles(): Promise<Profiles> {
+  const raw = await readRaw(PROFILES_KEY);
+  if (raw) return JSON.parse(raw) as Profiles;
+  const old = await readRaw(OLD_KEY);
+  return { active: 'laptop', laptop: old ? (JSON.parse(old) as Connection) : undefined };
+}
+
+export async function saveProfiles(profiles: Profiles): Promise<void> {
+  await writeRaw(PROFILES_KEY, JSON.stringify(profiles));
 }
 
 export class ApiError extends Error {

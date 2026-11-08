@@ -8,7 +8,7 @@ import uuid
 from collections.abc import Callable
 from typing import Any
 
-from . import risk, strategy
+from . import awake, risk, strategy
 from .config import Settings
 from .exchange import Exchange
 from .risk import Limits
@@ -43,6 +43,7 @@ class Engine:
         self.halted: str = store.get("halted", "")
         # Never resume trading by itself after a restart.
         self.running = False
+        self.keep_awake: bool = bool(store.get("keep_awake", True))
 
     # ---------- small helpers
 
@@ -128,6 +129,13 @@ class Engine:
             # Saving the amount starts a new budget from now.
             self.store.put("budget_start_ms", self.now_ms())
             self.log("info", "limits_changed", limits.model_dump_json())
+
+    async def set_keep_awake(self, on: bool) -> None:
+        async with self.lock:
+            self.keep_awake = on
+            self.store.put("keep_awake", on)
+            awake.set_keep_awake(on)
+            self.log("info", "keep_awake_on" if on else "keep_awake_off")
 
     async def panic(self) -> None:
         """Stop trading and close every open position."""
@@ -401,11 +409,14 @@ class Engine:
                 if symbol in cached
             },
             "next_check_ms": self.last_closed_bar() + 2 * strategy.BAR_MS,
+            "keep_awake": self.keep_awake,
+            "keep_awake_supported": awake.supported(),
             "last_tick_ms": self.last_tick_ms,
             "last_error": self.last_error,
         }
 
     async def run_forever(self) -> None:
+        awake.set_keep_awake(self.keep_awake)
         while True:
             await self.tick()
             await asyncio.sleep(self.settings.tick_seconds)

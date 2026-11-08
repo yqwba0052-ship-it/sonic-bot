@@ -46,6 +46,24 @@ The bot's decisions match the backtest bar for bar (`research/tests/test_bot_mat
 Paper trades are checked against 1-hour bars after the laptop wakes, so a stop touched during
 sleep still counts. The bot can only act while the laptop is on.
 
+## Optional: run 24 hours a day on a cloud server
+
+1. Create an Ubuntu 24.04 server yourself, for example DigitalOcean 1 GB at about $6 a month.
+   Pick a region that can reach Binance (not the USA), such as Frankfurt or Singapore.
+2. In its console, as root:
+
+   ```
+   curl -fsSL https://raw.githubusercontent.com/yqwba0052-ship-it/sonic-bot/main/deploy/install_cloud.sh | bash
+   ```
+
+3. Put the printed `https://...sslip.io` address and token in the app under Connection, then Cloud.
+   The app keeps both the laptop and the cloud connection, and you switch between them with one tap.
+
+The script installs the bot as a restricted service and puts Caddy in front with automatic HTTPS,
+so the token is never sent in clear text. The firewall allows only SSH and web ports. Running the
+script again updates the bot and keeps its data. The laptop option "keep awake while the bot runs"
+is in the app's Connection tab.
+
 ## Modes (`server/.env`)
 
 - `SONIC_MODE=paper` is the default.
