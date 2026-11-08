@@ -39,8 +39,23 @@ jobs:
     defaults:
       run:
         working-directory: app
+    outputs:
+      number: ${{ steps.version.outputs.number }}
+      tag: ${{ steps.version.outputs.tag }}
     steps:
       - uses: actions/checkout@v5
+      - name: Next version (v1.0.1, v1.0.2, ...)
+        id: version
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          last=$(gh release list --repo "${{ github.repository }}" --limit 100 \
+                   --json tagName --jq '.[].tagName' \
+                 | grep -E '^v1\.0\.[0-9]+$' | sed 's/^v1\.0\.//' | sort -n | tail -1)
+          next=$(( ${last:-0} + 1 ))
+          echo "number=$next" >> "$GITHUB_OUTPUT"
+          echo "tag=v1.0.$next" >> "$GITHUB_OUTPUT"
+          echo "Building v1.0.$next"
       - uses: actions/setup-node@v5
         with:
           node-version: "24"
@@ -53,6 +68,15 @@ jobs:
       - run: npm ci
       - run: npx tsc --noEmit
       - run: npx eslint src
+      - name: Version inside the app (each release installs over the previous one)
+        run: |
+          node -e '
+            const fs = require("fs");
+            const config = JSON.parse(fs.readFileSync("app.json", "utf8"));
+            config.expo.version = "1.0.${{ steps.version.outputs.number }}";
+            config.expo.android.versionCode = ${{ steps.version.outputs.number }} + 1;
+            fs.writeFileSync("app.json", JSON.stringify(config, null, 2));
+          '
       - run: npx expo prebuild --platform android --no-install
         env:
           CI: "1"
@@ -80,3 +104,28 @@ jobs:
           name: sonic-apk
           path: app/android/app/build/outputs/apk/release/app-release.apk
           if-no-files-found: error
+
+  release:
+    # Like the Nokhba app: every push to main that passes all checks publishes the APK.
+    needs: [server, research, android]
+    if: github.event_name == 'push'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    concurrency:
+      group: release
+      cancel-in-progress: false
+    steps:
+      - uses: actions/download-artifact@v5
+        with:
+          name: sonic-apk
+      - name: Publish release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          mv app-release.apk sonic.apk
+          gh release create "${{ needs.android.outputs.tag }}" sonic.apk \
+            --repo "${{ github.repository }}" \
+            --target "${{ github.sha }}" \
+            --title "سونيك ${{ needs.android.outputs.tag }}" \
+            --notes "نسخة أندرويد مبنية تلقائياً من ${{ github.sha }}. حمّل sonic.apk وثبّته على هاتفك. التطبيق يتحكم في البوت على اللابتوب (وضع وهمي أو تجريبي فقط، بدون أموال حقيقية)."

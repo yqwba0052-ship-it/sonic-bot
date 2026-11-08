@@ -3,6 +3,11 @@
 A trading server and a phone app. Only paper (simulated money at real prices) and Binance
 demo trading exist; the signed client refuses every URL except the demo one.
 
+## Download the app
+
+Latest APK, built and published by CI on every push to `main` (like the Nokhba app):
+https://github.com/yqwba0052-ship-it/sonic-bot/releases/latest/download/sonic.apk
+
 ## Strategy (from `research/`)
 
 `trend-20-100-4h`: 20/100 EMA cross on 4-hour bars, buys only while BTC is above its 300-bar EMA
