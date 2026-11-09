@@ -24,6 +24,12 @@ if [ "$(id -u)" -ne 0 ]; then
   exit 1
 fi
 
+# Small servers (512 MB) need swap for pip and git; add 1 GB once.
+if ! swapon --show | grep -q . && [ "$(awk '/MemTotal/ {print $2}' /proc/meminfo)" -lt 1000000 ]; then
+  fallocate -l 1G /swapfile && chmod 600 /swapfile && mkswap /swapfile >/dev/null && swapon /swapfile
+  grep -q '^/swapfile' /etc/fstab || echo '/swapfile none swap sw 0 0' >> /etc/fstab
+fi
+
 export DEBIAN_FRONTEND=noninteractive
 apt-get update -q
 apt-get install -y -q python3-venv git caddy ufw curl
