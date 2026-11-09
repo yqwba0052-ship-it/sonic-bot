@@ -15,7 +15,7 @@ from fastapi.staticfiles import StaticFiles
 from pydantic import ValidationError
 
 from .engine import Engine
-from .risk import Limits
+from .risk import ALLOWED_SYMBOLS, Limits
 
 
 def create_app(engine: Engine, token: str, background: bool = True) -> FastAPI:
@@ -77,6 +77,25 @@ def create_app(engine: Engine, token: str, background: bool = True) -> FastAPI:
             raise HTTPException(status_code=422, detail="invalid_values")
         await engine.set_keep_awake(body["keep_awake"])
         return engine.status()
+
+    @app.get("/chart", dependencies=secured)
+    async def chart_data(
+        symbol: str = Query(pattern=r"^[A-Z0-9]{2,20}USDT$"),
+        source: str = Query(default="live", pattern=r"^(live|replay)$"),
+        trade_id: int | None = Query(default=None, ge=1),
+        bars: int = Query(default=120, ge=30, le=600),
+    ) -> dict[str, Any]:
+        """4-hour candles, the bot's EMAs and its trades for the chart screen."""
+        if symbol not in ALLOWED_SYMBOLS:
+            raise HTTPException(status_code=422, detail="unknown_symbol")
+        return await engine.chart(symbol, source, trade_id, bars)
+
+    @app.get("/replay/trades", dependencies=secured)
+    async def replay_trades(
+        symbol: str | None = Query(default=None, pattern=r"^[A-Z0-9]{2,20}USDT$"),
+    ) -> dict[str, Any]:
+        """Trades of the last engine replay on past prices."""
+        return engine.replay_list(symbol)
 
     @app.get("/report", dependencies=secured)
     async def report(month: str | None = Query(default=None, pattern=r"^\d{4}-\d{2}$")) -> dict:

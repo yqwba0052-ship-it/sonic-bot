@@ -11,7 +11,7 @@ from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
 
-from . import awake, journal, risk, strategy
+from . import awake, chart, journal, risk, strategy
 from .config import Settings
 from .exchange import Exchange
 from .risk import Limits
@@ -308,13 +308,13 @@ class Engine:
             plan = {
                 "strategy": strategy.NAME,
                 "mode": self.settings.mode,
-                "fast": strategy.ema(closes, strategy.FAST)[-1],
-                "slow": strategy.ema(closes, strategy.SLOW)[-1],
-                "btc_up": btc_up,
-                "atr": strategy.atr(bars),
-                "stop_pct": strategy.stop_distance(bars) / closes[-1],
-                "half_at_r": strategy.HALF_AT_R,
-                "risk_pct": self.limits.risk_per_trade_pct,
+                "fast": float(strategy.ema(closes, strategy.FAST)[-1]),
+                "slow": float(strategy.ema(closes, strategy.SLOW)[-1]),
+                "btc_up": bool(btc_up),
+                "atr": float(strategy.atr(bars)),
+                "stop_pct": float(strategy.stop_distance(bars) / closes[-1]),
+                "half_at_r": float(strategy.HALF_AT_R),
+                "risk_pct": float(self.limits.risk_per_trade_pct),
             }
             added = await self._open(symbol, side, strategy.stop_distance(bars), margin, plan)
             if added:
@@ -342,6 +342,9 @@ class Engine:
         margin: float,
         plan: dict[str, Any] | None = None,
     ) -> float:
+        # Serialise the plan before any order: a failure here must never leave a position
+        # open that the bot does not know about.
+        plan_json = json.dumps(plan or {}, default=str)
         filters = await self.exchange.filters(symbol)
         price = await self.exchange.price(symbol)
         size = risk.size_position(
@@ -372,7 +375,7 @@ class Engine:
             margin=used_margin,
             opened_ms=opened_ms,
             risk_usdt=fill.qty * abs(fill.price - stop),
-            plan=json.dumps(plan or {}),
+            plan=plan_json,
         )
         self.log("info", "trade_opened", f"{side} {symbol} {fill.qty} @ {fill.price}")
         try:
@@ -432,6 +435,38 @@ class Engine:
             )
             > limits.capital_usdt
         ]
+
+    async def chart(
+        self, symbol: str, source: str, trade_id: int | None, shown: int
+    ) -> dict[str, Any]:
+        """Candles, EMAs and trades for the app; centred on a trade when one is chosen."""
+        if source == "replay":
+            trades = [t for t in chart.replay_trades()["trades"] if t["symbol"] == symbol]
+        else:
+            trades = [t for t in self.store.trades(500) if t["symbol"] == symbol]
+        focus = next((t for t in trades if t["id"] == trade_id), None) if trade_id else None
+        total = shown + chart.WARMUP
+        if focus is None and source == "live":
+            bars = await self.exchange.bars(symbol, strategy.INTERVAL, total)
+        else:
+            if focus is not None:
+                end = (focus.get("closed_ms") or self.now_ms()) + chart.PAD * strategy.BAR_MS
+                hold = ((focus.get("closed_ms") or self.now_ms()) - focus["opened_ms"])
+                shown = max(shown, int(hold // strategy.BAR_MS) + 2 * chart.PAD)
+                total = shown + chart.WARMUP
+            else:
+                end = max((t.get("closed_ms") or 0 for t in trades), default=self.now_ms())
+            end = min(end, self.now_ms())
+            bars = await self.exchange.bars_until(symbol, strategy.INTERVAL, end, total)
+        data = chart.build(bars, shown, trades)
+        data.update({"symbol": symbol, "source": source, "focus": trade_id})
+        return data
+
+    def replay_list(self, symbol: str | None) -> dict[str, Any]:
+        saved = chart.replay_trades()
+        trades = [chart.trade_view(t) for t in saved["trades"]
+                  if symbol is None or t["symbol"] == symbol]
+        return {"period": saved.get("period"), "trades": trades[-200:]}
 
     def month_report(self, month: str | None = None) -> dict[str, Any]:
         """Closed trades of one UTC month against the owner's goal of 80-90% winning trades."""

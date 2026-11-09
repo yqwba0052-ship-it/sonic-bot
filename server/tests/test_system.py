@@ -66,6 +66,9 @@ class FakeMarket:
     async def bars(self, symbol: str, interval: str, limit: int) -> list[Bar]:
         return make_bars(self.btc if symbol == "BTCUSDT" else self.coin)
 
+    async def bars_until(self, symbol: str, interval: str, end_ms: int, limit: int) -> list[Bar]:
+        return [b for b in await self.bars(symbol, interval, limit) if b.t < end_ms][-limit:]
+
 
 class Clock:
     def __init__(self) -> None:
@@ -684,3 +687,53 @@ async def test_month_report_measures_the_goal() -> None:
         headers = {"Authorization": "Bearer secret"}
         assert client.get("/report", headers=headers).json()["trades"] == 5
         assert client.get("/report?month=bad", headers=headers).status_code == 422
+
+
+async def test_chart_shows_candles_emas_and_the_trade() -> None:
+    engine, _, _, _ = build()
+    await engine.start()
+    await engine.tick()
+    data = await engine.chart("SOLUSDT", "live", None, 60)
+    assert len(data["bars"]) == 60 and len(data["fast"]) == 60 and len(data["slow"]) == 60
+    assert data["trades"] and data["trades"][0]["entry_price"] > 0
+    assert data["settings"]["atr_k"] == strategy.ATR_K
+
+
+def test_chart_and_replay_endpoints(tmp_path, monkeypatch) -> None:
+    import json as _json
+
+    from sonic import chart
+
+    saved = {"period": "2025-07..2026-10", "trades": [{
+        "id": 7, "symbol": "SOLUSDT", "side": "BUY", "qty": 0.1, "entry_price": 100.0,
+        "stop_price": 95.0, "target_price": 101.0, "opened_ms": BAR_MS * 300,
+        "closed_ms": BAR_MS * 320, "exit_price": 100.0, "pnl": 0.05, "r": 0.1, "scaled": 1,
+        "exit_reason": "breakeven",
+    }]}
+    path = tmp_path / "trades.json"
+    path.write_text(_json.dumps(saved), encoding="utf-8")
+    monkeypatch.setattr(chart, "REPLAY_FILE", path)
+    engine, _, _, _ = build()
+    with TestClient(create_app(engine, "secret", background=False)) as client:
+        headers = {"Authorization": "Bearer secret"}
+        assert client.get("/chart?symbol=SOLUSDT", headers=headers).status_code == 200
+        assert client.get("/chart?symbol=SCAMUSDT", headers=headers).status_code == 422
+        listed = client.get("/replay/trades?symbol=SOLUSDT", headers=headers).json()
+        assert listed["period"] == "2025-07..2026-10" and listed["trades"][0]["id"] == 7
+        focused = client.get("/chart?symbol=SOLUSDT&source=replay&trade_id=7", headers=headers)
+        body = focused.json()
+        assert body["focus"] == 7 and body["trades"][0]["exit_reason"] == "breakeven"
+        assert all(bar[0] < BAR_MS * 320 + 21 * BAR_MS for bar in body["bars"])
+
+
+async def test_plan_with_numpy_values_is_saved_before_the_order() -> None:
+    np = pytest.importorskip("numpy")
+
+    engine, exchange, _, _ = build()
+    await engine.start()
+    plan = {"btc_up": np.bool_(True), "fast": np.float64(1.5)}
+    async with engine.lock:
+        await engine._open("SOLUSDT", "BUY", 6.0, 0.0, plan)
+    trade = engine.store.open_trades()[0]
+    assert '"btc_up": "True"' in trade["plan"] or '"btc_up": true' in trade["plan"]
+    assert exchange.state["open"]  # the order went through and the trade is known

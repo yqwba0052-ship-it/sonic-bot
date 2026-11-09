@@ -59,6 +59,9 @@ class Exchange(Protocol):
     async def price(self, symbol: str) -> float: ...
     async def prices(self) -> dict[str, float]: ...
     async def bars(self, symbol: str, interval: str, limit: int) -> list[Bar]: ...
+    async def bars_until(
+        self, symbol: str, interval: str, end_ms: int, limit: int
+    ) -> list[Bar]: ...
     async def balance(self) -> float: ...
     async def positions(self) -> dict[str, Position]: ...
     async def prepare(self, symbol: str, leverage: int) -> None: ...
@@ -115,6 +118,19 @@ class PublicMarket:
         data = await self.get("/fapi/v1/ticker/price")
         return {item["symbol"]: float(item["price"]) for item in data}
 
+    async def bars_until(
+        self, symbol: str, interval: str, end_ms: int, limit: int
+    ) -> list[Bar]:
+        """Bars that opened before `end_ms` (up to 1500), oldest first."""
+        data = await self.get(
+            "/fapi/v1/klines",
+            {"symbol": symbol, "interval": interval, "endTime": end_ms, "limit": min(limit, 1500)},
+        )
+        return [
+            Bar(int(row[0]), float(row[1]), float(row[2]), float(row[3]), float(row[4]))
+            for row in data
+        ]
+
     async def bars(self, symbol: str, interval: str, limit: int) -> list[Bar]:
         """Closed bars only; the bar still forming is dropped."""
         data = await self.get(
@@ -154,6 +170,11 @@ class PaperExchange:
 
     async def bars(self, symbol: str, interval: str, limit: int) -> list[Bar]:
         return await self.market.bars(symbol, interval, limit)
+
+    async def bars_until(
+        self, symbol: str, interval: str, end_ms: int, limit: int
+    ) -> list[Bar]:
+        return await self.market.bars_until(symbol, interval, end_ms, limit)
 
     async def prices(self) -> dict[str, float]:
         return await self.market.prices()
@@ -323,6 +344,11 @@ class BinanceDemo:
 
     async def bars(self, symbol: str, interval: str, limit: int) -> list[Bar]:
         return await self.market.bars(symbol, interval, limit)
+
+    async def bars_until(
+        self, symbol: str, interval: str, end_ms: int, limit: int
+    ) -> list[Bar]:
+        return await self.market.bars_until(symbol, interval, end_ms, limit)
 
     async def prices(self) -> dict[str, float]:
         return await self.market.prices()

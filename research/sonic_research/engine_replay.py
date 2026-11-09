@@ -114,6 +114,13 @@ async def replay(start: str, end: str, limits: Limits) -> dict:
         budget_curve.append(engine.budget_left())
         now += HOUR_MS
     trades = [t for t in store.trades(100_000) if t["closed_ms"]]
+    out = SERVER / "replay"
+    out.mkdir(exist_ok=True)
+    (out / "trades.json").write_text(
+        json.dumps({"period": f"{start}..{end}",
+                    "trades": sorted(trades, key=lambda t: t["opened_ms"])}),
+        encoding="utf-8",
+    )
     events = Counter(e["code"] for e in store.events(1_000_000))
     skipped = Counter(e["detail"].split()[-1] for e in store.events(1_000_000)
                       if e["code"] == "trade_skipped")
