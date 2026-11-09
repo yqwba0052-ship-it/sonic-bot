@@ -5,6 +5,11 @@ on:
     branches: [main]
   workflow_dispatch:
 
+# One build at a time: two runs side by side picked the same release number.
+concurrency:
+  group: build-${{ github.ref }}
+  cancel-in-progress: false
+
 jobs:
   server:
     runs-on: ubuntu-latest
