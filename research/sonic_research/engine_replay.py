@@ -77,7 +77,7 @@ def live_filters(symbols: list[str]) -> dict[str, Filters]:
     return {symbol: parse_filters(info, symbol) for symbol in symbols}
 
 
-async def replay(start: str, end: str, limits: Limits) -> dict:
+async def replay(start: str, end: str, limits: Limits, save_trades: bool = False) -> dict:
     symbols = sorted(set(limits.symbols) | {"BTCUSDT"})
     year, month = map(int, start.split("-"))
     year, month = (year, month - 7) if month > 7 else (year - 1, month + 5)
@@ -114,13 +114,14 @@ async def replay(start: str, end: str, limits: Limits) -> dict:
         budget_curve.append(engine.budget_left())
         now += HOUR_MS
     trades = [t for t in store.trades(100_000) if t["closed_ms"]]
-    out = SERVER / "replay"
-    out.mkdir(exist_ok=True)
-    (out / "trades.json").write_text(
-        json.dumps({"period": f"{start}..{end}",
-                    "trades": sorted(trades, key=lambda t: t["opened_ms"])}),
-        encoding="utf-8",
-    )
+    if save_trades:  # only the command line run; tests and experiments leave the app's file
+        out = SERVER / "replay"
+        out.mkdir(exist_ok=True)
+        (out / "trades.json").write_text(
+            json.dumps({"period": f"{start}..{end}",
+                        "trades": sorted(trades, key=lambda t: t["opened_ms"])}),
+            encoding="utf-8",
+        )
     events = Counter(e["code"] for e in store.events(1_000_000))
     skipped = Counter(e["detail"].split()[-1] for e in store.events(1_000_000)
                       if e["code"] == "trade_skipped")
@@ -140,6 +141,7 @@ async def replay(start: str, end: str, limits: Limits) -> dict:
         "end_amount": round(float(curve[-1]), 2),
         "max_drop": float((1 - curve / peak).max()),
         "scaled": sum(1 for t in trades if t["scaled"]),
+        "closed": trades,  # every closed trade, for experiments; main() leaves it out
         "events": dict(events),
         "skipped": dict(skipped),
         "errors": errors[:20],
@@ -152,7 +154,8 @@ async def replay(start: str, end: str, limits: Limits) -> dict:
 def main() -> None:
     start = sys.argv[1] if len(sys.argv) > 1 else "2025-07"
     end = sys.argv[2] if len(sys.argv) > 2 else "2026-10"
-    report = asyncio.run(replay(start, end, Limits()))
+    report = asyncio.run(replay(start, end, Limits(), save_trades=True))
+    report.pop("closed")
     REPORT.write_text(json.dumps(report, indent=2), encoding="utf-8")
     print(json.dumps(report, indent=1, ensure_ascii=False))
 

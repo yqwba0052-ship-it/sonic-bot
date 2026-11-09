@@ -1,17 +1,19 @@
 """Trend strategy chosen by the research (research/reports/phase2.json, capital.json).
 
-trend-20-100-k3-tnone-h120-btc on 4-hour bars:
+trend-20-100 on 4-hour bars:
 - enter when the 20-bar EMA crosses the 100-bar EMA on a closed bar;
-- buy only while BTC closes above its 300-bar EMA, sell only while it closes below;
+- buy only while BTC closes above its 300-bar EMA AND the coin closes above its own 200-bar EMA
+  (sell only in the mirror case);
 - stop at 2.5 x ATR(14) from the entry;
-- half the position closes at +0.25 x the stop distance, then the rest's stop moves to the entry
-  (owner's choice: most trades end in profit, smaller total; research/sonic_research/partial.py);
+- half the position closes at +0.20 x the stop distance, then the rest's stop moves to the entry
+  (owner's goal: 80-90% of each month's trades in profit);
 - the rest exits when the EMAs cross back, or after 240 bars (40 days).
-Stop 2.5 ATR and 40 days came from research/sonic_research/improve.py (2026-11-09): better
-than 3 ATR / 20 days on both the training and the unseen years, neighbours agree.
-Tested 2021-01..2026-10 on the 8 small-account coins with fees, slippage and funding: 78% of
-trades ended in profit; a $30 account grew to about $104, deepest drop 7%. Past results are
-no promise.
+Stop 2.5 ATR and 40 days came from research/sonic_research/improve.py (2026-11-09). The coin
+EMA-200 filter and half at 0.20R came from engine-replay experiments on 2026-11-10 (STRATEGY.md):
+better share of months at 80%+ on both 2021-2023 and the unseen 2024-2026.
+Engine replay 2021-06..2026-10, $30 on the 8 small-account coins with fees and slippage:
+224 trades, 82.6% in profit, 67% of months at 80%+, $30 -> $83.49, deepest drop 15%.
+Past results are no promise.
 """
 
 from __future__ import annotations
@@ -26,18 +28,19 @@ SLOW = 100
 ATR_PERIOD = 14
 ATR_K = 2.5
 REGIME_PERIOD = 300
+COIN_TREND_PERIOD = 200  # buy only while the coin itself closes above this EMA
 MAX_HOLD_BARS = 240
 HISTORY_BARS = 1000
 
-HALF_AT_R = 0.25
+HALF_AT_R = 0.20
 
-# Self-check for this setup (longs only, half at 0.25R, stop 2.5 ATR, 40 days): the average R
-# of the last 30 closed trades was never below -0.23 in 5.8 years (1st percentile -0.20).
-# Worse than this means the market no longer fits. History: 78% winning, average +0.40R.
+# Self-check for this setup (longs only, coin above EMA 200, half at 0.20R, stop 2.5 ATR,
+# 40 days): the average R of the last 30 closed trades was never below -0.17 in 5.4 years.
+# Worse than this means the market no longer fits. History: 82.6% winning, average +0.51R.
 DRIFT_WINDOW = 30
-DRIFT_FLOOR = -0.30
-EXPECTED_AVG_R = 0.40
-EXPECTED_WIN_RATE = 0.78
+DRIFT_FLOOR = -0.25
+EXPECTED_AVG_R = 0.50
+EXPECTED_WIN_RATE = 0.82
 
 
 @dataclass(frozen=True)
@@ -83,13 +86,16 @@ def btc_uptrend(btc: list[Bar]) -> bool:
 
 
 def entry_signal(bars: list[Bar], btc_up: bool) -> str | None:
-    """BUY or SELL when the EMAs crossed on the last closed bar and BTC agrees."""
+    """BUY or SELL when the EMAs crossed on the last closed bar and both BTC and the coin's own
+    long trend (EMA 200) agree."""
     if len(bars) < SLOW * 3:
         return None
     now, before = _above(bars)
-    if now and not before and btc_up:
+    closes = [bar.c for bar in bars]
+    coin_up = closes[-1] > ema(closes, COIN_TREND_PERIOD)[-1]
+    if now and not before and btc_up and coin_up:
         return "BUY"
-    if not now and before and not btc_up:
+    if not now and before and not btc_up and not coin_up:
         return "SELL"
     return None
 

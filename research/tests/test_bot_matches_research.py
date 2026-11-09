@@ -44,6 +44,11 @@ def test_entries_and_stops_match_the_backtest(symbol: str) -> None:
         assert btc_up == bool(regime[i])
         decision = bot.entry_signal(as_bot[: i + 1], btc_up)
         expected = {1: "BUY", -1: "SELL", 0: None}[int(signals.entry[i])]
+        if expected:  # the bot also needs the coin on the same side of its own EMA 200
+            closes = [float(c) for c in coin.c[: i + 1]]
+            above = closes[-1] > bot.ema(closes, bot.COIN_TREND_PERIOD)[-1]
+            if above != (expected == "BUY"):
+                expected = None
         assert decision == expected, (symbol, i)
         if expected:
             entries += 1

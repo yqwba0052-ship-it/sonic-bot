@@ -195,7 +195,8 @@ async def test_opens_once_per_bar_with_a_stop_and_a_half_target() -> None:
     paper = exchange.state["open"]["SOLUSDT"]
     assert paper["stop"] == trade["stop_price"]
     distance = trade["entry_price"] - trade["stop_price"]
-    assert trade["target_price"] == pytest.approx(trade["entry_price"] + distance / 4, abs=0.02)
+    half = trade["entry_price"] + distance * strategy.HALF_AT_R
+    assert trade["target_price"] == pytest.approx(half, abs=0.02)
     assert paper["target_qty"] == pytest.approx(trade["qty"] / 2, abs=0.001)
     assert trade["risk_usdt"] > 0
 
@@ -808,3 +809,19 @@ async def test_simulator_period_stops_before_its_end(tmp_path, monkeypatch) -> N
     end = 350 * BAR_MS
     data = await engine.simulate("SOLUSDT", "replay", 1, end)
     assert data["bars"][-1][0] == end - BAR_MS  # the candle opening at the end is left out
+
+
+def test_no_buy_while_the_coin_is_below_its_long_average() -> None:
+    # The EMAs cross up, BTC is up, but the coin is still under its 200-bar EMA.
+    closes = [200 - i * 0.3 for i in range(400)]
+    while strategy.entry_signal(make_bars(closes), True) is None and closes[-1] < 400:
+        closes.append(closes[-1] * 1.01)
+        bars = make_bars(closes)
+        fast, slow = strategy.ema(closes, strategy.FAST), strategy.ema(closes, strategy.SLOW)
+        if fast[-1] > slow[-1] and fast[-2] <= slow[-2]:
+            long_avg = strategy.ema(closes, strategy.COIN_TREND_PERIOD)[-1]
+            assert closes[-1] <= long_avg  # crossed, but under the long average: no signal
+            assert strategy.entry_signal(bars, True) is None
+            break
+    else:
+        pytest.fail("no EMA cross happened in the test series")

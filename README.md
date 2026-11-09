@@ -11,7 +11,8 @@ https://github.com/yqwba0052-ship-it/sonic-bot/releases/latest/download/sonic.ap
 ## Strategy (from `research/`)
 
 `trend-20-100-4h`: 20/100 EMA cross on 4-hour bars, buys only while BTC is above its 300-bar EMA
-and sells only while below, stop at 2.5 x ATR(14), half closed at +0.25R with the stop then moved
+and the coin above its own 200-bar EMA (sells only in the mirror case), stop at 2.5 x ATR(14),
+half closed at +0.20R with the stop then moved
 to the entry, rest exits when the EMAs cross back or after 40 days (`research/sonic_research/improve.py`).
 
 Tested 2021-01..2026-10 on 12 coins with fees, slippage and funding
@@ -31,9 +32,11 @@ paper exchange, sizing and limits hour by hour on past Binance prices.
 | Settings | Period | Trades | Winning | $30 became | Deepest drop | Engine errors |
 |---|---|---|---|---|---|---|
 | stop 3 ATR, 20 days (old) | 2021-06..2026-10 | 247 | 77.7% | $56.53 | 12.3% | 0 |
-| **stop 2.5 ATR, 40 days (live)** | 2021-06..2026-10 | 266 | 80.8% | $86.72 | 15.0% | 0 |
-| live | 2022 (bear market) | 22 | 95.5% | $31.72 | 11.0% | 0 |
-| live | 2025-07..2026-10 | 59 | 74.6% | $33.98 | 8.9% | 0 |
+| stop 2.5 ATR, 40 days, half at 0.25R | 2021-06..2026-10 | 266 | 80.8% | $86.72 | 15.0% | 0 |
+| **+ coin above EMA 200, half at 0.20R (live)** | 2021-06..2026-10 | 224 | 82.6% | $83.49 | 15.0% | 0 |
+
+The owner's goal is 80-90% winning trades each month. With the live settings, 67% of the months
+with 3 or more trades reached 80% (was 56%). See STRATEGY.md.
 
 Past results are no promise.
 
