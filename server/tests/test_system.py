@@ -628,3 +628,59 @@ async def test_status_tells_what_the_last_scan_found() -> None:
     scan = engine.status()["last_scan"]
     assert scan["market"] == "btc_up"
     assert scan["signals"] == 1 and scan["opened"] == 1
+
+
+async def test_trades_record_why_they_opened_and_closed(tmp_path) -> None:
+    import json as _json
+
+    from sonic import journal
+
+    engine, _, market, _ = build()
+    engine.journal_dir = tmp_path
+    await engine.start()
+    await engine.tick()
+    trade = engine.store.open_trades()[0]
+    plan = _json.loads(trade["plan"])
+    assert plan["btc_up"] is True and plan["fast"] > plan["slow"]
+    market.last = trade["stop_price"] * 0.99
+    await engine.tick()
+    closed = engine.store.trades()[0]
+    assert closed["exit_reason"] == "stop_loss"
+    files = list(tmp_path.glob("*.md"))
+    assert len(files) == 1
+    text = files[0].read_text(encoding="utf-8")
+    assert "SOLUSDT" in text and journal.REASONS["stop_loss"] in text and "BTC up" in text
+
+
+async def test_panic_and_breakeven_reasons() -> None:
+    engine, _, market, _ = build()
+    await engine.start()
+    await engine.tick()
+    trade = engine.store.open_trades()[0]
+    market.last = trade["target_price"] * 1.001
+    await engine.tick()
+    market.last = trade["entry_price"] * 0.999
+    await engine.tick()
+    assert engine.store.trades()[0]["exit_reason"] == "breakeven"
+    engine2, _, _, _ = build()
+    await engine2.start()
+    await engine2.tick()
+    await engine2.panic()
+    assert engine2.store.trades()[0]["exit_reason"] == "panic_button"
+
+
+async def test_month_report_measures_the_goal() -> None:
+    engine, _, _, _ = build()
+    for i, pnl in enumerate([1.0, 1.0, 1.0, 1.0, -1.0]):
+        trade_id = engine.store.open_trade(
+            symbol="XRPUSDT", side="BUY", qty=1, entry_price=1, stop_price=0.9,
+            target_price=0, margin=1, opened_ms=0, risk_usdt=0.1,
+        )
+        engine.store.close_trade(trade_id, int(T0 * 1000) - i, 1, pnl, 0.0, "breakeven")
+    report = engine.month_report()
+    assert report["trades"] == 5 and report["win_rate"] == 0.8
+    assert report["verdict"] == "in_goal"
+    with TestClient(create_app(engine, "secret", background=False)) as client:
+        headers = {"Authorization": "Bearer secret"}
+        assert client.get("/report", headers=headers).json()["trades"] == 5
+        assert client.get("/report?month=bad", headers=headers).status_code == 422

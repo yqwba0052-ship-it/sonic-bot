@@ -3,12 +3,15 @@
 from __future__ import annotations
 
 import asyncio
+import json
 import time
 import uuid
 from collections.abc import Callable
+from datetime import UTC, datetime
+from pathlib import Path
 from typing import Any
 
-from . import awake, risk, strategy
+from . import awake, journal, risk, strategy
 from .config import Settings
 from .exchange import Exchange
 from .risk import Limits
@@ -19,6 +22,7 @@ from .store import Store
 FAILURE_HALT_MS = 30 * 60 * 1000
 DAY_MS = 86_400_000
 MARKETS_TTL_MS = 10 * 60 * 1000
+GOAL_WIN_RATE = (0.80, 0.90)  # the owner's goal for a month of trades
 
 
 class Engine:
@@ -47,6 +51,13 @@ class Engine:
         # Never resume trading by itself after a restart.
         self.running = False
         self.keep_awake: bool = bool(store.get("keep_awake", True))
+        # Why the bot itself is closing a trade, read when the close is seen in _sync.
+        self.pending_exit: dict[str, str] = {}
+        self.journal_dir: Path | None = (
+            Path(settings.db_path).resolve().parent / "journal"
+            if settings.db_path != ":memory:"
+            else None
+        )
 
     # ---------- small helpers
 
@@ -148,11 +159,12 @@ class Engine:
         """Stop trading and close every open position."""
         async with self.lock:
             self.halt("panic_button")
-            await self._close_all()
+            await self._close_all("panic_button")
             await self._sync()
 
-    async def _close_all(self) -> None:
+    async def _close_all(self, reason: str) -> None:
         for symbol, position in (await self.exchange.positions()).items():
+            self.pending_exit[symbol] = reason
             await self.exchange.close_market(symbol, position.qty, self._client_id())
 
     # ---------- loop
@@ -195,10 +207,15 @@ class Engine:
         for symbol, trade in tracked.items():
             if symbol not in positions:
                 result = await self.exchange.closed_result(symbol, trade["opened_ms"])
+                reason = self.pending_exit.pop(symbol, "") or (
+                    "breakeven" if trade["scaled"] else "stop_loss"
+                )
                 self.store.close_trade(
-                    trade["id"], self.now_ms(), result.exit_price, result.pnl, result.fees
+                    trade["id"], self.now_ms(), result.exit_price, result.pnl, result.fees, reason
                 )
                 self.log("info", "trade_closed", f"{symbol} {result.pnl:+.2f}")
+                if self.journal_dir is not None:
+                    journal.write_trade(self.journal_dir, self.store.trade(trade["id"]))
         for symbol in positions:
             if symbol not in tracked:
                 self.halt("unknown_position", symbol)
@@ -220,7 +237,7 @@ class Engine:
                 self.running = False
                 self.halted = ""
                 self.halt("budget_used", f"amount {self.limits.capital_usdt}")
-                await self._close_all()
+                await self._close_all("budget_used")
                 await self._sync()
             return
         if risk.daily_loss_breached(self.limits, self.realized_today(), self.unrealized):
@@ -228,7 +245,7 @@ class Engine:
                 self.running = False
                 self.halted = ""
                 self.halt("daily_loss_limit", f"limit {self.limits.max_daily_loss_usdt}")
-                await self._close_all()
+                await self._close_all("daily_loss_limit")
                 await self._sync()
             return
         recent = self.recent_r()
@@ -265,6 +282,7 @@ class Engine:
                 reason = "trade_exit_time"
             live = self.live.get(trade["symbol"])
             if reason and live is not None:
+                self.pending_exit[trade["symbol"]] = reason
                 await self.exchange.close_market(trade["symbol"], live["qty"], self._client_id())
                 self.log("info", reason, trade["symbol"])
         await self._sync()
@@ -286,7 +304,19 @@ class Engine:
             if side is None or (side == "SELL" and not self.limits.allow_shorts):
                 continue
             signals += 1
-            added = await self._open(symbol, side, strategy.stop_distance(bars), margin)
+            closes = [bar.c for bar in bars]
+            plan = {
+                "strategy": strategy.NAME,
+                "mode": self.settings.mode,
+                "fast": strategy.ema(closes, strategy.FAST)[-1],
+                "slow": strategy.ema(closes, strategy.SLOW)[-1],
+                "btc_up": btc_up,
+                "atr": strategy.atr(bars),
+                "stop_pct": strategy.stop_distance(bars) / closes[-1],
+                "half_at_r": strategy.HALF_AT_R,
+                "risk_pct": self.limits.risk_per_trade_pct,
+            }
+            added = await self._open(symbol, side, strategy.stop_distance(bars), margin, plan)
             if added:
                 used.add(symbol)
                 margin += added
@@ -304,7 +334,14 @@ class Engine:
             "opened": opened,
         })
 
-    async def _open(self, symbol: str, side: str, stop_dist: float, margin: float) -> float:
+    async def _open(
+        self,
+        symbol: str,
+        side: str,
+        stop_dist: float,
+        margin: float,
+        plan: dict[str, Any] | None = None,
+    ) -> float:
         filters = await self.exchange.filters(symbol)
         price = await self.exchange.price(symbol)
         size = risk.size_position(
@@ -335,12 +372,14 @@ class Engine:
             margin=used_margin,
             opened_ms=opened_ms,
             risk_usdt=fill.qty * abs(fill.price - stop),
+            plan=json.dumps(plan or {}),
         )
         self.log("info", "trade_opened", f"{side} {symbol} {fill.qty} @ {fill.price}")
         try:
             await self.exchange.protect(symbol, side, stop, target, half if target else 0.0)
         except Exception as error:  # noqa: BLE001 - an unprotected position must not stay open
             self.halt("protection_failed", str(error)[:300])
+            self.pending_exit[symbol] = "protection_failed"
             signed = fill.qty if side == "BUY" else -fill.qty
             await self.exchange.close_market(symbol, signed, self._client_id())
             await self._sync()
@@ -393,6 +432,42 @@ class Engine:
             )
             > limits.capital_usdt
         ]
+
+    def month_report(self, month: str | None = None) -> dict[str, Any]:
+        """Closed trades of one UTC month against the owner's goal of 80-90% winning trades."""
+        now = datetime.fromtimestamp(self.now_ms() / 1000, UTC)
+        month = month or now.strftime("%Y-%m")
+        start = datetime.strptime(month, "%Y-%m").replace(tzinfo=UTC)
+        end = (start.replace(day=28) + __import__("datetime").timedelta(days=4)).replace(day=1)
+        trades = self.store.closed_between(
+            int(start.timestamp() * 1000), int(end.timestamp() * 1000)
+        )
+        wins = sum(1 for t in trades if (t["pnl"] or 0) > 0)
+        win_rate = wins / len(trades) if trades else None
+        low, high = GOAL_WIN_RATE
+        verdict = (
+            "no_trades" if win_rate is None
+            else "below_goal" if win_rate < low
+            else "in_goal" if win_rate <= high
+            else "above_goal"
+        )
+        by_reason: dict[str, int] = {}
+        for t in trades:
+            key = t["exit_reason"] or "unknown"
+            by_reason[key] = by_reason.get(key, 0) + 1
+        return {
+            "month": month,
+            "trades": len(trades),
+            "wins": wins,
+            "win_rate": win_rate,
+            "goal": {"min": low, "max": high},
+            "verdict": verdict,
+            "pnl": round(sum(t["pnl"] or 0 for t in trades), 2),
+            "avg_r": (sum(t["r"] or 0 for t in trades) / len(trades)) if trades else None,
+            "by_exit": by_reason,
+            "strategy": strategy.NAME,
+            "mode": self.settings.mode,
+        }
 
     def insights(self) -> dict[str, Any]:
         """What the bot has learned from its own closed trades."""

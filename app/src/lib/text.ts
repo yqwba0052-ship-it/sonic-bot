@@ -35,6 +35,17 @@ const MESSAGES: Record<string, string> = {
     'نتائج آخر 30 صفقة أسوأ من أي فترة في 6 سنوات من الاختبار. توقف البوت عن فتح صفقات جديدة، والصفقات المفتوحة باقية بوقفها. راجع النتائج قبل إعادة التفعيل.',
 };
 
+export const EXIT_REASONS: Record<string, string> = {
+  stop_loss: 'وقف الخسارة',
+  breakeven: 'أُخذ نصف الربح ثم أُقفل الباقي عند سعر الدخول',
+  trade_exit_signal: 'انعكس الاتجاه',
+  trade_exit_time: 'مرت 40 يومًا',
+  panic_button: 'إغلاق طارئ منك',
+  daily_loss_limit: 'حد الخسارة اليومي',
+  budget_used: 'انتهى المبلغ',
+  protection_failed: 'تعذر وضع الوقف',
+};
+
 export function coinName(symbol: string): string {
   return symbol.replace(/USDT$/, '');
 }

@@ -39,7 +39,13 @@ class Store:
         self.db.row_factory = sqlite3.Row
         self.db.executescript(SCHEMA)
         columns = {row["name"] for row in self.db.execute("PRAGMA table_info(trades)")}
-        for name, kind in (("risk_usdt", "REAL"), ("r", "REAL"), ("scaled", "INTEGER DEFAULT 0")):
+        for name, kind in (
+            ("risk_usdt", "REAL"),
+            ("r", "REAL"),
+            ("scaled", "INTEGER DEFAULT 0"),
+            ("plan", "TEXT"),
+            ("exit_reason", "TEXT"),
+        ):
             if name not in columns:
                 self.db.execute(f"ALTER TABLE trades ADD COLUMN {name} {kind}")
         self.db.commit()
@@ -90,12 +96,18 @@ class Store:
         self.db.commit()
 
     def close_trade(
-        self, trade_id: int, closed_ms: int, exit_price: float, pnl: float, fees: float
+        self,
+        trade_id: int,
+        closed_ms: int,
+        exit_price: float,
+        pnl: float,
+        fees: float,
+        exit_reason: str = "",
     ) -> None:
         self.db.execute(
-            "UPDATE trades SET closed_ms = ?, exit_price = ?, pnl = ?, fees = ?, "
+            "UPDATE trades SET closed_ms = ?, exit_price = ?, pnl = ?, fees = ?, exit_reason = ?, "
             "r = CASE WHEN risk_usdt > 0 THEN ? / risk_usdt END WHERE id = ?",
-            (closed_ms, exit_price, pnl, fees, pnl, trade_id),
+            (closed_ms, exit_price, pnl, fees, exit_reason, pnl, trade_id),
         )
         self.db.commit()
 
@@ -127,5 +139,15 @@ class Store:
             "SELECT symbol, COUNT(*) AS trades, AVG(r) AS avg_r, SUM(pnl) AS pnl, "
             "SUM(CASE WHEN pnl > 0 THEN 1 ELSE 0 END) AS wins FROM trades "
             "WHERE closed_ms IS NOT NULL GROUP BY symbol ORDER BY symbol"
+        )
+        return [dict(row) for row in rows]
+
+    def trade(self, trade_id: int) -> dict[str, Any]:
+        return dict(self.db.execute("SELECT * FROM trades WHERE id = ?", (trade_id,)).fetchone())
+
+    def closed_between(self, start_ms: int, end_ms: int) -> list[dict[str, Any]]:
+        rows = self.db.execute(
+            "SELECT * FROM trades WHERE closed_ms >= ? AND closed_ms < ? ORDER BY closed_ms",
+            (start_ms, end_ms),
         )
         return [dict(row) for row in rows]

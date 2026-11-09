@@ -78,6 +78,11 @@ def create_app(engine: Engine, token: str, background: bool = True) -> FastAPI:
         await engine.set_keep_awake(body["keep_awake"])
         return engine.status()
 
+    @app.get("/report", dependencies=secured)
+    async def report(month: str | None = Query(default=None, pattern=r"^\d{4}-\d{2}$")) -> dict:
+        """One month of closed trades against the 80-90% winning-trades goal."""
+        return engine.month_report(month)
+
     @app.get("/insights", dependencies=secured)
     async def insights() -> dict[str, Any]:
         """What the bot learned from its own closed trades."""

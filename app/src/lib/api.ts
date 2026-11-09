@@ -19,6 +19,19 @@ export type Market = {
   min_amount_usdt: number;
 };
 
+export type MonthReport = {
+  month: string;
+  trades: number;
+  wins: number;
+  win_rate: number | null;
+  goal: { min: number; max: number };
+  verdict: 'no_trades' | 'below_goal' | 'in_goal' | 'above_goal';
+  pnl: number;
+  avg_r: number | null;
+  by_exit: Record<string, number>;
+  mode: string;
+};
+
 export type Insights = {
   expected_avg_r: number;
   expected_win_rate: number;
@@ -46,6 +59,7 @@ export type Trade = {
   fees: number | null;
   r: number | null;
   scaled: number | null;
+  exit_reason: string | null;
 };
 
 export type BotEvent = { id: number; at_ms: number; level: string; code: string; detail: string };
