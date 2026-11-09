@@ -64,7 +64,17 @@ export function BotProvider({ children }: { children: ReactNode }) {
   }, []);
 
   useEffect(() => {
-    loadProfiles().then((saved) => {
+    loadProfiles().then(async (saved) => {
+      // Opened by the laptop as http://<server>/#token=...: connect to this server at once.
+      // The part after # never leaves the browser, and it is removed from the address.
+      if (typeof window !== 'undefined' && window.location?.hash.startsWith('#token=')) {
+        const token = decodeURIComponent(window.location.hash.slice('#token='.length));
+        const clean = () => window.history.replaceState(null, '', window.location.pathname);
+        clean();
+        setTimeout(clean, 1500); // the router may put the address back while it starts
+        saved = { ...saved, laptop: { url: window.location.origin, token }, active: 'laptop' };
+        await saveProfiles(saved);
+      }
       const active = saved[saved.active] ?? null;
       current.current = active;
       setProfiles(saved);
