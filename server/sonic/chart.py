@@ -17,6 +17,7 @@ from . import strategy
 REPLAY_FILE = Path(__file__).resolve().parent.parent / "replay" / "trades.json"
 WARMUP = strategy.SLOW * 3  # bars before the window so the EMAs have settled
 PAD = 20  # bars shown after a closed trade
+LEAD = 90  # simulator: candles before the period, so playback starts on a full chart
 
 
 def replay_trades() -> dict[str, Any]:
@@ -58,3 +59,35 @@ def build(bars: list[strategy.Bar], shown: int, trades: list[dict[str, Any]]) ->
             "interval": strategy.INTERVAL,
         },
     }
+
+
+def half_time(trade: dict[str, Any], bars: list[strategy.Bar]) -> int | None:
+    """When the half-profit target was first touched (the candle it happened in)."""
+    target = trade.get("target_price")
+    if not trade.get("scaled") or not target:
+        return None
+    start = trade["opened_ms"] - trade["opened_ms"] % strategy.BAR_MS
+    end = trade.get("closed_ms") or float("inf")
+    for bar in bars:
+        if bar.t < start or bar.t > end:
+            continue
+        if (bar.h >= target) if trade["side"] == "BUY" else (bar.low <= target):
+            return max(bar.t, trade["opened_ms"])
+    return None
+
+
+def simulation(
+    bars: list[strategy.Bar], shown: int, trades: list[dict[str, Any]],
+    forming: strategy.Bar | None,
+) -> dict[str, Any]:
+    """Everything the app's candle simulator needs to replay a period candle by candle:
+    closed candles with the bot's EMAs (closed candles only, as the bot sees them), the
+    candle still forming (live only), and each trade with the time of every event."""
+    data = build(bars, shown + LEAD, trades)
+    every = bars + ([forming] if forming else [])
+    for trade in data["trades"]:
+        trade["half_ms"] = half_time(trade, every)
+    data["forming"] = (
+        [forming.t, forming.o, forming.h, forming.low, forming.c] if forming else None
+    )
+    return data

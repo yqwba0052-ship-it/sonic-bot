@@ -90,6 +90,18 @@ def create_app(engine: Engine, token: str, background: bool = True) -> FastAPI:
             raise HTTPException(status_code=422, detail="unknown_symbol")
         return await engine.chart(symbol, source, trade_id, bars)
 
+    @app.get("/simulate", dependencies=secured)
+    async def simulate(
+        symbol: str = Query(pattern=r"^[A-Z0-9]{2,20}USDT$"),
+        source: str = Query(default="live", pattern=r"^(live|replay)$"),
+        months: int = Query(default=1, ge=1, le=6),
+        end_ms: int | None = Query(default=None, ge=0),
+    ) -> dict[str, Any]:
+        """A period of candles and the bot's trades, for the simulator to replay."""
+        if symbol not in ALLOWED_SYMBOLS:
+            raise HTTPException(status_code=422, detail="unknown_symbol")
+        return await engine.simulate(symbol, source, months, end_ms)
+
     @app.get("/replay/trades", dependencies=secured)
     async def replay_trades(
         symbol: str | None = Query(default=None, pattern=r"^[A-Z0-9]{2,20}USDT$"),

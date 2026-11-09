@@ -71,3 +71,15 @@ profit, trend turned, 40 days, or owner/limits).
 - Mean reversion, which won 63-67% of trades but lost money
 - Close full targets, which won 72% of trades but made little
 - Monthly automatic strategy switching, which lost money
+- Dropping AVAX (38% wins over 13 trades in 2021-2026). Tested walk-forward: in 2021-2023
+  it was not weak (1 winning trade), so that data gives no reason to drop it; in 2024-2026
+  dropping it raised wins from 77.6% to 79.9% but lowered the result from $62.55 to $57.70.
+  Kept (2026-11-10).
+
+## Watching the bot: the candle simulator
+
+The app's candle tab (`GET /simulate`) replays a period candle by candle: the bot's EMAs,
+each trade's entry, half profit and exit appear when they happen, with a running count of
+trades, winners and profit. Two sources: the bot's own trades now (paper or demo, with the
+candle still forming, refreshed each minute) and the five-year engine replay
+(`server/replay/trades.json`), by half-year.

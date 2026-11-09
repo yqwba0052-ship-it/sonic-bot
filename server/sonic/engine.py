@@ -112,6 +112,11 @@ class Engine:
             if self.halted:
                 raise ValueError("halted")
             self.running = True
+            last = self.store.get("last_scan", {}) or {}
+            if last.get("market") == "not_running":
+                # The bar that closed while the bot was off was never scanned for entries:
+                # scan it on the next tick instead of waiting up to 4 hours.
+                self.store.put("last_bar_ms", self.last_closed_bar() - 1)
             self.log("info", "started")
 
     async def stop(self) -> None:
@@ -460,6 +465,36 @@ class Engine:
             bars = await self.exchange.bars_until(symbol, strategy.INTERVAL, end, total)
         data = chart.build(bars, shown, trades)
         data.update({"symbol": symbol, "source": source, "focus": trade_id})
+        return data
+
+    async def simulate(
+        self, symbol: str, source: str, months: int, end_ms: int | None
+    ) -> dict[str, Any]:
+        """A period of candles and trades for the app's simulator to replay."""
+        shown = months * 30 * 6
+        total = shown + chart.LEAD + chart.WARMUP
+        now = self.now_ms()
+        forming = None
+        if source == "replay":
+            saved = chart.replay_trades()
+            trades = [t for t in saved["trades"] if t["symbol"] == symbol]
+            end = end_ms or max((t.get("closed_ms") or 0 for t in trades), default=now)
+            bars = await self.exchange.bars_until(symbol, strategy.INTERVAL, min(end, now), total)
+            bars = [b for b in bars if b.t < min(end, now) and b.t + strategy.BAR_MS <= now]
+        else:
+            trades = [t for t in self.store.trades(500) if t["symbol"] == symbol]
+            bars = await self.exchange.bars_until(symbol, strategy.INTERVAL, now, total + 1)
+            if bars and bars[-1].t + strategy.BAR_MS > now:
+                forming, bars = bars[-1], bars[:-1]
+                price = (await self.exchange.prices()).get(symbol)
+                if price:  # the newest price, so the forming candle moves every refresh
+                    forming = strategy.Bar(
+                        forming.t, forming.o, max(forming.h, price), min(forming.low, price), price
+                    )
+        data = chart.simulation(bars, shown, trades, forming)
+        data["lead"] = max(0, len(data["bars"]) - shown)
+        data.update({"symbol": symbol, "source": source, "now_ms": now,
+                     "period": chart.replay_trades().get("period") if source == "replay" else None})
         return data
 
     def replay_list(self, symbol: str | None) -> dict[str, Any]:

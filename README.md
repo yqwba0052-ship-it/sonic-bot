@@ -37,6 +37,12 @@ paper exchange, sizing and limits hour by hour on past Binance prices.
 
 Past results are no promise.
 
+## Candle simulator
+
+The app's candle tab replays the bot's trades candle by candle (play, pause, speed, next
+event) for the bot's own trades now, with the live forming candle, or for the five-year
+engine replay by half-year. See STRATEGY.md.
+
 ## Safety
 
 - **Amount:** a hard total-loss budget. Losing it closes everything and halts the bot.

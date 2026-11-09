@@ -737,3 +737,74 @@ async def test_plan_with_numpy_values_is_saved_before_the_order() -> None:
     trade = engine.store.open_trades()[0]
     assert '"btc_up": "True"' in trade["plan"] or '"btc_up": true' in trade["plan"]
     assert exchange.state["open"]  # the order went through and the trade is known
+
+
+async def test_simulator_gives_every_trade_event_and_the_forming_candle() -> None:
+    engine, _, market, clock = build()
+    await engine.start()
+    await engine.tick()  # opens on the up-cross
+    trade = engine.store.open_trades()[0]
+    # The next candle reaches the half-profit target.
+    market.coin.append(trade["target_price"] * 1.02)
+    market.last = market.coin[-1]
+    clock.next_bar()
+    await engine.tick()
+    data = await engine.simulate("SOLUSDT", "live", 1, None)
+    assert data["lead"] == 90 and len(data["bars"]) == 180 + 90 and data["forming"] is None
+    shown = data["trades"][0]
+    assert shown["scaled"] and "half_ms" in shown
+
+
+def test_half_profit_time_is_the_first_candle_that_reaches_the_target() -> None:
+    from sonic import chart
+
+    bars = [Bar(i * BAR_MS, 100, high, 99, 100) for i, high in enumerate([100, 101, 103, 104])]
+    trade = {"side": "BUY", "opened_ms": BAR_MS + 5, "closed_ms": None,
+             "target_price": 102.5, "scaled": 1}
+    assert chart.half_time(trade, bars) == 2 * BAR_MS
+    assert chart.half_time(dict(trade, scaled=0), bars) is None
+    short = dict(trade, side="SELL", target_price=99.5)
+    assert chart.half_time(short, bars) == BAR_MS + 5  # reached in the entry candle itself
+
+
+async def test_simulator_splits_off_the_candle_still_forming() -> None:
+    engine, _, market, clock = build()
+    bars = make_bars(market.coin)
+    clock.now = (bars[-1].t + BAR_MS // 2) / 1000  # half way through the last candle
+    data = await engine.simulate("SOLUSDT", "live", 1, None)
+    assert data["forming"][0] == bars[-1].t
+    assert data["bars"][-1][0] == bars[-2].t
+    assert data["forming"][4] == market.last
+
+
+async def test_start_after_a_missed_bar_scans_it_at_once() -> None:
+    engine, _, _, _ = build()
+    await engine.tick()  # the bar closes while the bot is off
+    assert engine.status()["last_scan"]["market"] == "not_running"
+    assert not engine.store.open_trades()
+    await engine.start()
+    await engine.tick()  # same bar, but now scanned
+    assert engine.status()["last_scan"]["market"] == "btc_up"
+    assert engine.store.open_trades()
+
+
+def test_simulate_endpoint_checks_its_input() -> None:
+    engine, _, _, _ = build()
+    with TestClient(create_app(engine, "secret", background=False)) as client:
+        headers = {"Authorization": "Bearer secret"}
+        ok = client.get("/simulate?symbol=SOLUSDT&months=3", headers=headers)
+        assert ok.status_code == 200 and len(ok.json()["bars"]) > 0
+        assert client.get("/simulate?symbol=SCAMUSDT", headers=headers).status_code == 422
+        assert client.get("/simulate?symbol=SOLUSDT&months=12", headers=headers).status_code == 422
+        replay = client.get("/simulate?symbol=SOLUSDT&source=replay", headers=headers)
+        assert replay.status_code == 200
+
+
+async def test_simulator_period_stops_before_its_end(tmp_path, monkeypatch) -> None:
+    from sonic import chart
+
+    monkeypatch.setattr(chart, "REPLAY_FILE", tmp_path / "none.json")
+    engine, _, _, _ = build()
+    end = 350 * BAR_MS
+    data = await engine.simulate("SOLUSDT", "replay", 1, end)
+    assert data["bars"][-1][0] == end - BAR_MS  # the candle opening at the end is left out
