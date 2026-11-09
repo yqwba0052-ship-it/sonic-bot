@@ -48,8 +48,14 @@ class Engine:
         self.markets_cache: tuple[int, list[dict[str, Any]]] | None = None
         self.limits = Limits(**store.get("limits", {}))
         self.halted: str = store.get("halted", "")
-        # Never resume trading by itself after a restart.
-        self.running = False
+        # Never resume trading by itself after a restart, unless the owner switched on
+        # "resume after restart" (for a cloud server that may reboot during a month-long run)
+        # and the bot was running, not halted, when the server went down.
+        self.auto_resume: bool = bool(store.get("auto_resume", False))
+        self.running = bool(
+            self.auto_resume and store.get("was_running", False) and not self.halted
+        )
+        self.resumed = self.running
         self.keep_awake: bool = bool(store.get("keep_awake", True))
         # Why the bot itself is closing a trade, read when the close is seen in _sync.
         self.pending_exit: dict[str, str] = {}
@@ -97,6 +103,7 @@ class Engine:
 
     def halt(self, reason: str, detail: str = "") -> None:
         self.running = False
+        self.store.put("was_running", False)
         if not self.halted:
             self.halted = reason
             self.store.put("halted", reason)
@@ -112,6 +119,7 @@ class Engine:
             if self.halted:
                 raise ValueError("halted")
             self.running = True
+            self.store.put("was_running", True)
             last = self.store.get("last_scan", {}) or {}
             if last.get("market") == "not_running":
                 # The bar that closed while the bot was off was never scanned for entries:
@@ -122,6 +130,7 @@ class Engine:
     async def stop(self) -> None:
         async with self.lock:
             self.running = False
+            self.store.put("was_running", False)
             self.log("info", "stopped")
 
     async def clear_halt(self) -> None:
@@ -159,6 +168,12 @@ class Engine:
             self.store.put("keep_awake", on)
             awake.set_keep_awake(on)
             self.log("info", "keep_awake_on" if on else "keep_awake_off")
+
+    async def set_auto_resume(self, on: bool) -> None:
+        async with self.lock:
+            self.auto_resume = on
+            self.store.put("auto_resume", on)
+            self.log("info", "auto_resume_on" if on else "auto_resume_off")
 
     async def panic(self) -> None:
         """Stop trading and close every open position."""
@@ -583,6 +598,7 @@ class Engine:
             "next_check_ms": self.last_closed_bar() + 2 * strategy.BAR_MS,
             "last_scan": self.store.get("last_scan"),
             "keep_awake": self.keep_awake,
+            "auto_resume": self.auto_resume,
             "keep_awake_supported": awake.supported(),
             "last_tick_ms": self.last_tick_ms,
             "last_error": self.last_error,
@@ -591,6 +607,9 @@ class Engine:
 
     async def run_forever(self) -> None:
         awake.set_keep_awake(self.keep_awake)
+        if self.resumed:
+            self.resumed = False
+            self.log("info", "resumed_after_restart")
         while True:
             await self.tick()
             await asyncio.sleep(self.settings.tick_seconds)

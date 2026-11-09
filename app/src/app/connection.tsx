@@ -63,6 +63,15 @@ function ConnectionForm() {
     }
   };
 
+  const toggleResume = async () => {
+    if (!status) return;
+    try {
+      await call('/settings', 'PUT', { auto_resume: !status.auto_resume });
+    } catch (failure) {
+      setNotice({ text: message(errorCode(failure)), color: colors.loss });
+    }
+  };
+
   return (
     <Screen title="الاتصال">
       <Card>
@@ -132,6 +141,24 @@ function ConnectionForm() {
           </Pressable>
         </Card>
       ) : null}
+      {status ? (
+        <Card>
+          <Pressable
+            accessibilityRole="switch"
+            accessibilityState={{ checked: status.auto_resume }}
+            accessibilityLabel="إكمال التداول بعد إعادة تشغيل الخادم"
+            onPress={toggleResume}
+            style={[styles.choice, status.auto_resume && styles.chosen]}>
+            <Text style={styles.choiceText}>
+              {status.auto_resume ? '✓ ' : ''}إكمال التداول بعد إعادة تشغيل الخادم
+            </Text>
+            <Text style={styles.choiceHint}>
+              مفيد للخادم السحابي في تجربة الشهر: لو أعاد الخادم التشغيل يكمل البوت وحده. لا يكمل إذا
+              كنت أوقفته، أو أوقفه زر الطوارئ أو حد الخسارة.
+            </Text>
+          </Pressable>
+        </Card>
+      ) : null}
       {place === 'cloud' ? (
         <Card>
           <Body>تشغيل 24 ساعة على خادم سحابي (اختياري)</Body>
@@ -140,7 +167,8 @@ function ConnectionForm() {
             أمريكا مثل فرانكفورت أو سنغافورة.{'\n'}
             2. افتح لوحة الأوامر فيه، والصق الأمر الموجود في ملف README في GitHub (deploy).{'\n'}
             3. انسخ العنوان والرمز اللذين يظهران، وضعهما هنا.{'\n'}
-            البوت على الخادم السحابي يبدأ متوقفًا، فاضغط «شغّل البوت» بعد الاتصال.
+            البوت على الخادم السحابي يبدأ متوقفًا، فاضغط «شغّل البوت» بعد الاتصال، وفعّل «إكمال التداول
+            بعد إعادة تشغيل الخادم». وأوقف البوت على اللابتوب حتى لا يعمل بوتان.
           </Body>
         </Card>
       ) : null}

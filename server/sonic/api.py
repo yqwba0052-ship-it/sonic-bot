@@ -73,9 +73,13 @@ def create_app(engine: Engine, token: str, background: bool = True) -> FastAPI:
 
     @app.put("/settings", dependencies=secured)
     async def put_settings(body: Annotated[dict[str, Any], Body()]) -> dict[str, Any]:
-        if not isinstance(body.get("keep_awake"), bool):
+        known = {"keep_awake", "auto_resume"}
+        if not body or set(body) - known or not all(isinstance(v, bool) for v in body.values()):
             raise HTTPException(status_code=422, detail="invalid_values")
-        await engine.set_keep_awake(body["keep_awake"])
+        if "keep_awake" in body:
+            await engine.set_keep_awake(body["keep_awake"])
+        if "auto_resume" in body:
+            await engine.set_auto_resume(body["auto_resume"])
         return engine.status()
 
     @app.get("/chart", dependencies=secured)

@@ -81,6 +81,7 @@ export type Status = {
   next_check_ms: number;
   last_scan: { at_ms: number; market: string; coins: number; signals: number; opened: number } | null;
   keep_awake: boolean;
+  auto_resume: boolean;
   keep_awake_supported: boolean;
   last_tick_ms: number;
   last_error: string;

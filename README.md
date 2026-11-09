@@ -82,6 +82,9 @@ sleep still counts. The bot can only act while the laptop is on.
 
 3. Put the printed `https://...sslip.io` address and token in the app under Connection, then Cloud.
    The app keeps both the laptop and the cloud connection, and you switch between them with one tap.
+4. Press Start, and switch on "resume after server restart" (Connection tab) so a reboot of the
+   server does not end a month-long run. The bot still stays stopped after a restart if you
+   stopped it, or if the panic button or a loss limit halted it. Stop the laptop bot.
 
 The script installs the bot as a restricted service and puts Caddy in front with automatic HTTPS,
 so the token is never sent in clear text. The firewall allows only SSH and web ports. Running the

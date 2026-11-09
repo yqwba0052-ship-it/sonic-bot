@@ -825,3 +825,30 @@ def test_no_buy_while_the_coin_is_below_its_long_average() -> None:
             break
     else:
         pytest.fail("no EMA cross happened in the test series")
+
+
+async def test_restart_resumes_only_when_the_owner_allowed_it() -> None:
+    engine, exchange, _, clock = build()
+    await engine.start()
+
+    def restarted() -> Engine:
+        return Engine(engine.store, exchange, settings(), clock=clock)
+
+    assert not restarted().running  # default: never resume by itself
+    await engine.set_auto_resume(True)
+    assert restarted().running and restarted().status()["auto_resume"]
+    await engine.stop()
+    assert not restarted().running  # the owner stopped it: stays stopped
+    await engine.start()
+    engine.halt("panic_button")
+    assert not restarted().running  # halted: stays stopped
+
+
+def test_settings_endpoint_takes_both_switches() -> None:
+    engine, _, _, _ = build()
+    with TestClient(create_app(engine, "secret", background=False)) as client:
+        headers = {"Authorization": "Bearer secret"}
+        body = client.put("/settings", json={"auto_resume": True}, headers=headers).json()
+        assert body["auto_resume"] is True
+        for bad in ({"auto_resume": "yes"}, {"other": True}, {}):
+            assert client.put("/settings", json=bad, headers=headers).status_code == 422

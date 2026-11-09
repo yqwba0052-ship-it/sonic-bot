@@ -15,4 +15,5 @@ server/web/
 research/data/
 server/downloads/
 server/journal/
-server/replay/
+server/replay/*
+!server/replay/trades.json

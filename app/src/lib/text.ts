@@ -29,6 +29,9 @@ const MESSAGES: Record<string, string> = {
   trade_exit_signal: 'أُقفلت صفقة لأن الاتجاه انعكس',
   trade_exit_time: 'أُقفلت صفقة بعد 40 يومًا',
   keep_awake_on: 'تفعيل منع النوم',
+  auto_resume_on: 'تفعيل الاستئناف بعد إعادة التشغيل',
+  auto_resume_off: 'إيقاف الاستئناف بعد إعادة التشغيل',
+  resumed_after_restart: 'رجع الخادم بعد إعادة تشغيل، وأكمل البوت التداول',
   keep_awake_off: 'إيقاف منع النوم',
   trade_scaled: 'أُخذ ربح نصف الصفقة، والوقف صار عند سعر الدخول',
   strategy_drift:
