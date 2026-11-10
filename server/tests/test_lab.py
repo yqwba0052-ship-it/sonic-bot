@@ -128,12 +128,16 @@ def test_add_pause_and_delete_after_confirmation() -> None:
     assert len(lab_.trades("4123456789")) == len(trades)  # pause keeps the data
     lab_.add("other", "Other")
     lab_.import_trades("other", trades[:3], "csv")
-    counts = lab_.delete("4123456789")
-    assert counts["trader_trades"] == len(trades) and counts["traders"] == 1
-    assert lab_.trader("4123456789") is None
-    assert len(lab_.trades("other")) == 3  # other traders' data is untouched
+    lab_.delete("4123456789")
+    assert [t["trader_id"] for t in lab_.traders()] == ["other"]  # off the list
+    assert lab_.listed("4123456789") is None
+    assert len(lab_.trades("4123456789")) == len(trades)  # its trades are kept
+    assert len(lab_.trades("other")) == 3
     with pytest.raises(KeyError):
-        lab_.import_trades("4123456789", trades, "csv")  # gone: nothing learned from it
+        lab_.import_trades("4123456789", trades, "csv")  # no longer watched
+    lab_.add("4123456789", "Ali")  # adding again brings it back with its data
+    assert lab_.listed("4123456789")["status"] == "watching"
+    assert len(lab_.trades("4123456789")) == len(trades)
 
 
 # ---------- learning and testing
@@ -286,8 +290,11 @@ def test_traders_api_add_import_and_confirmed_delete() -> None:
         assert client.delete("/traders/Abu-Fahad", headers=headers).status_code == 428
         assert client.get("/traders", headers=headers).json()[0]["trades"] == 2
         done = client.delete("/traders/Abu-Fahad?confirm=true", headers=headers).json()
-        assert done["deleted"]["trader_trades"] == 2
+        assert done["removed"]["status"] == "removed"
         assert client.get("/traders", headers=headers).json() == []
+        assert client.get("/traders/Abu-Fahad", headers=headers).status_code == 404
+        assert len(engine.lab.trades("Abu-Fahad")) == 2  # kept
+        assert client.get("/strategies", headers=headers).status_code == 200
         assert client.get("/traders/template.csv", headers=headers).text.startswith("symbol,")
 
 
@@ -304,3 +311,84 @@ async def test_a_study_finishing_after_delete_saves_nothing() -> None:
     with pytest.raises(KeyError):
         await lab_.study("gone", slow_bars)
     assert lab_.db.execute("SELECT COUNT(*) FROM trader_models").fetchone()[0] == 0
+
+
+# ---------- ranking of saved strategies
+
+def outcome(net: float, dd: float = 0.05, pf: float = 1.8, months_pos: float = 0.75,
+           win: float = 0.6, worst: float = -0.012, trades: int = 40, days: int = 300,
+           yearly: float | None = None) -> dict:
+    return {"trades": trades, "wins": int(trades * win), "win_rate": win, "net_pnl": net,
+            "net_pct": net / 30, "yearly_pct": net / 30 if yearly is None else yearly,
+            "max_drawdown": dd, "profit_factor": pf, "months": 10,
+            "months_positive": months_pos, "worst_trade": worst, "days": days, "open_at_end": 0}
+
+
+def save(lab_: leader.Lab, trader: str, result: dict, model: dict | None = None) -> int:
+    lab_.add(trader, trader)
+    report = {"notes": [], "test": {"learned": result, "sonic": outcome(3)}}
+    cur = lab_.db.execute(
+        "INSERT INTO trader_models (trader_id, created_ms, model, report) VALUES (?, ?, ?, ?)",
+        (trader, END, json.dumps(model or {"symbols": []}), json.dumps(report)))
+    lab_.db.commit()
+    return cur.lastrowid
+
+
+def test_exclusions_name_the_reason() -> None:
+    assert leader.exclusion(outcome(5)) is None
+    assert "بيانات غير كافية" in leader.exclusion(outcome(5, trades=8))
+    assert "خاسرة" in leader.exclusion(outcome(-1))
+    assert "تراجع كبير" in leader.exclusion(outcome(5, dd=0.35))
+    assert "خسارة كبيرة" in leader.exclusion(outcome(5, worst=-0.06))
+    assert "معامل ربح" in leader.exclusion(outcome(5, pf=1.05))
+    assert "غير مستقرة" in leader.exclusion(outcome(5, months_pos=0.3))
+    assert "اختبار قديم" in leader.exclusion({"trades": 40, "net_pnl": 5})
+
+
+def test_a_high_win_rate_alone_does_not_win() -> None:
+    steady = leader.score(outcome(9, dd=0.04, pf=2.2, months_pos=0.85, win=0.55, yearly=0.3))[0]
+    lucky = leader.score(outcome(2, dd=0.15, pf=1.25, months_pos=0.55, win=0.95, yearly=0.05))[0]
+    assert steady > lucky
+
+
+def test_choice_needs_ten_strategies_and_keeps_deleted_ones() -> None:
+    lab_ = lab()
+    for n in range(9):
+        save(lab_, f"tr{n}", outcome(2 + n * 0.1, win=0.95))
+    nine = lab_.ranking()
+    assert nine["choice"] is None and "10" in nine["no_choice"]
+    best_id = save(lab_, "best", outcome(12, dd=0.03, pf=2.5, months_pos=0.9, yearly=0.4, win=0.6))
+    save(lab_, "loser", outcome(-4))
+    lab_.delete("best")  # deleted traders' strategies still count
+    ranked = lab_.ranking()
+    assert ranked["total"] == 11 and ranked["choice"]["model_id"] == best_id
+    assert ranked["champion"]["model_id"] == best_id and ranked["champion"]["reasons"]
+    assert any(e["trader_id"] == "loser" and "خاسرة" in e["why"] for e in ranked["excluded"])
+    newer = save(lab_, "tr0", outcome(30, dd=0.02, pf=3.0, months_pos=1.0, yearly=1.0))
+    again = lab_.ranking()  # new test results: re-ranked, new choice
+    assert again["choice"]["model_id"] == newer
+    assert again["ranked"][0]["trader_id"] == "tr0"
+
+
+async def test_chosen_strategy_paper_trades_on_its_own() -> None:
+    lab_ = lab()
+    lab_.add("trend1", "")
+    lab_.import_trades("trend1", four_coins(), "csv")
+    await lab_.study("trend1", bars_until)
+    model = lab_.latest_model("trend1")["model"]
+    model["rsi"], model["dist"], model["age"] = [0, 100], [-99, 99], [0, 500]
+    lab_.db.execute("UPDATE trader_models SET model = ?", (json.dumps(model),))
+    lab_.delete("trend1")  # its own paper trading stops; the chosen track does not
+    lab_.put_state("champion", {"trader_id": "trend1", "model_id": lab_.latest_model(
+        "trend1")["id"], "name": "trend1", "score": 50, "reasons": []})
+    upto = {"n": 2000}
+
+    async def bars(symbol: str) -> list[Bar]:
+        return MARKET[symbol][: upto["n"]]
+
+    for _ in range(300):
+        await lab_.paper_tick(bars)
+        upto["n"] += 1
+    champion = lab_.db.execute("SELECT COUNT(*) FROM champion_paper").fetchone()[0]
+    own = lab_.db.execute("SELECT COUNT(*) FROM trader_paper").fetchone()[0]
+    assert champion > 0 and own == 0

@@ -188,7 +188,7 @@ def create_app(engine: Engine, token: str, background: bool = True) -> FastAPI:
 
     @app.get("/traders/{trader_id}", dependencies=secured)
     async def trader_detail(trader_id: str = Path_(pattern=trader_path)) -> dict[str, Any]:
-        trader = engine.lab.trader(trader_id)
+        trader = engine.lab.listed(trader_id)
         if trader is None:
             raise HTTPException(status_code=404, detail="unknown_trader")
         trades = engine.lab.trades(trader_id)
@@ -214,8 +214,8 @@ def create_app(engine: Engine, token: str, background: bool = True) -> FastAPI:
     ) -> dict[str, Any]:
         if not confirm:  # the app sends confirm=true only after "are you sure?" -> OK
             raise HTTPException(status_code=428, detail="confirm_required")
-        try:
-            return {"deleted": engine.lab.delete(trader_id)}
+        try:  # off the list and no longer watched; trades and strategies stay saved
+            return {"removed": engine.lab.delete(trader_id)}
         except KeyError as error:
             raise lab_error(error) from error
 
@@ -234,14 +234,22 @@ def create_app(engine: Engine, token: str, background: bool = True) -> FastAPI:
         return {"format": parsed["format"], "read": len(parsed["trades"]), "added": added,
                 "still_open": parsed["skipped"], "errors": parsed["errors"][:50]}
 
+    @app.get("/strategies", dependencies=secured)
+    async def strategies() -> dict[str, Any]:
+        """Every saved strategy scored on its out-of-sample test, deleted traders included,
+        and the chosen one (with 10 or more) with its reasons and its own paper trading."""
+        return engine.lab.ranking()
+
     @app.post("/traders/{trader_id}/study", dependencies=secured)
     async def study_trader(trader_id: str = Path_(pattern=trader_path)) -> dict[str, Any]:
-        if engine.lab.trader(trader_id) is None:
+        if engine.lab.listed(trader_id) is None:
             raise HTTPException(status_code=404, detail="unknown_trader")
         try:
-            return await engine.lab.study(trader_id, engine.exchange.bars_until)
+            report = await engine.lab.study(trader_id, engine.exchange.bars_until)
         except (KeyError, ValueError) as error:
             raise lab_error(error) from error
+        engine.lab.ranking()  # new test results: re-rank and update the chosen strategy
+        return report
 
     @app.post("/traders/{trader_id}/claim", dependencies=secured)
     async def claim_trades(

@@ -61,6 +61,37 @@ type Detail = {
   versions: { id: number; created_ms: number; learned: number }[];
   paper: Result & { open: number };
 };
+type Ranked = {
+  trader_id: string;
+  name: string;
+  status: string;
+  model_id: number;
+  score?: number;
+  why?: string;
+  result: (Result & {
+    yearly_pct: number | null;
+    profit_factor: number | null;
+    months_positive: number | null;
+    worst_trade: number | null;
+    days: number;
+  }) | null;
+};
+type Ranking = {
+  total: number;
+  choose_from: number;
+  ranked: Ranked[];
+  excluded: Ranked[];
+  no_choice: string | null;
+  champion: null | {
+    name: string;
+    trader_id: string;
+    model_id: number;
+    score: number;
+    reasons: string[];
+    since_ms: number;
+    paper: Result & { open: number; needed: number };
+  };
+};
 type Account = { linked: boolean; key_hint: string | null; synced_ms: number | null; target: string | null };
 
 const STUDY_MS = 180_000;
@@ -86,6 +117,63 @@ function rules(model: Model): string {
     `${side} ${trend}${btc}، و RSI بين ${model.rsi[0]} و ${model.rsi[1]}${age}. ` +
     `الوقف ${model.stop_atr} ATR، والهدف ${model.target_atr} ATR، وأقصى مدة ${(model.max_hold_bars * 4) / 24} يوم. ` +
     `العملات: ${model.symbols.map((s) => s.replace('USDT', '')).join('، ')}.`
+  );
+}
+
+function Strategies({ ranking }: { ranking: Ranking | null }) {
+  if (!ranking) return null;
+  const champion = ranking.champion;
+  return (
+    <Card>
+      <Body>تقييم الاستراتيجيات المحفوظة ({ranking.total})</Body>
+      <Body color={colors.muted}>
+        يُقيَّم كل استراتيجية على فترة لم تتعلم منها: الربح بعد الرسوم، ومعامل الربح، واستقرار الأرباح شهريًا، وأقصى
+        تراجع، وأسوأ صفقة، ثم نسبة الفوز (وزنها أقل). تدخل استراتيجيات المتداولين المحذوفين أيضًا.
+      </Body>
+      {champion ? (
+        <View style={styles.champion}>
+          <Text style={styles.championTitle}>
+            الأفضل الآن: {champion.name} (تقييم {champion.score})
+          </Text>
+          {champion.reasons.map((reason) => (
+            <Body key={reason}>• {reason}</Body>
+          ))}
+          <Row
+            label="تداولها الوهمي المستقل"
+            value={`${champion.paper.trades} من ${champion.paper.needed} صفقة، فوز ${percent(champion.paper.win_rate)}، ${dollars(champion.paper.net_pnl)}`}
+          />
+          <Body color={colors.warn}>
+            غير معتمدة: تحت الاختبار الوهمي، مستقلة عن Sonic، ولا تُستخدم في تداول حقيقي.
+          </Body>
+        </View>
+      ) : (
+        <Body color={colors.warn}>{ranking.no_choice}</Body>
+      )}
+      {ranking.ranked.slice(0, 10).map((item, index) => (
+        <View key={item.model_id} style={styles.rankRow}>
+          <Text style={styles.rankName}>
+            {index + 1}. {item.name}
+            {item.status === 'removed' ? ' (محذوف من القائمة)' : ''} — {item.score}
+          </Text>
+          <Text style={styles.rankLine}>
+            سنويًا {percent(item.result?.yearly_pct)}، معامل الربح {item.result?.profit_factor ?? '—'}، أشهر رابحة{' '}
+            {percent(item.result?.months_positive)}، تراجع {percent(item.result?.max_drawdown)}، فوز{' '}
+            {percent(item.result?.win_rate)}
+          </Text>
+        </View>
+      ))}
+      {ranking.excluded.length ? (
+        <>
+          <Body color={colors.muted}>مستبعدة ({ranking.excluded.length}):</Body>
+          {ranking.excluded.slice(0, 10).map((item) => (
+            <Text key={item.model_id} style={styles.rankLine}>
+              • {item.name}
+              {item.status === 'removed' ? ' (محذوف)' : ''}: {item.why}
+            </Text>
+          ))}
+        </>
+      ) : null}
+    </Card>
   );
 }
 
@@ -146,6 +234,7 @@ export default function TradersScreen() {
   const [notice, setNotice] = useState<{ text: string; color: string } | null>(null);
   const [confirm, setConfirm] = useState<Trader | null>(null);
   const [account, setAccount] = useState<Account | null>(null);
+  const [ranking, setRanking] = useState<Ranking | null>(null);
   const [key, setKey] = useState('');
   const [secret, setSecret] = useState('');
 
@@ -156,6 +245,7 @@ export default function TradersScreen() {
     try {
       setList(await call<Trader[]>('/traders', 'GET'));
       setAccount(await call<Account>('/account', 'GET'));
+      setRanking(await call<Ranking>('/strategies', 'GET'));
     } catch {
       // the status line on the first tab already says when the server is unreachable
     }
@@ -208,7 +298,10 @@ export default function TradersScreen() {
     setConfirm(null);
     try {
       await call(`/traders/${trader.trader_id}?confirm=true`, 'DELETE');
-      setNotice({ text: `حُذف ${trader.name} مع صفقاته واستراتيجيته.`, color: colors.muted });
+      setNotice({
+        text: `حُذف ${trader.name} من القائمة وتوقفت مراقبته. صفقاته واستراتيجياته محفوظة وتدخل في التقييم.`,
+        color: colors.muted,
+      });
       if (open === trader.trader_id) {
         setOpen(null);
         setDetail(null);
@@ -306,6 +399,8 @@ export default function TradersScreen() {
       </Card>
 
       {notice ? <Body color={notice.color}>{notice.text}</Body> : null}
+
+      <Strategies ranking={ranking} />
 
       {list.length === 0 ? (
         <Card>
@@ -438,7 +533,8 @@ export default function TradersScreen() {
           <View style={styles.dialog}>
             <Text style={styles.dialogTitle}>هل أنت متأكد؟</Text>
             <Text style={styles.dialogText}>
-              سيتوقف تتبع {confirm?.name}، وتُحذف صفقاته المحفوظة واستراتيجيته ونتائج تداوله الوهمي نهائيًا.
+              سيُحذف {confirm?.name} من القائمة وتتوقف مراقبته. تبقى صفقاته واستراتيجياته ونتائج اختباراتها
+              محفوظة، وتدخل في تقييم الاستراتيجيات.
             </Text>
             <View style={styles.actions}>
               <Pressable
@@ -489,6 +585,11 @@ const styles = StyleSheet.create({
   tableRow: { flexDirection: 'row', paddingVertical: 4 },
   cell: { flex: 1, color: colors.text, fontSize: 12, textAlign: 'center' },
   first: { flex: 1.8, textAlign: 'right', fontWeight: '700' },
+  champion: { borderWidth: 1, borderColor: colors.gain, borderRadius: 10, padding: 10, gap: 4 },
+  championTitle: { color: colors.gain, fontSize: 15, fontWeight: '700' },
+  rankRow: { borderTopWidth: 1, borderColor: colors.line, paddingVertical: 6 },
+  rankName: { color: colors.text, fontSize: 14, fontWeight: '700' },
+  rankLine: { color: colors.muted, fontSize: 12, lineHeight: 18 },
   backdrop: { flex: 1, backgroundColor: '#000a', justifyContent: 'center', padding: 24 },
   dialog: { backgroundColor: colors.card, borderRadius: 12, padding: 18, gap: 10 },
   dialogTitle: { color: colors.text, fontSize: 18, fontWeight: '700' },

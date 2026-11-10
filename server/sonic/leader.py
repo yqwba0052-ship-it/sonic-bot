@@ -15,10 +15,18 @@ style (sides, trend, RSI zone, risk, holding time), learns an independent rule s
 first 70% of the trades and tests it on the rest of the time span (out of sample) next to
 Sonic's own rules in the same simulator. A learned rule set is a guess at patterns in the
 trader's results, NOT the trader's real strategy. Only traders the owner added are studied.
-Pausing a trader stops its paper trading and keeps everything; deleting it (the app asks
-"are you sure?" first) removes its trades, models and paper trades. Paper trading of the models
-runs in its own table, never sends an order, never touches Sonic's strategy, and no model is
-ever used for real trading.
+Pausing a trader stops its paper trading; deleting it (the app asks "are you sure?" first)
+takes it off the list and stops watching it. Either way its trades, models and test results
+stay saved and keep taking part in the strategy ranking; adding the same trader again brings it
+back. Paper trading runs in its own tables, never sends an order, never touches Sonic's strategy,
+and no model is ever used for real trading.
+
+Ranking (rank()): the latest learned version of every trader's strategy, deleted traders
+included, is scored on its OUT-OF-SAMPLE test only: profit after fees (per year), profit factor,
+share of profitable months, deepest drawdown, worst single trade, and win rate. Strategies with
+too little data, losses, deep drawdowns, big single losses or unstable months are left out, with
+the reason. With 10 or more saved strategies the best one is chosen and paper-traded on its own
+("champion"); it is never used for real trading.
 """
 
 from __future__ import annotations
@@ -96,6 +104,23 @@ CREATE TABLE IF NOT EXISTS trader_models (
     created_ms INTEGER NOT NULL,
     model TEXT,
     report TEXT NOT NULL
+);
+CREATE TABLE IF NOT EXISTS lab_state (key TEXT PRIMARY KEY, value TEXT NOT NULL);
+CREATE TABLE IF NOT EXISTS champion_paper (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    trader_id TEXT NOT NULL,
+    model_id INTEGER NOT NULL,
+    symbol TEXT NOT NULL,
+    side TEXT NOT NULL,
+    entry_price REAL NOT NULL,
+    stop_price REAL NOT NULL,
+    target_price REAL NOT NULL,
+    opened_ms INTEGER NOT NULL,
+    until_ms INTEGER NOT NULL,
+    closed_ms INTEGER,
+    exit_price REAL,
+    ret REAL,
+    reason TEXT
 );
 CREATE TABLE IF NOT EXISTS trader_paper (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -690,7 +715,8 @@ def simulate(kind: str, model: dict[str, Any] | None, series: dict[str, Series],
         if pos["left"] <= EPS:
             trades.append({"symbol": sym, "side": "BUY" if pos["d"] == 1 else "SELL",
                            "opened_ms": pos["opened"], "closed_ms": t + BAR_MS,
-                           "pnl": pos["pnl"], "why": why})
+                           "pnl": pos["pnl"], "why": why,
+                           "share": pos["pnl"] / pos["equity"]})  # of the amount at entry
             del open_[sym]
 
     for t in times:
@@ -739,16 +765,31 @@ def simulate(kind: str, model: dict[str, Any] | None, series: dict[str, Series],
                 continue
             open_[sym] = {"d": d, "entry": entry, "stop": entry - d * stop_dist,
                           "target": entry + d * target_dist, "i": i, "opened": t + BAR_MS,
-                          "left": qty, "scaled": False, "pnl": 0.0}
+                          "left": qty, "scaled": False, "pnl": 0.0, "equity": equity}
         peak = max(peak, equity)
         max_dd = max(max_dd, 1 - equity / peak)
     wins = sum(1 for tr in trades if tr["pnl"] > 0)
+    gross_win = sum(tr["pnl"] for tr in trades if tr["pnl"] > 0)
+    gross_loss = -sum(tr["pnl"] for tr in trades if tr["pnl"] < 0)
+    months: dict[str, float] = {}
+    for tr in trades:
+        key = datetime.fromtimestamp(tr["closed_ms"] / 1000, UTC).strftime("%Y-%m")
+        months[key] = months.get(key, 0.0) + tr["pnl"]
+    days = max((end_ms - start_ms) / 86_400_000, 1)
     return {
         "trades": len(trades), "wins": wins,
         "win_rate": rnd(wins / len(trades)) if trades else None,
         "net_pnl": rnd(equity - CAPITAL, 2),
         "net_pct": rnd(equity / CAPITAL - 1),
+        "yearly_pct": rnd((equity / CAPITAL) ** (365 / days) - 1) if equity > 0 else -1.0,
         "max_drawdown": rnd(max_dd),
+        "profit_factor": rnd(min(gross_win / gross_loss, 10.0), 2) if gross_loss
+        else (10.0 if gross_win else None),
+        "months": len(months),
+        "months_positive": rnd(sum(v > 0 for v in months.values()) / len(months)) if months
+        else None,
+        "worst_trade": rnd(min((tr["share"] for tr in trades), default=0.0)),
+        "days": round(days),
         "open_at_end": len(open_),
     }
 
@@ -766,6 +807,102 @@ def actual(trades: list[dict[str, Any]], start_ms: int, end_ms: int) -> dict[str
         "pnl_reported": rnd(sum(t["pnl"] for t in known), 2) if known else None,
         "pnl_missing": len(window) - len(known),
     }
+
+
+# ---------- ranking every saved strategy (out-of-sample results only)
+
+CHOOSE_FROM = 10  # pick a best strategy only when at least this many are saved
+CHAMPION_PAPER_TRADES = 20  # paper trades the chosen strategy needs before any judgement
+LIMITS = {  # a strategy outside any of these is left out of the choice
+    "min_trades": 20, "min_days": 60, "min_months": 3,
+    "max_drawdown": 0.20, "worst_trade": -0.03, "min_profit_factor": 1.2,
+    "min_months_positive": 0.5,
+}
+WEIGHTS = {"profit": 0.25, "profit_factor": 0.20, "stability": 0.20, "drawdown": 0.20,
+           "win_rate": 0.10, "risk": 0.05}
+
+
+def exclusion(result: dict[str, Any] | None) -> str | None:
+    """Why a tested strategy cannot be chosen (None = eligible). Arabic, for the app."""
+    if not result or result.get("profit_factor", "missing") == "missing":
+        return "اختبار قديم بلا تفاصيل كافية: أعد تحليل المتداول"
+    if result["trades"] < LIMITS["min_trades"] or result.get("days", 0) < LIMITS["min_days"] \
+            or (result.get("months") or 0) < LIMITS["min_months"]:
+        return (f"بيانات غير كافية ({result['trades']} صفقة في {result.get('days', 0)} يوم؛ "
+                f"المطلوب {LIMITS['min_trades']} صفقة و {LIMITS['min_days']} يومًا)")
+    if (result["net_pnl"] or 0) <= 0:
+        return f"خاسرة بعد الرسوم ({result['net_pnl']:+.2f}$)"
+    if (result["max_drawdown"] or 0) > LIMITS["max_drawdown"]:
+        return f"تراجع كبير ({result['max_drawdown'] * 100:.0f}%)"
+    if (result["worst_trade"] or 0) < LIMITS["worst_trade"]:
+        return f"خسارة كبيرة في صفقة واحدة ({result['worst_trade'] * 100:.1f}% من المبلغ)"
+    if (result["profit_factor"] or 0) < LIMITS["min_profit_factor"]:
+        return f"معامل ربح ضعيف ({result['profit_factor']})"
+    if (result["months_positive"] or 0) < LIMITS["min_months_positive"]:
+        return f"أرباح غير مستقرة ({result['months_positive'] * 100:.0f}% فقط من الأشهر رابحة)"
+    return None
+
+
+def score(result: dict[str, Any]) -> tuple[float, dict[str, float]]:
+    """0-100. Sustainable profit and risk control weigh far more than the win rate alone."""
+    parts = {
+        "profit": clamp((result["yearly_pct"] or 0) / 0.5, 0, 1),
+        "profit_factor": clamp(((result["profit_factor"] or 1) - 1) / 1.5, 0, 1),
+        "stability": result["months_positive"] or 0,
+        "drawdown": clamp(1 - (result["max_drawdown"] or 0) / LIMITS["max_drawdown"], 0, 1),
+        "win_rate": result["win_rate"] or 0,
+        "risk": clamp(1 - (result["worst_trade"] or 0) / LIMITS["worst_trade"], 0, 1),
+    }
+    return round(100 * sum(WEIGHTS[k] * v for k, v in parts.items()), 1), parts
+
+
+def reasons(best: dict[str, Any], runner: dict[str, Any] | None) -> list[str]:
+    r = best["result"]
+    out = [
+        f"ربح بعد الرسوم {r['yearly_pct'] * 100:+.0f}% سنويًا في فترة لم يتعلم منها "
+        f"({r['days']} يوم، {r['trades']} صفقة).",
+        f"معامل الربح {r['profit_factor']}: كل دولار خسارة قابله {r['profit_factor']} دولار ربح.",
+        f"{r['months_positive'] * 100:.0f}% من الأشهر رابحة، وأقصى تراجع "
+        f"{r['max_drawdown'] * 100:.0f}%، وأسوأ صفقة {r['worst_trade'] * 100:.1f}% من المبلغ.",
+        f"نسبة الفوز {r['win_rate'] * 100:.0f}% (وزنها 10% فقط من التقييم).",
+    ]
+    if runner:
+        ahead = [label for key, label in (("profit", "الربح"), ("profit_factor", "معامل الربح"),
+                                          ("stability", "الاستقرار"), ("drawdown", "التراجع"),
+                                          ("risk", "إدارة المخاطر"))
+                 if best["parts"][key] > runner["parts"][key]]
+        if ahead:
+            out.append(f"تفوقت على الثانية ({runner['name']}) في: " + "، ".join(ahead) + ".")
+    return out
+
+
+def rank(entries: list[dict[str, Any]]) -> dict[str, Any]:
+    """entries: {trader_id, name, status, model_id, created_ms, result}. Returns the ranking,
+    the excluded strategies with reasons, and the choice (only with CHOOSE_FROM or more)."""
+    ranked, excluded = [], []
+    for entry in entries:
+        why = exclusion(entry["result"])
+        if why:
+            excluded.append({**entry, "why": why})
+            continue
+        value, parts = score(entry["result"])
+        rounded = {k: round(v, 3) for k, v in parts.items()}
+        ranked.append({**entry, "score": value, "parts": rounded})
+    ranked.sort(key=lambda e: (e["score"], e["result"]["yearly_pct"] or 0), reverse=True)
+    choice, why_none = None, None
+    if len(entries) < CHOOSE_FROM:
+        why_none = (f"الاختيار التلقائي يبدأ عند {CHOOSE_FROM} استراتيجيات محفوظة "
+                    f"(عندك {len(entries)}).")
+    elif not ranked:
+        why_none = "لا توجد استراتيجية تجاوزت شروط الربح والاستقرار والمخاطر."
+    else:
+        best = ranked[0]
+        choice = {"trader_id": best["trader_id"], "model_id": best["model_id"],
+                  "name": best["name"], "score": best["score"],
+                  "reasons": reasons(best, ranked[1] if len(ranked) > 1 else None)}
+    return {"total": len(entries), "ranked": ranked, "excluded": excluded, "choice": choice,
+            "no_choice": why_none, "limits": LIMITS, "weights": WEIGHTS,
+            "choose_from": CHOOSE_FROM}
 
 
 # ---------- the lab: traders, data, models, paper trading
@@ -790,7 +927,7 @@ class Lab:
                 "INSERT INTO traders VALUES (?, ?, ?, ?, 'watching', ?, ?)",
                 (trader_id, (name or trader_id)[:60], url, kind, now, now),
             )
-        else:  # adding again resumes watching a paused trader, data and models intact
+        else:  # adding again brings back a paused or deleted trader, data and models intact
             self.db.execute(
                 "UPDATE traders SET status = 'watching', name = COALESCE(NULLIF(?, ''), name), "
                 "url = COALESCE(?, url), changed_ms = ? WHERE trader_id = ?",
@@ -802,28 +939,31 @@ class Lab:
     def set_status(self, trader_id: str, status: str) -> dict[str, Any]:
         if status not in ("watching", "paused"):
             raise ValueError("invalid_status")
-        if self.trader(trader_id) is None:
+        if self.listed(trader_id) is None:
             raise KeyError("unknown_trader")
         self.db.execute("UPDATE traders SET status = ?, changed_ms = ? WHERE trader_id = ?",
                         (status, self.now_ms(), trader_id))
         self.db.commit()
         return self.trader(trader_id) or {}
 
+    def listed(self, trader_id: str) -> dict[str, Any] | None:
+        """The trader if it is on the owner's list (not deleted)."""
+        row = self.trader(trader_id)
+        return row if row and row["status"] != "removed" else None
+
     def trader(self, trader_id: str) -> dict[str, Any] | None:
         row = self.db.execute("SELECT * FROM traders WHERE trader_id = ?", (trader_id,)).fetchone()
         return dict(row) if row else None
 
-    def delete(self, trader_id: str) -> dict[str, int]:
-        """Remove a trader with all its trades, models and paper trades (after the owner
-        confirmed in the app)."""
-        if self.trader(trader_id) is None:
+    def delete(self, trader_id: str) -> dict[str, Any]:
+        """Off the list and no longer watched. Its trades, strategies and test results are kept
+        (they stay in the ranking); adding the trader again brings it back."""
+        if self.listed(trader_id) is None:
             raise KeyError("unknown_trader")
-        counts = {}
-        for table in ("trader_paper", "trader_models", "trader_trades", "traders"):
-            counts[table] = self.db.execute(
-                f"DELETE FROM {table} WHERE trader_id = ?", (trader_id,)).rowcount
+        self.db.execute("UPDATE traders SET status = 'removed', changed_ms = ? WHERE trader_id = ?",
+                        (self.now_ms(), trader_id))
         self.db.commit()
-        return counts
+        return self.trader(trader_id) or {}
 
     def traders(self) -> list[dict[str, Any]]:
         rows = self.db.execute(
@@ -833,6 +973,8 @@ class Lab:
         out = []
         for row in rows:
             item = dict(row)
+            if item["status"] == "removed":
+                continue
             latest = self.latest_model(item["trader_id"])
             item["model"] = None if latest is None else {
                 "id": latest["id"], "created_ms": latest["created_ms"],
@@ -845,7 +987,7 @@ class Lab:
 
     # data
     def import_trades(self, trader_id: str, trades: list[dict[str, Any]], source: str) -> int:
-        if self.trader(trader_id) is None:
+        if self.listed(trader_id) is None:
             raise KeyError("unknown_trader")
         now, added = self.now_ms(), 0
         for t in trades:
@@ -863,7 +1005,7 @@ class Lab:
 
     def move_trades(self, from_id: str, to_id: str, start_ms: int, end_ms: int) -> int:
         """The owner says which trader some synced trades came from (never guessed)."""
-        if self.trader(to_id) is None:
+        if self.listed(to_id) is None:
             raise KeyError("unknown_trader")
         cur = self.db.execute(
             "UPDATE OR IGNORE trader_trades SET trader_id = ? WHERE trader_id = ? "
@@ -953,7 +1095,7 @@ class Lab:
             }
             if report["test"]["days"] < 30:
                 report["notes"].append("فترة الاختبار أقل من شهر: النتائج غير موثوقة بعد.")
-        if self.trader(trader_id) is None:
+        if self.listed(trader_id) is None:
             # deleted while this study was running: keep nothing of it
             raise KeyError("unknown_trader")
         cur = self.db.execute(
@@ -965,13 +1107,57 @@ class Lab:
         report["model"] = model
         return report
 
+    # ranking and the chosen strategy
+    def state(self, key: str, default: Any = None) -> Any:
+        row = self.db.execute("SELECT value FROM lab_state WHERE key = ?", (key,)).fetchone()
+        return json.loads(row["value"]) if row else default
+
+    def put_state(self, key: str, value: Any) -> None:
+        self.db.execute("INSERT INTO lab_state VALUES (?, ?) ON CONFLICT(key) DO UPDATE SET "
+                        "value = excluded.value", (key, json.dumps(value)))
+        self.db.commit()
+
+    def ranking(self) -> dict[str, Any]:
+        """Score the latest learned version of every trader (deleted ones too), and keep the
+        chosen strategy in step: a new best starts a new paper track."""
+        entries = []
+        for row in self.db.execute(
+            "SELECT m.id, m.trader_id, m.created_ms, m.report, t.name, t.status "
+            "FROM trader_models m JOIN traders t ON t.trader_id = m.trader_id "
+            "WHERE m.model IS NOT NULL AND m.id = "
+            "(SELECT MAX(id) FROM trader_models x WHERE x.trader_id = m.trader_id "
+            "AND x.model IS NOT NULL)"
+        ).fetchall():
+            report = json.loads(row["report"])
+            entries.append({"trader_id": row["trader_id"], "name": row["name"],
+                            "status": row["status"], "model_id": row["id"],
+                            "created_ms": row["created_ms"],
+                            "result": (report.get("test") or {}).get("learned"),
+                            "sonic": (report.get("test") or {}).get("sonic")})
+        result = rank(entries)
+        choice = result["choice"]
+        current = self.state("champion")
+        if choice and (current is None or current["model_id"] != choice["model_id"]):
+            self.put_state("champion", {**choice, "since_ms": self.now_ms()})
+        elif choice is None and current is not None:
+            self.put_state("champion", None)
+        champion = self.state("champion")
+        if champion:
+            champion["paper"] = self.paper_summary(champion["model_id"], table="champion_paper",
+                                                   by="model_id")
+            champion["paper"]["needed"] = CHAMPION_PAPER_TRADES
+        result["champion"] = champion
+        return result
+
     # independent paper trading of the latest models
     async def paper_tick(self, bars: Callable[[str], Awaitable[list[Bar]]]) -> None:
         """Once per closed 4h bar: close paper trades that hit stop, target or time, then open
         new ones for watched traders whose model gives a signal on the last closed bar."""
         btc = Series(await bars("BTCUSDT"))
         cache: dict[str, Series] = {}
-        for row in self.db.execute("SELECT * FROM trader_paper WHERE closed_ms IS NULL").fetchall():
+        open_rows = [(table, row) for table in ("trader_paper", "champion_paper")
+                     for row in self.db.execute(f"SELECT * FROM {table} WHERE closed_ms IS NULL")]
+        for table, row in open_rows:
             s = cache.get(row["symbol"]) or Series(await bars(row["symbol"]))
             cache[row["symbol"]] = s
             d = 1 if row["side"] == "BUY" else -1
@@ -989,20 +1175,26 @@ class Lab:
                 if price is not None:
                     ret = d * (price / row["entry_price"] - 1) - COST
                     self.db.execute(
-                        "UPDATE trader_paper SET closed_ms = ?, exit_price = ?, ret = ?, reason = ?"
+                        f"UPDATE {table} SET closed_ms = ?, exit_price = ?, ret = ?, reason = ?"
                         " WHERE id = ?", (s.t[j] + BAR_MS, price, ret, why, row["id"]))
                     break
+        tracks = []
         for trader in self.traders():
-            if trader["status"] != "watching":
-                continue
             latest = self.latest_model(trader["trader_id"])
-            if latest is None or latest["model"] is None:
-                continue
-            model = latest["model"]
+            if trader["status"] == "watching" and latest and latest["model"]:
+                tracks.append(("trader_paper", trader["trader_id"], latest["id"], latest["model"]))
+        champion = self.state("champion")
+        if champion:
+            row = self.db.execute("SELECT model FROM trader_models WHERE id = ?",
+                                  (champion["model_id"],)).fetchone()
+            if row and row["model"]:
+                tracks.append(("champion_paper", champion["trader_id"], champion["model_id"],
+                               json.loads(row["model"])))
+        for table, trader_id, model_id, model in tracks:
             for symbol in model["symbols"]:
                 busy = self.db.execute(
-                    "SELECT 1 FROM trader_paper WHERE trader_id = ? AND symbol = ? AND "
-                    "closed_ms IS NULL", (trader["trader_id"], symbol)).fetchone()
+                    f"SELECT 1 FROM {table} WHERE model_id = ? AND symbol = ? AND "
+                    "closed_ms IS NULL", (model_id, symbol)).fetchone()
                 if busy:
                     continue
                 s = cache.get(symbol) or Series(await bars(symbol))
@@ -1014,17 +1206,17 @@ class Lab:
                 d = 1 if side == "BUY" else -1
                 atr, entry = s.atr[i], s.c[i]
                 self.db.execute(
-                    "INSERT INTO trader_paper (trader_id, model_id, symbol, side, entry_price, "
+                    f"INSERT INTO {table} (trader_id, model_id, symbol, side, entry_price, "
                     "stop_price, target_price, opened_ms, until_ms) VALUES (?,?,?,?,?,?,?,?,?)",
-                    (trader["trader_id"], latest["id"], symbol, side, entry,
+                    (trader_id, model_id, symbol, side, entry,
                      entry - d * model["stop_atr"] * atr, entry + d * model["target_atr"] * atr,
                      s.t[i] + BAR_MS, s.t[i] + BAR_MS + model["max_hold_bars"] * BAR_MS))
         self.db.commit()
 
-    def paper_summary(self, trader_id: str) -> dict[str, Any]:
+    def paper_summary(self, key: Any, table: str = "trader_paper",
+                      by: str = "trader_id") -> dict[str, Any]:
         rows = self.db.execute(
-            "SELECT p.*, m.model FROM trader_paper p JOIN trader_models m ON m.id = p.model_id "
-            "WHERE p.trader_id = ? ORDER BY p.opened_ms", (trader_id,)).fetchall()
+            f"SELECT * FROM {table} WHERE {by} = ? ORDER BY opened_ms", (key,)).fetchall()
         closed = [r for r in rows if r["closed_ms"] is not None]
         equity = peak = CAPITAL
         max_dd = 0.0
