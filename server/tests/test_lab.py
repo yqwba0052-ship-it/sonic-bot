@@ -1,0 +1,306 @@
+"""Learning from traders (leader.py) and the read-only account link (account.py)."""
+
+from __future__ import annotations
+
+import json
+import math
+import random
+import sqlite3
+
+import httpx
+import pytest
+from fastapi.testclient import TestClient
+
+from sonic import account, leader
+from sonic.api import create_app
+from sonic.strategy import BAR_MS, Bar, ema
+from tests.test_system import build
+
+T0 = 1_700_000_000_000 - (1_700_000_000_000 % BAR_MS)
+
+
+def walk(seed: int, n: int = 2600, start: float = 100.0) -> list[Bar]:
+    """Trending random walk: long up and down legs, so EMA crosses happen."""
+    rng = random.Random(seed)
+    price, bars = start, []
+    for i in range(n):
+        drift = 0.004 * math.sin(i / 40)
+        close = price * math.exp(drift + rng.gauss(0, 0.012))
+        high = max(price, close) * (1 + abs(rng.gauss(0, 0.004)))
+        low = min(price, close) * (1 - abs(rng.gauss(0, 0.004)))
+        bars.append(Bar(T0 + i * BAR_MS, price, high, low, close))
+        price = close
+    return bars
+
+
+MARKET = {"BTCUSDT": walk(1, start=30000), "SOLUSDT": walk(2), "XRPUSDT": walk(3, start=0.5)}
+for name in leader.SONIC_SYMBOLS:
+    MARKET.setdefault(name, walk(hash(name) % 1000))
+END = MARKET["BTCUSDT"][-1].t + BAR_MS
+
+
+async def bars_until(symbol: str, interval: str, end_ms: int, limit: int) -> list[Bar]:
+    return [b for b in MARKET[symbol] if b.t < end_ms][-limit:]
+
+
+def trend_trader(symbol: str) -> list[dict]:
+    """A made-up trader: buys when EMA 20 crosses above EMA 100, sells 6 bars later."""
+    bars = MARKET[symbol]
+    closes = [b.c for b in bars]
+    fast, slow = ema(closes, 20), ema(closes, 100)
+    out = []
+    for i in range(400, len(bars) - 7):
+        if fast[i] > slow[i] and fast[i - 1] <= slow[i - 1]:
+            out.append({"symbol": symbol, "side": "BUY", "leverage": 5.0, "qty": 1.0,
+                        "entry_price": bars[i].c, "exit_price": bars[i + 6].c,
+                        "opened_ms": bars[i].t + BAR_MS, "closed_ms": bars[i + 6].t + BAR_MS,
+                        "pnl": bars[i + 6].c - bars[i].c, "fee": None})
+    return out
+
+
+def four_coins() -> list[dict]:
+    return [t for s in ("SOLUSDT", "XRPUSDT", "DOGEUSDT", "ADAUSDT") for t in trend_trader(s)]
+
+
+def lab() -> leader.Lab:
+    db = sqlite3.connect(":memory:")
+    db.row_factory = sqlite3.Row
+    return leader.Lab(db, lambda: END)
+
+
+# ---------- import
+
+def test_template_and_arabic_rows_parse() -> None:
+    parsed = leader.parse_csv(leader.TEMPLATE)
+    assert parsed["format"] == "positions" and len(parsed["trades"]) == 2
+    first = parsed["trades"][0]
+    assert first["side"] == "BUY" and first["symbol"] == "BTCUSDT" and first["leverage"] == 10
+    text = ("العملة,الاتجاه,سعر الدخول,سعر الخروج,وقت الدخول,وقت الخروج\n"
+            "sol,شراء,١٥٠,١٦٠,2026-10-01 08:00,2026-10-02 08:00\n"
+            "XRP/USDT,بيع,0.6,,2026-10-03 08:00,\n"          # still open: skipped
+            "DOGE,sideways,1,2,2026-10-03 08:00,2026-10-04\n")  # unknown side: error
+    parsed = leader.parse_csv(text)
+    assert [t["symbol"] for t in parsed["trades"]] == ["SOLUSDT"]
+    assert parsed["trades"][0]["entry_price"] == 150 and parsed["trades"][0]["pnl"] is None
+    assert parsed["skipped"] == 1 and parsed["errors"] == [[4, "side"]]
+
+
+def test_unknown_columns_are_reported() -> None:
+    parsed = leader.parse_csv("a,b\n1,2\n")
+    assert parsed["trades"] == [] and parsed["errors"][0][1].startswith("unknown_columns")
+
+
+def test_fills_pair_into_positions_including_a_flip() -> None:
+    text = ("Date(UTC),Symbol,Side,Price,Quantity,Fee,Realized Profit\n"
+            "2026-10-01 00:00:00,SOLUSDT,BUY,100,1,0.05,0\n"
+            "2026-10-01 04:00:00,SOLUSDT,BUY,110,1,0.05,0\n"
+            "2026-10-02 00:00:00,SOLUSDT,SELL,120,3,0.15,30\n"   # closes 2, opens a short of 1
+            "2026-10-03 00:00:00,SOLUSDT,BUY,115,1,0.05,5\n")
+    parsed = leader.parse_csv(text)
+    assert parsed["format"] == "fills" and parsed["skipped"] == 0
+    long_, short = parsed["trades"]
+    assert long_["side"] == "BUY" and long_["entry_price"] == pytest.approx(105)
+    assert long_["exit_price"] == 120 and long_["qty"] == 2
+    assert long_["pnl"] == pytest.approx(30)
+    assert short["side"] == "SELL" and short["entry_price"] == 120 and short["exit_price"] == 115
+
+
+def test_trader_ids_from_links() -> None:
+    assert leader.trader_ref(
+        "https://www.binance.com/en/copy-trading/lead-details/4123456789?timeRange=30D"
+    ) == "4123456789"
+    assert leader.trader_ref("https://x.com/a?portfolioId=998877") == "998877"
+    assert leader.trader_ref("abc") == "abc"
+    assert leader.trader_ref("bad id!") is None
+
+
+# ---------- traders: add, pause, delete
+
+def test_add_pause_and_delete_after_confirmation() -> None:
+    lab_ = lab()
+    lab_.add("https://www.binance.com/en/copy-trading/lead-details/4123456789", "Ali")
+    assert lab_.traders()[0]["name"] == "Ali" and lab_.traders()[0]["status"] == "watching"
+    trades = trend_trader("SOLUSDT")
+    assert lab_.import_trades("4123456789", trades, "csv") == len(trades)
+    assert lab_.import_trades("4123456789", trades, "csv") == 0  # duplicates ignored
+    lab_.set_status("4123456789", "paused")
+    assert lab_.trader("4123456789")["status"] == "paused"
+    assert len(lab_.trades("4123456789")) == len(trades)  # pause keeps the data
+    lab_.add("other", "Other")
+    lab_.import_trades("other", trades[:3], "csv")
+    counts = lab_.delete("4123456789")
+    assert counts["trader_trades"] == len(trades) and counts["traders"] == 1
+    assert lab_.trader("4123456789") is None
+    assert len(lab_.trades("other")) == 3  # other traders' data is untouched
+    with pytest.raises(KeyError):
+        lab_.import_trades("4123456789", trades, "csv")  # gone: nothing learned from it
+
+
+# ---------- learning and testing
+
+async def test_study_learns_tests_out_of_sample_and_saves_a_version() -> None:
+    lab_ = lab()
+    lab_.add("trend1", "Trend")
+    trades = four_coins()
+    lab_.import_trades("trend1", trades, "csv")
+    report = await lab_.study("trend1", bars_until)
+    assert report["learn"]["status"] == "ok", report.get("learn")
+    model = report["model"]
+    assert model["sides"] == ["BUY"] and model["trend"] == "with"
+    assert set(model["symbols"]) <= {"SOLUSDT", "XRPUSDT", "DOGEUSDT", "ADAUSDT"}
+    test = report["test"]
+    for key in ("learned", "sonic"):
+        assert {"trades", "win_rate", "net_pnl", "max_drawdown"} <= test[key].keys()
+    assert test["trader"]["trades"] > 0
+    assert report["learn"]["split_ms"] > trades[0]["opened_ms"]
+    assert "ليست استراتيجيته الحقيقية" in report["warning"]
+    assert lab_.latest_model("trend1")["id"] == report["model_id"]
+    await lab_.study("trend1", bars_until)
+    assert len(lab_.models("trend1")) == 2  # every update is a new saved version
+
+
+async def test_too_few_trades_gives_analysis_only() -> None:
+    lab_ = lab()
+    lab_.add("few", "")
+    lab_.import_trades("few", trend_trader("SOLUSDT")[:5], "csv")
+    report = await lab_.study("few", bars_until)
+    assert report["learn"]["status"] == "not_enough_trades" and report["model"] is None
+    assert report["stats"]["usable"] == 5
+
+
+async def test_paper_trading_opens_and_closes_without_orders() -> None:
+    lab_ = lab()
+    lab_.add("trend1", "")
+    lab_.import_trades("trend1", four_coins(), "csv")
+    await lab_.study("trend1", bars_until)
+    model = lab_.latest_model("trend1")["model"]
+    model["rsi"], model["dist"] = [0, 100], [-99, 99]  # make a signal easy to get
+    lab_.db.execute("UPDATE trader_models SET model = ?", (json.dumps(model),))
+    upto = {"n": 2000}
+
+    async def bars(symbol: str) -> list[Bar]:
+        return MARKET[symbol][: upto["n"]]
+
+    for _ in range(300):
+        await lab_.paper_tick(bars)
+        upto["n"] += 1
+    summary = lab_.paper_summary("trend1")
+    assert summary["trades"] > 0 and summary["win_rate"] is not None
+    lab_.set_status("trend1", "paused")
+    before = lab_.db.execute("SELECT COUNT(*) FROM trader_paper").fetchone()[0]
+    for _ in range(50):
+        await lab_.paper_tick(bars)
+        upto["n"] += 1
+    after = lab_.db.execute("SELECT COUNT(*) FROM trader_paper").fetchone()[0]
+    assert after == before  # a paused trader opens no new paper trades
+
+
+# ---------- read-only account link
+
+def test_only_a_read_only_key_passes() -> None:
+    assert account.read_only_problems({"enableReading": True, "ipRestrict": True,
+                                       "enableFutures": False}) == []
+    assert account.read_only_problems({"enableReading": True, "enableFutures": True,
+                                       "enableWithdrawals": True}) == [
+        "enableFutures", "enableWithdrawals"]
+    assert account.read_only_problems({"enableReading": False}) == ["enableReading_off"]
+
+
+def mock_binance(permissions: dict, seen: list) -> httpx.MockTransport:
+    def handler(request: httpx.Request) -> httpx.Response:
+        seen.append((request.method, request.url.host, request.url.path))
+        if request.url.path == "/sapi/v1/account/apiRestrictions":
+            return httpx.Response(200, json=permissions)
+        if request.url.path == "/fapi/v1/income":
+            return httpx.Response(200, json=[{"symbol": "SOLUSDT", "incomeType": "REALIZED_PNL"}])
+        if request.url.path == "/fapi/v1/userTrades":
+            start = int(request.url.params["startTime"])
+            if start > END - 8 * 86_400_000:
+                return httpx.Response(200, json=[
+                    {"symbol": "SOLUSDT", "side": "BUY", "price": "100", "qty": "1",
+                     "realizedPnl": "0", "commission": "0.05", "commissionAsset": "USDT",
+                     "time": END - 3 * 86_400_000},
+                    {"symbol": "SOLUSDT", "side": "SELL", "price": "104", "qty": "1",
+                     "realizedPnl": "4", "commission": "0.05", "commissionAsset": "USDT",
+                     "time": END - 2 * 86_400_000}])
+            return httpx.Response(200, json=[])
+        return httpx.Response(404)
+    return httpx.MockTransport(handler)
+
+
+def test_api_refuses_a_trading_key_and_syncs_a_read_only_one(monkeypatch) -> None:
+    engine, _, _, clock = build()
+    clock.now = END / 1000
+    seen: list = []
+    key = {"key": "k" * 20, "secret": "s" * 20}
+    headers = {"Authorization": "Bearer secret"}
+    with TestClient(create_app(engine, "secret", background=False)) as client:
+        monkeypatch.setattr(account, "transport", lambda: mock_binance(
+            {"enableReading": True, "enableFutures": True}, seen))
+        refused = client.put("/account", json=key, headers=headers)
+        assert refused.status_code == 422
+        assert refused.json()["detail"]["permissions"] == ["enableFutures"]
+        assert client.get("/account", headers=headers).json()["linked"] is False
+        monkeypatch.setattr(account, "transport", lambda: mock_binance(
+            {"enableReading": True, "enableFutures": False, "enableWithdrawals": False}, seen))
+        linked = client.put("/account", json=key, headers=headers).json()
+        assert linked["linked"] and linked["key_hint"].endswith("kkkk")
+        assert "secret" not in json.dumps(linked)
+        synced = client.post("/account/sync", json={}, headers=headers).json()
+        assert synced["trader_id"] == leader.ACCOUNT_ID and synced["added"] == 1
+        trade = engine.lab.trades(leader.ACCOUNT_ID)[0]
+        assert trade["entry_price"] == 100 and trade["exit_price"] == 104 and trade["pnl"] == 4
+    assert {method for method, _, _ in seen} == {"GET"}
+    assert {(host, path) for _, host, path in seen} <= {
+        ("api.binance.com", "/sapi/v1/account/apiRestrictions"),
+        ("fapi.binance.com", "/fapi/v1/income"), ("fapi.binance.com", "/fapi/v1/userTrades")}
+
+
+def test_reader_cannot_call_any_other_path() -> None:
+    reader = account.AccountReader("k" * 20, "s" * 20)
+
+    async def call() -> None:
+        async with httpx.AsyncClient() as client:
+            await reader._get(client, account.FUTURES, "/fapi/v1/order", {})
+
+    import asyncio
+
+    with pytest.raises(PermissionError):
+        asyncio.run(call())
+
+
+def test_traders_api_add_import_and_confirmed_delete() -> None:
+    engine, _, _, _ = build()
+    headers = {"Authorization": "Bearer secret"}
+    with TestClient(create_app(engine, "secret", background=False)) as client:
+        added = client.post("/traders", json={"ref": "", "name": "Abu Fahad"}, headers=headers)
+        assert added.status_code == 200 and added.json()["trader_id"] == "Abu-Fahad"
+        bad = client.post("/traders", json={"ref": "!!", "name": ""}, headers=headers)
+        assert bad.status_code == 422
+        imported = client.post("/traders/Abu-Fahad/import", json={"csv": leader.TEMPLATE},
+                               headers=headers).json()
+        assert imported["added"] == 2 and imported["format"] == "positions"
+        assert client.get("/traders/Abu-Fahad", headers=headers).json()["trades"] == 2
+        assert client.put("/traders/Abu-Fahad", json={"status": "paused"},
+                          headers=headers).json()["status"] == "paused"
+        assert client.delete("/traders/Abu-Fahad", headers=headers).status_code == 428
+        assert client.get("/traders", headers=headers).json()[0]["trades"] == 2
+        done = client.delete("/traders/Abu-Fahad?confirm=true", headers=headers).json()
+        assert done["deleted"]["trader_trades"] == 2
+        assert client.get("/traders", headers=headers).json() == []
+        assert client.get("/traders/template.csv", headers=headers).text.startswith("symbol,")
+
+
+async def test_a_study_finishing_after_delete_saves_nothing() -> None:
+    lab_ = lab()
+    lab_.add("gone", "")
+    lab_.import_trades("gone", four_coins(), "csv")
+
+    async def slow_bars(symbol: str, interval: str, end_ms: int, limit: int) -> list[Bar]:
+        if lab_.trader("gone") is not None and symbol == "BTCUSDT":
+            lab_.delete("gone")  # the owner deletes while the study is still reading prices
+        return await bars_until(symbol, interval, end_ms, limit)
+
+    with pytest.raises(KeyError):
+        await lab_.study("gone", slow_bars)
+    assert lab_.db.execute("SELECT COUNT(*) FROM trader_models").fetchone()[0] == 0

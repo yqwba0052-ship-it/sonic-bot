@@ -31,7 +31,7 @@ type Bot = {
   online: boolean;
   error: string;
   connect: (connection: Connection, place: Place) => Promise<void>;
-  call: <T>(path: string, method?: string, body?: unknown) => Promise<T>;
+  call: <T>(path: string, method?: string, body?: unknown, timeoutMs?: number) => Promise<T>;
   refresh: () => Promise<void>;
 };
 
@@ -116,10 +116,10 @@ export function BotProvider({ children }: { children: ReactNode }) {
   );
 
   const call = useCallback(
-    async <T,>(path: string, method = 'POST', body?: unknown) => {
+    async <T,>(path: string, method = 'POST', body?: unknown, timeoutMs?: number) => {
       const active = current.current;
       if (!active) throw new ApiError('not_connected', 0);
-      const result = await request<T>(active, path, { method, body });
+      const result = await request<T>(active, path, { method, body, timeoutMs });
       await refresh();
       return result;
     },

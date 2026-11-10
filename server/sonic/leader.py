@@ -1,0 +1,1041 @@
+"""Learn from other traders' closed trades and test what was learned. Paper only.
+
+Access (checked 2026-11-11 on developers.binance.com): the official copy-trading API has two
+endpoints, both about the CALLER's own lead-trader account (userStatus, leadSymbol). No official
+endpoint returns another lead trader's positions, or a follower's copy trades and the lead
+trader they came from. The public lead pages run on internal, undocumented endpoints, which this
+module does not use. Trades therefore come from:
+- CSV import (one closed position per row, see TEMPLATE; or single fills, paired here), and
+- the owner's own futures history through a READ-ONLY key (account.py). Binance does not say
+  which lead trader a copied trade came from, so those trades are only attributed to a trader
+  when the owner says so.
+
+Per trader it stores the trades, links each one to public 4-hour market data, describes the
+style (sides, trend, RSI zone, risk, holding time), learns an independent rule set from the
+first 70% of the trades and tests it on the rest of the time span (out of sample) next to
+Sonic's own rules in the same simulator. A learned rule set is a guess at patterns in the
+trader's results, NOT the trader's real strategy. Only traders the owner added are studied.
+Pausing a trader stops its paper trading and keeps everything; deleting it (the app asks
+"are you sure?" first) removes its trades, models and paper trades. Paper trading of the models
+runs in its own table, never sends an order, never touches Sonic's strategy, and no model is
+ever used for real trading.
+"""
+
+from __future__ import annotations
+
+import bisect
+import csv
+import io
+import json
+import math
+import re
+import sqlite3
+from collections import Counter
+from collections.abc import Awaitable, Callable
+from datetime import UTC, datetime
+from typing import Any
+
+from . import strategy
+from .strategy import Bar
+
+BAR_MS = strategy.BAR_MS
+INTERVAL = strategy.INTERVAL
+WARMUP = 300  # 4h bars before a trade so the indicators have settled
+FEE = 0.0005  # taker fee per side
+SLIP = 0.0002  # slippage per side
+COST = 2 * (FEE + SLIP)  # round trip, as a share of the price
+TRAIN_SHARE = 0.7
+MIN_TRADES = 20  # fewer usable closed trades than this is too little to learn from
+MAX_PAGES = 12  # 1500 bars a page: about 8 years of 4h bars
+CAPITAL = 30.0
+RISK = 0.01
+MAX_OPEN = 3
+SONIC_SYMBOLS = ("SOLUSDT", "XRPUSDT", "DOGEUSDT", "ADAUSDT", "SUIUSDT", "TRXUSDT",
+                 "BNBUSDT", "AVAXUSDT")
+TRADER_ID = re.compile(r"^[A-Za-z0-9_-]{3,40}$")
+SYMBOL = re.compile(r"^[A-Z0-9]{2,20}USDT$")
+ACCOUNT_ID = "my-account"  # owner's own synced trades not yet attributed to a trader
+EPS = 1e-12
+
+TEMPLATE = (
+    "symbol,side,leverage,qty,entry_price,exit_price,opened_at,closed_at,pnl,fee\n"
+    "BTCUSDT,long,10,0.002,67000,68200,2026-10-01 08:00,2026-10-02 14:30,2.40,0.13\n"
+    "ETHUSDT,short,5,0.05,2600,2550,2026-10-03 12:15,2026-10-03 20:00,2.50,0.13\n"
+)
+
+SCHEMA = """
+CREATE TABLE IF NOT EXISTS traders (
+    trader_id TEXT PRIMARY KEY,
+    name TEXT NOT NULL,
+    url TEXT,
+    kind TEXT NOT NULL,
+    status TEXT NOT NULL,
+    added_ms INTEGER NOT NULL,
+    changed_ms INTEGER NOT NULL
+);
+CREATE TABLE IF NOT EXISTS trader_trades (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    trader_id TEXT NOT NULL,
+    symbol TEXT NOT NULL,
+    side TEXT NOT NULL,
+    leverage REAL,
+    qty REAL,
+    entry_price REAL NOT NULL,
+    exit_price REAL NOT NULL,
+    opened_ms INTEGER NOT NULL,
+    closed_ms INTEGER NOT NULL,
+    pnl REAL,
+    fee REAL,
+    source TEXT NOT NULL,
+    imported_ms INTEGER NOT NULL,
+    UNIQUE (trader_id, symbol, side, opened_ms, entry_price)
+);
+CREATE TABLE IF NOT EXISTS trader_models (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    trader_id TEXT NOT NULL,
+    created_ms INTEGER NOT NULL,
+    model TEXT,
+    report TEXT NOT NULL
+);
+CREATE TABLE IF NOT EXISTS trader_paper (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    trader_id TEXT NOT NULL,
+    model_id INTEGER NOT NULL,
+    symbol TEXT NOT NULL,
+    side TEXT NOT NULL,
+    entry_price REAL NOT NULL,
+    stop_price REAL NOT NULL,
+    target_price REAL NOT NULL,
+    opened_ms INTEGER NOT NULL,
+    until_ms INTEGER NOT NULL,
+    closed_ms INTEGER,
+    exit_price REAL,
+    ret REAL,
+    reason TEXT
+);
+"""
+
+BarsUntil = Callable[[str, str, int, int], Awaitable[list[Bar]]]
+
+
+# ---------- small helpers
+
+def pct(values: list[float], q: float) -> float:
+    """Linear percentile, q in 0..1 (nan when empty)."""
+    data = sorted(values)
+    if not data:
+        return math.nan
+    pos = (len(data) - 1) * q
+    low, high = math.floor(pos), math.ceil(pos)
+    return data[low] + (data[high] - data[low]) * (pos - low)
+
+
+def median(values: list[float]) -> float:
+    return pct(values, 0.5)
+
+
+def share(flags: list[bool]) -> float | None:
+    return sum(flags) / len(flags) if flags else None
+
+
+def clamp(value: float, low: float, high: float) -> float:
+    return max(low, min(high, value))
+
+
+def rnd(value: float | None, places: int = 4) -> float | None:
+    return None if value is None or (isinstance(value, float) and math.isnan(value)) \
+        else round(value, places)
+
+
+DIGITS = str.maketrans("٠١٢٣٤٥٦٧٨٩", "0123456789")
+
+
+def number(text: str) -> float | None:
+    text = text.translate(DIGITS).strip().replace(",", "")
+    text = re.sub(r"(?i)usdt|x$|%", "", text).strip()
+    if not text or text in {"-", "--"}:
+        return None
+    try:
+        return float(text)
+    except ValueError:
+        return None
+
+
+TIME_FORMATS = ("%Y-%m-%d %H:%M:%S", "%Y-%m-%d %H:%M", "%Y/%m/%d %H:%M:%S", "%Y/%m/%d %H:%M",
+                "%d/%m/%Y %H:%M:%S", "%d/%m/%Y %H:%M", "%Y-%m-%d")
+
+
+def moment(text: str) -> int | None:
+    """Milliseconds, UTC. Epoch seconds or ms, ISO, or common date-time forms (taken as UTC)."""
+    text = text.translate(DIGITS).strip()
+    if not text:
+        return None
+    if re.fullmatch(r"\d{9,13}", text):
+        value = int(text)
+        return value if value > 10**11 else value * 1000
+    when = None
+    try:
+        when = datetime.fromisoformat(text.replace("Z", "+00:00"))
+    except ValueError:
+        for form in TIME_FORMATS:
+            try:
+                when = datetime.strptime(text, form)
+                break
+            except ValueError:
+                continue
+    if when is None:
+        return None
+    if when.tzinfo is None:
+        when = when.replace(tzinfo=UTC)
+    return int(when.timestamp() * 1000)
+
+
+def symbol_of(text: str) -> str | None:
+    value = re.sub(r"(?i)perp(etual)?|[\s/\-_:.]", "", text.translate(DIGITS)).upper()
+    if value and not value.endswith("USDT") and re.fullmatch(r"[A-Z0-9]{2,15}", value):
+        value += "USDT"
+    return value if SYMBOL.fullmatch(value) else None
+
+
+def side_of(text: str) -> str | None:
+    value = text.strip().lower()
+    if any(word in value for word in ("long", "buy", "شراء", "لونج")):
+        return "BUY"
+    if any(word in value for word in ("short", "sell", "بيع", "شورت")):
+        return "SELL"
+    return None
+
+
+def trader_ref(text: str) -> str | None:
+    """A lead trader id from a Binance link (.../lead-details/<id>, ?portfolioId=<id>) or the
+    id itself. Only the text is read; the link is never opened."""
+    text = text.strip()
+    patterns = (r"lead-details/([A-Za-z0-9_-]{3,40})", r"[?&]portfolioId=([A-Za-z0-9_-]{3,40})")
+    for pattern in patterns:
+        found = re.search(pattern, text)
+        if found:
+            return found.group(1)
+    return text if TRADER_ID.fullmatch(text) else None
+
+
+# ---------- CSV import
+
+ALIASES = {
+    "symbol": ("symbol", "pair", "contract", "coin", "العملة", "الرمز", "الزوج"),
+    "side": ("side", "direction", "position side", "position", "الاتجاه", "النوع"),
+    "leverage": ("leverage", "lev", "الرافعة"),
+    "qty": ("qty", "quantity", "size", "position size", "max open interest", "amount",
+            "الكمية", "الحجم"),
+    "entry_price": ("entry_price", "entry price", "entry", "open price", "avg entry price",
+                    "سعر الدخول"),
+    "exit_price": ("exit_price", "exit price", "close price", "closing price",
+                   "avg close price", "سعر الخروج"),
+    "opened_at": ("opened_at", "opened at", "open time", "opened", "entry time", "وقت الدخول"),
+    "closed_at": ("closed_at", "closed at", "close time", "closed", "exit time", "وقت الخروج"),
+    "pnl": ("pnl", "realized pnl", "closed pnl", "realized profit", "profit", "الربح"),
+    "fee": ("fee", "fees", "commission", "الرسوم", "العمولة"),
+    "time": ("date(utc)", "date (utc)", "date", "time", "datetime", "التاريخ", "الوقت"),
+    "price": ("price", "السعر"),
+}
+
+
+def _columns(header: list[str]) -> dict[str, int]:
+    clean = [re.sub(r"\s+", " ", h.replace("﻿", "")).strip().lower() for h in header]
+    found: dict[str, int] = {}
+    for key, names in ALIASES.items():
+        for index, name in enumerate(clean):
+            if name in names and index not in found.values():
+                found[key] = index
+                break
+    return found
+
+
+def _cell(row: list[str], cols: dict[str, int], key: str) -> str:
+    index = cols.get(key)
+    return row[index] if index is not None and index < len(row) else ""
+
+
+def parse_csv(text: str) -> dict[str, Any]:
+    """{'trades': [...], 'errors': [[row, code]], 'skipped': open positions, 'format': ...}.
+    Missing values stay missing (None); nothing is guessed."""
+    rows = list(csv.reader(io.StringIO(text.strip())))
+    if len(rows) < 2:
+        return {"trades": [], "errors": [[1, "empty"]], "skipped": 0, "format": None}
+    cols = _columns(rows[0])
+    position_keys = {"symbol", "side", "entry_price", "exit_price", "opened_at", "closed_at"}
+    fill_keys = {"symbol", "side", "price", "qty", "time"}
+    if position_keys <= cols.keys():
+        return {**_positions(rows[1:], cols), "format": "positions"}
+    if fill_keys <= cols.keys():
+        return {**pair_fills(_fill_rows(rows[1:], cols), "pnl" in cols), "format": "fills"}
+    missing = sorted(position_keys - cols.keys())
+    return {"trades": [], "errors": [[1, "unknown_columns:" + ",".join(missing)]],
+            "skipped": 0, "format": None}
+
+
+def _positions(rows: list[list[str]], cols: dict[str, int]) -> dict[str, Any]:
+    trades: list[dict[str, Any]] = []
+    errors: list[list[Any]] = []
+    skipped = 0
+    for line, row in enumerate(rows, start=2):
+        if not any(cell.strip() for cell in row):
+            continue
+        symbol = symbol_of(_cell(row, cols, "symbol"))
+        side = side_of(_cell(row, cols, "side"))
+        entry = number(_cell(row, cols, "entry_price"))
+        exit_ = number(_cell(row, cols, "exit_price"))
+        opened = moment(_cell(row, cols, "opened_at"))
+        closed = moment(_cell(row, cols, "closed_at"))
+        if exit_ is None and closed is None and symbol and side and entry and opened:
+            skipped += 1  # still open: nothing to learn from yet
+            continue
+        problem = (
+            "symbol" if symbol is None else "side" if side is None
+            else "entry_price" if not entry or entry <= 0
+            else "exit_price" if not exit_ or exit_ <= 0
+            else "opened_at" if opened is None
+            else "closed_at" if closed is None or closed < opened
+            else ""
+        )
+        if problem:
+            errors.append([line, problem])
+            continue
+        trades.append({
+            "symbol": symbol, "side": side,
+            "leverage": number(_cell(row, cols, "leverage")),
+            "qty": number(_cell(row, cols, "qty")),
+            "entry_price": entry, "exit_price": exit_,
+            "opened_ms": opened, "closed_ms": closed,
+            "pnl": number(_cell(row, cols, "pnl")),
+            "fee": number(_cell(row, cols, "fee")),
+        })
+    return {"trades": trades, "errors": errors, "skipped": skipped}
+
+
+def _fill_rows(rows: list[list[str]], cols: dict[str, int]) -> dict[str, Any]:
+    fills, errors = [], []
+    for line, row in enumerate(rows, start=2):
+        if not any(cell.strip() for cell in row):
+            continue
+        symbol = symbol_of(_cell(row, cols, "symbol"))
+        side = side_of(_cell(row, cols, "side"))
+        price = number(_cell(row, cols, "price"))
+        qty = number(_cell(row, cols, "qty"))
+        at = moment(_cell(row, cols, "time"))
+        if not symbol or not side or not price or not qty or at is None:
+            errors.append([line, "fill"])
+            continue
+        fills.append({"at": at, "symbol": symbol, "side": side, "price": price, "qty": abs(qty),
+                      "pnl": number(_cell(row, cols, "pnl")) or 0.0,
+                      "fee": abs(number(_cell(row, cols, "fee")) or 0.0)})
+    return {"fills": fills, "errors": errors}
+
+
+def pair_fills(parsed: dict[str, Any], has_pnl: bool) -> dict[str, Any]:
+    """Pair single fills into closed positions: a position opens when the net size leaves zero
+    and closes when it returns to zero; a flip closes one position and opens the next."""
+    books: dict[str, dict[str, float | str | int]] = {}
+    trades: list[dict[str, Any]] = []
+    for fill in sorted(parsed["fills"], key=lambda f: f["at"]):
+        symbol, side, price = fill["symbol"], fill["side"], fill["price"]
+        left, pnl, fee = fill["qty"], fill["pnl"], fill["fee"]
+        while left > EPS:
+            book = books.get(symbol)
+            if book is None:
+                book = books[symbol] = {"side": side, "size": 0.0, "in_value": 0.0, "in_size": 0.0,
+                                        "out_value": 0.0, "out_size": 0.0, "opened": fill["at"],
+                                        "pnl": 0.0, "fee": 0.0}
+            if side == book["side"]:
+                book["size"] += left
+                book["in_value"] += left * price
+                book["in_size"] += left
+                book["pnl"] += pnl
+                book["fee"] += fee
+                left = 0.0
+                continue
+            used = min(left, book["size"])
+            part = used / left
+            book["out_value"] += used * price
+            book["out_size"] += used
+            book["size"] -= used
+            book["pnl"] += pnl  # realized profit belongs to the closing part only
+            book["fee"] += fee * part
+            pnl, fee, left = 0.0, fee * (1 - part), left - used
+            if book["size"] <= EPS:
+                trades.append({
+                    "symbol": symbol, "side": book["side"], "leverage": None,
+                    "qty": book["in_size"],
+                    "entry_price": book["in_value"] / book["in_size"],
+                    "exit_price": book["out_value"] / book["out_size"],
+                    "opened_ms": book["opened"], "closed_ms": fill["at"],
+                    "pnl": book["pnl"] if has_pnl else None,
+                    "fee": book["fee"] or None,
+                })
+                del books[symbol]
+    return {"trades": trades, "errors": parsed["errors"], "skipped": len(books)}
+
+
+# ---------- indicators on 4h bars
+
+def rsi_series(closes: list[float], period: int = 14) -> list[float]:
+    out = [50.0] * len(closes)
+    gain = loss = 0.0
+    for i in range(1, len(closes)):
+        change = closes[i] - closes[i - 1]
+        up, down = max(change, 0.0), max(-change, 0.0)
+        if i <= period:
+            gain += up / period
+            loss += down / period
+            if i < period:
+                continue
+        else:
+            gain = (gain * (period - 1) + up) / period
+            loss = (loss * (period - 1) + down) / period
+        out[i] = 100.0 if loss == 0 else 100 - 100 / (1 + gain / loss)
+    return out
+
+
+def atr_series(bars: list[Bar], period: int = strategy.ATR_PERIOD) -> list[float]:
+    out = [0.0] * len(bars)
+    value = 0.0
+    for i in range(1, len(bars)):
+        prev, bar = bars[i - 1], bars[i]
+        item = max(bar.h - bar.low, abs(bar.h - prev.c), abs(bar.low - prev.c))
+        if i <= period:
+            value += item / period
+        else:
+            value = (value * (period - 1) + item) / period
+        out[i] = value if i >= period else 0.0
+    return out
+
+
+class Series:
+    """One symbol's 4h bars with every indicator the lab needs, computed once."""
+
+    def __init__(self, bars: list[Bar]) -> None:
+        self.bars = bars
+        self.t = [b.t for b in bars]
+        self.h = [b.h for b in bars]
+        self.low = [b.low for b in bars]
+        self.c = [b.c for b in bars]
+        closes = self.c or [0.0]
+        self.fast = strategy.ema(closes, strategy.FAST)
+        self.slow = strategy.ema(closes, strategy.SLOW)
+        self.long = strategy.ema(closes, strategy.COIN_TREND_PERIOD)
+        self.regime = strategy.ema(closes, strategy.REGIME_PERIOD)
+        self.rsi = rsi_series(self.c)
+        self.atr = atr_series(bars)
+        self.age = [0] * len(bars)  # bars since EMA 20 last crossed EMA 100
+        for i in range(1, len(bars)):
+            same = (self.fast[i] > self.slow[i]) == (self.fast[i - 1] > self.slow[i - 1])
+            self.age[i] = min(self.age[i - 1] + 1, 500) if same else 0
+        self.at = {t: i for i, t in enumerate(self.t)}
+
+    def closed_before(self, ms: int) -> int:
+        """Index of the last bar that had closed by `ms` (-1 if none)."""
+        return bisect.bisect_right(self.t, ms - BAR_MS) - 1
+
+    def holding(self, ms: int) -> int:
+        """Index of the bar that contains `ms`."""
+        return bisect.bisect_right(self.t, ms) - 1
+
+    def btc_up(self, ms: int) -> bool | None:
+        i = self.closed_before(ms)
+        return None if i < WARMUP else self.c[i] > self.regime[i]
+
+
+async def history(bars_until: BarsUntil, symbol: str, start_ms: int, end_ms: int) -> list[Bar]:
+    """Closed 4h bars from start_ms to end_ms, paging back 1500 bars at a time."""
+    out: list[Bar] = []
+    end = end_ms
+    for _ in range(MAX_PAGES):
+        page = await bars_until(symbol, INTERVAL, end, 1500)
+        page = [b for b in page if b.t < end and (not out or b.t < out[0].t)]
+        if not page:
+            break
+        out = page + out
+        if page[0].t <= start_ms:
+            break
+        end = page[0].t
+    return [b for b in out if b.t + BAR_MS <= end_ms]
+
+
+# ---------- per-trade market context
+
+def context(trade: dict[str, Any], s: Series, btc: Series) -> dict[str, Any] | None:
+    """The market around one trade, from bars that had closed before it opened. None when
+    there is not enough history before the trade."""
+    opened, closed = trade["opened_ms"], trade["closed_ms"]
+    i = s.closed_before(opened)
+    if i < WARMUP or not s.atr[i]:
+        return None
+    d = 1 if trade["side"] == "BUY" else -1
+    close, atr = s.c[i], s.atr[i]
+    atr_pct = atr / close
+    j0, j1 = max(i + 1, s.holding(opened)), max(i + 1, s.holding(closed))
+    if j0 >= len(s.t):
+        return None
+    high, low = max(s.h[j0:j1 + 1]), min(s.low[j0:j1 + 1])
+    entry, exit_ = trade["entry_price"], trade["exit_price"]
+    mfe = (high / entry - 1) if d == 1 else (1 - low / entry)
+    mae = (1 - low / entry) if d == 1 else (high / entry - 1)
+    ret = d * (exit_ / entry - 1)
+    btc_up = btc.btc_up(opened)
+    return {
+        "side": trade["side"], "symbol": trade["symbol"], "opened_ms": opened,
+        "win": (trade["pnl"] > 0) if trade.get("pnl") is not None else ret > 0,
+        "ret": ret, "ret_atr": ret / atr_pct,
+        "aligned": (s.fast[i] > s.slow[i]) == (d == 1),
+        "rsi_side": s.rsi[i] if d == 1 else 100 - s.rsi[i],
+        "dist_side": d * (close - s.fast[i]) / atr,
+        "age": s.age[i],
+        "atr_pct": atr_pct,
+        "btc_with": None if btc_up is None else btc_up == (d == 1),
+        "hour": datetime.fromtimestamp(opened / 1000, UTC).hour,
+        "hold_bars": (closed - opened) / BAR_MS,
+        "mfe_atr": max(mfe, 0.0) / atr_pct, "mae_atr": max(mae, 0.0) / atr_pct,
+        "leverage": trade.get("leverage"),
+    }
+
+
+# ---------- style analysis
+
+def describe(trades: list[dict[str, Any]], rows: list[dict[str, Any]]) -> dict[str, Any]:
+    """The trader's style in numbers plus plain-language findings (Arabic, for the app)."""
+    wins = [r for r in rows if r["win"]]
+    losses = [r for r in rows if not r["win"]]
+    aligned = [r for r in rows if r["aligned"]]
+    against = [r for r in rows if not r["aligned"]]
+    btc_known = [r for r in rows if r["btc_with"] is not None]
+    levs = [t["leverage"] for t in trades if t.get("leverage")]
+    by_symbol = Counter(r["symbol"] for r in rows)
+    hours = Counter(r["hour"] for r in rows)
+    stats = {
+        "trades": len(trades), "usable": len(rows),
+        "win_rate": rnd(share([r["win"] for r in rows])),
+        "long_share": rnd(share([r["side"] == "BUY" for r in rows])),
+        "hold_hours_median": rnd(median([r["hold_bars"] * 4 for r in rows]), 1),
+        "leverage_median": rnd(median(levs), 1) if levs else None,
+        "leverage_max": max(levs) if levs else None,
+        "symbols": [[sym, n, rnd(share([r["win"] for r in rows if r["symbol"] == sym]), 3)]
+                    for sym, n in by_symbol.most_common(6)],
+        "aligned_share": rnd(share([r["aligned"] for r in rows])),
+        "win_rate_aligned": rnd(share([r["win"] for r in aligned])),
+        "win_rate_against": rnd(share([r["win"] for r in against])),
+        "btc_with_share": rnd(share([r["btc_with"] for r in btc_known])),
+        "rsi_median": rnd(median([r["rsi_side"] for r in rows]), 1),
+        "busy_hours_utc": [h for h, _ in hours.most_common(3)],
+        "avg_win_pct": rnd(median([r["ret"] * 100 for r in wins]), 2),
+        "avg_loss_pct": rnd(median([r["ret"] * 100 for r in losses]), 2),
+        "winner_mae_atr_p80": rnd(pct([r["mae_atr"] for r in wins], 0.8), 2),
+        "loser_mae_atr_median": rnd(median([r["mae_atr"] for r in losses]), 2),
+        "fields_missing": sorted({key for t in trades for key in ("leverage", "qty", "pnl", "fee")
+                                  if t.get(key) is None}),
+    }
+    notes: list[str] = []
+    if stats["long_share"] is not None:
+        notes.append(f"{stats['long_share'] * 100:.0f}% من صفقاته شراء و "
+                     f"{(1 - stats['long_share']) * 100:.0f}% بيع.")
+    if stats["aligned_share"] is not None:
+        kind = "مع الاتجاه" if stats["aligned_share"] >= 0.6 else (
+            "عكس الاتجاه" if stats["aligned_share"] <= 0.4 else "مع الاتجاه وعكسه")
+        notes.append(f"يدخل غالبًا {kind} ({stats['aligned_share'] * 100:.0f}% مع اتجاه "
+                     "المتوسطين 20/100).")
+    if stats["hold_hours_median"] is not None:
+        notes.append(f"متوسط مدة الصفقة {stats['hold_hours_median']:.0f} ساعة.")
+    if stats["avg_win_pct"] is not None and stats["avg_loss_pct"] is not None:
+        notes.append(f"الربح المعتاد {stats['avg_win_pct']:+.2f}% والخسارة المعتادة "
+                     f"{stats['avg_loss_pct']:+.2f}% من السعر.")
+    if stats["winner_mae_atr_p80"] is not None:
+        notes.append(f"صفقاته الرابحة تحمّلت عكسها حتى {stats['winner_mae_atr_p80']:.1f} ATR "
+                     "قبل أن تربح: وقفه الفعلي واسع بهذا القدر تقريبًا.")
+    if stats["leverage_median"]:
+        notes.append(f"الرافعة المعتادة ×{stats['leverage_median']:g} وأعلاها "
+                     f"×{stats['leverage_max']:g}.")
+    if stats["fields_missing"]:
+        notes.append("بيانات غير متوفرة في السجل ولم تُخمَّن: " + "، ".join(stats["fields_missing"])
+                     + ".")
+    return {"stats": stats, "notes": notes}
+
+
+# ---------- learning an independent rule set
+
+def learn(rows: list[dict[str, Any]], trades: list[dict[str, Any]],
+          q: float = 0.15) -> dict[str, Any]:
+    """Rules from the trader's training trades. Context only from closed bars, so the same rules
+    can be run on any market data later. A guess at patterns, not the trader's own method."""
+    n = len(rows)
+    sides = [s for s in ("BUY", "SELL")
+             if sum(r["side"] == s for r in rows) >= max(3, 0.2 * n)]
+    aligned = share([r["aligned"] for r in rows]) or 0.5
+    trend = "with" if aligned >= 0.65 else "against" if aligned <= 0.35 else "any"
+    btc_rule = {}
+    for s in sides:
+        known = [r["btc_with"] for r in rows if r["side"] == s and r["btc_with"] is not None]
+        btc_rule[s] = bool(known) and (share(known) or 0) >= 0.75
+    wins = [r for r in rows if r["win"]]
+    stop_atr = clamp(pct([r["mae_atr"] for r in wins], 0.8) * 1.1, 0.5, 6.0) if wins else 2.5
+    target_atr = clamp(median([r["ret_atr"] for r in wins]), 0.3, 10.0) if wins else 1.0
+    symbols = [sym for sym, count in Counter(r["symbol"] for r in rows).most_common(10)
+               if count >= 2] or sorted({r["symbol"] for r in rows})[:10]
+    levs = [t["leverage"] for t in trades if t.get("leverage")]
+    return {
+        "sides": sides or ["BUY"],
+        "trend": trend,
+        "btc": btc_rule,
+        "rsi": [rnd(pct([r["rsi_side"] for r in rows], q), 1),
+                rnd(pct([r["rsi_side"] for r in rows], 1 - q), 1)],
+        "dist": [rnd(pct([r["dist_side"] for r in rows], q), 2),
+                 rnd(pct([r["dist_side"] for r in rows], 1 - q), 2)],
+        "age": [math.floor(pct([r["age"] for r in rows], q)),
+                math.ceil(pct([r["age"] for r in rows], 1 - q))],
+        "stop_atr": rnd(stop_atr, 2),
+        "target_atr": rnd(target_atr, 2),
+        "max_hold_bars": int(clamp(math.ceil(pct([r["hold_bars"] for r in rows], 0.9)), 1, 240)),
+        "symbols": symbols,
+        "leverage": clamp(median(levs) if levs else 3, 1, 5),
+        "trained_on": n,
+    }
+
+
+def fit(rows: list[dict[str, Any]], trades: list[dict[str, Any]], series: dict[str, Series],
+        btc: Series, start_ms: int, end_ms: int) -> dict[str, Any]:
+    """Tune the learned rules on the TRAINING period only:
+    1. entry band width: the one whose number of signals is closest to the trader's own number
+       of trades (a rule set that trades far more often is not the same style);
+    2. exits: the stop / target / holding time that left the most profit after fees, among a
+       small grid that includes the trader-like exits. A high win rate alone is not enough:
+       a tiny target with a wide stop wins often and still loses money."""
+    goal = len(rows)
+    best, best_gap = None, math.inf
+    for q in (0.1, 0.2, 0.3):
+        model = learn(rows, trades, q)
+        count = simulate("learned", model, series, btc, start_ms, end_ms)["trades"]
+        gap = abs(math.log((count + 1) / (goal + 1)))
+        if gap < best_gap:
+            best, best_gap, signals, best_q = model, gap, count, q
+    assert best is not None
+    described = {k: best[k] for k in ("stop_atr", "target_atr", "max_hold_bars")}
+    holds = sorted({best["max_hold_bars"],
+                    int(clamp(math.ceil(median([r["hold_bars"] for r in rows])), 1, 240))})
+    candidates = [described] + [
+        {"stop_atr": stop, "target_atr": target, "max_hold_bars": hold}
+        for stop in (1.0, 1.5, 2.0, 2.5, 3.0) for target in (0.5, 1.0, 1.5, 2.0, 3.0)
+        for hold in holds
+    ]
+    scored = []
+    for exits in candidates:
+        result = simulate("learned", {**best, **exits}, series, btc, start_ms, end_ms)
+        scored.append((result["net_pnl"] or 0, result["win_rate"] or 0, exits, result))
+    scored.sort(key=lambda item: (item[0], item[1]), reverse=True)
+    _, _, exits, result = scored[0]
+    return {**best, **exits, "described_exits": described, "fit": {
+        "band_q": best_q,
+        "train_signals": signals, "trader_train_trades": goal,
+        "train_net_pnl": result["net_pnl"], "train_win_rate": result["win_rate"],
+    }}
+
+
+def setup(model: dict[str, Any], s: Series, btc: Series, i: int, side: str) -> bool:
+    if i < WARMUP or not s.atr[i]:
+        return False
+    d = 1 if side == "BUY" else -1
+    up = s.fast[i] > s.slow[i]
+    if model["trend"] == "with" and up != (d == 1):
+        return False
+    if model["trend"] == "against" and up == (d == 1):
+        return False
+    if model["btc"].get(side):
+        btc_up = btc.btc_up(s.t[i] + BAR_MS)
+        if btc_up is None or btc_up != (d == 1):
+            return False
+    rsi = s.rsi[i] if d == 1 else 100 - s.rsi[i]
+    dist = d * (s.c[i] - s.fast[i]) / s.atr[i]
+    age = model.get("age") or [0, 10**9]
+    return (model["rsi"][0] <= rsi <= model["rsi"][1]
+            and model["dist"][0] <= dist <= model["dist"][1]
+            and age[0] <= s.age[i] <= age[1])
+
+
+def model_signal(model: dict[str, Any], s: Series, btc: Series, i: int) -> str | None:
+    """A side when its setup appears on bar i (true now, not on the bar before)."""
+    for side in model["sides"]:
+        if setup(model, s, btc, i, side) and not setup(model, s, btc, i - 1, side):
+            return side
+    return None
+
+
+# ---------- one simulator for every rule set (learned or Sonic's), same fees and sizing
+
+def simulate(kind: str, model: dict[str, Any] | None, series: dict[str, Series], btc: Series,
+             start_ms: int, end_ms: int) -> dict[str, Any]:
+    """$30, 1% risk per trade, at most 3 open trades, fees and slippage on both sides.
+    kind "learned": stop/target/max hold from the model. kind "sonic": Sonic's live rules
+    (EMA 20/100 cross, BTC above EMA 300, coin above EMA 200, stop 2.5 ATR, half profit at
+    0.20R then stop to entry, exit on cross back or after 240 bars). Within a bar the stop is
+    assumed to come first (conservative)."""
+    equity = peak = CAPITAL
+    max_dd = 0.0
+    trades: list[dict[str, Any]] = []
+    open_: dict[str, dict[str, Any]] = {}
+    times = sorted({t for s in series.values() for t in s.t if start_ms <= t < end_ms})
+    leverage = (model or {}).get("leverage", 3)
+
+    def close(sym: str, pos: dict[str, Any], price: float, qty: float, t: int, why: str) -> None:
+        nonlocal equity
+        pnl = pos["d"] * (price - pos["entry"]) * qty - (pos["entry"] + price) * qty * (FEE + SLIP)
+        equity += pnl
+        pos["pnl"] += pnl
+        pos["left"] -= qty
+        if pos["left"] <= EPS:
+            trades.append({"symbol": sym, "side": "BUY" if pos["d"] == 1 else "SELL",
+                           "opened_ms": pos["opened"], "closed_ms": t + BAR_MS,
+                           "pnl": pos["pnl"], "why": why})
+            del open_[sym]
+
+    for t in times:
+        for sym, s in series.items():
+            j = s.at.get(t)
+            pos = open_.get(sym)
+            if j is None or pos is None or j <= pos["i"]:
+                continue
+            d, hi, lo = pos["d"], s.h[j], s.low[j]
+            hit_stop = lo <= pos["stop"] if d == 1 else hi >= pos["stop"]
+            hit_target = hi >= pos["target"] if d == 1 else lo <= pos["target"]
+            if hit_stop:
+                close(sym, pos, pos["stop"], pos["left"], t, "stop")
+            elif kind == "learned":
+                if hit_target:
+                    close(sym, pos, pos["target"], pos["left"], t, "target")
+                elif j - pos["i"] >= model["max_hold_bars"]:
+                    close(sym, pos, s.c[j], pos["left"], t, "time")
+            else:
+                if hit_target and not pos["scaled"]:
+                    pos["scaled"] = True
+                    close(sym, pos, pos["target"], pos["left"] / 2, t, "half")
+                    pos["stop"] = pos["entry"]
+                turned = s.fast[j] < s.slow[j]
+                if sym in open_ and (turned or j - pos["i"] >= strategy.MAX_HOLD_BARS):
+                    close(sym, pos, s.c[j], pos["left"], t, "exit")
+        for sym, s in series.items():
+            i = s.at.get(t)
+            if i is None or sym in open_ or len(open_) >= MAX_OPEN or i < WARMUP or not s.atr[i]:
+                continue
+            if kind == "learned":
+                side = model_signal(model, s, btc, i)
+                stop_dist = model["stop_atr"] * s.atr[i]
+                target_dist = model["target_atr"] * s.atr[i]
+            else:
+                crossed = s.fast[i] > s.slow[i] and s.fast[i - 1] <= s.slow[i - 1]
+                side = "BUY" if crossed and btc.btc_up(t + BAR_MS) and s.c[i] > s.long[i] else None
+                stop_dist = strategy.ATR_K * s.atr[i]
+                target_dist = strategy.HALF_AT_R * stop_dist
+            if side is None or stop_dist <= 0:
+                continue
+            d = 1 if side == "BUY" else -1
+            entry = s.c[i]
+            qty = min(equity * RISK / stop_dist, equity * leverage / entry)
+            if qty <= 0:
+                continue
+            open_[sym] = {"d": d, "entry": entry, "stop": entry - d * stop_dist,
+                          "target": entry + d * target_dist, "i": i, "opened": t + BAR_MS,
+                          "left": qty, "scaled": False, "pnl": 0.0}
+        peak = max(peak, equity)
+        max_dd = max(max_dd, 1 - equity / peak)
+    wins = sum(1 for tr in trades if tr["pnl"] > 0)
+    return {
+        "trades": len(trades), "wins": wins,
+        "win_rate": rnd(wins / len(trades)) if trades else None,
+        "net_pnl": rnd(equity - CAPITAL, 2),
+        "net_pct": rnd(equity / CAPITAL - 1),
+        "max_drawdown": rnd(max_dd),
+        "open_at_end": len(open_),
+    }
+
+
+def actual(trades: list[dict[str, Any]], start_ms: int, end_ms: int) -> dict[str, Any]:
+    """The trader's own results in a window, from the imported data only."""
+    window = [t for t in trades if start_ms <= t["opened_ms"] < end_ms]
+    known = [t for t in window if t.get("pnl") is not None]
+    wins = [((t["pnl"] > 0) if t.get("pnl") is not None else
+             (t["exit_price"] - t["entry_price"]) * (1 if t["side"] == "BUY" else -1) > 0)
+            for t in window]
+    return {
+        "trades": len(window),
+        "win_rate": rnd(share(wins)),
+        "pnl_reported": rnd(sum(t["pnl"] for t in known), 2) if known else None,
+        "pnl_missing": len(window) - len(known),
+    }
+
+
+# ---------- the lab: traders, data, models, paper trading
+
+class Lab:
+    def __init__(self, db: sqlite3.Connection, now_ms: Callable[[], int]) -> None:
+        self.db = db
+        self.now_ms = now_ms
+        self.db.executescript(SCHEMA)
+        self.db.commit()
+
+    # traders
+    def add(self, ref: str, name: str = "", kind: str = "lead") -> dict[str, Any]:
+        trader_id = trader_ref(ref)
+        if trader_id is None:
+            raise ValueError("invalid_trader")
+        url = ref.strip() if ref.strip().startswith("http") else None
+        now = self.now_ms()
+        row = self.trader(trader_id)
+        if row is None:
+            self.db.execute(
+                "INSERT INTO traders VALUES (?, ?, ?, ?, 'watching', ?, ?)",
+                (trader_id, (name or trader_id)[:60], url, kind, now, now),
+            )
+        else:  # adding again resumes watching a paused trader, data and models intact
+            self.db.execute(
+                "UPDATE traders SET status = 'watching', name = COALESCE(NULLIF(?, ''), name), "
+                "url = COALESCE(?, url), changed_ms = ? WHERE trader_id = ?",
+                (name[:60], url, now, trader_id),
+            )
+        self.db.commit()
+        return self.trader(trader_id) or {}
+
+    def set_status(self, trader_id: str, status: str) -> dict[str, Any]:
+        if status not in ("watching", "paused"):
+            raise ValueError("invalid_status")
+        if self.trader(trader_id) is None:
+            raise KeyError("unknown_trader")
+        self.db.execute("UPDATE traders SET status = ?, changed_ms = ? WHERE trader_id = ?",
+                        (status, self.now_ms(), trader_id))
+        self.db.commit()
+        return self.trader(trader_id) or {}
+
+    def trader(self, trader_id: str) -> dict[str, Any] | None:
+        row = self.db.execute("SELECT * FROM traders WHERE trader_id = ?", (trader_id,)).fetchone()
+        return dict(row) if row else None
+
+    def delete(self, trader_id: str) -> dict[str, int]:
+        """Remove a trader with all its trades, models and paper trades (after the owner
+        confirmed in the app)."""
+        if self.trader(trader_id) is None:
+            raise KeyError("unknown_trader")
+        counts = {}
+        for table in ("trader_paper", "trader_models", "trader_trades", "traders"):
+            counts[table] = self.db.execute(
+                f"DELETE FROM {table} WHERE trader_id = ?", (trader_id,)).rowcount
+        self.db.commit()
+        return counts
+
+    def traders(self) -> list[dict[str, Any]]:
+        rows = self.db.execute(
+            "SELECT t.*, (SELECT COUNT(*) FROM trader_trades x WHERE x.trader_id = t.trader_id) "
+            "AS trades FROM traders t ORDER BY added_ms"
+        ).fetchall()
+        out = []
+        for row in rows:
+            item = dict(row)
+            latest = self.latest_model(item["trader_id"])
+            item["model"] = None if latest is None else {
+                "id": latest["id"], "created_ms": latest["created_ms"],
+                "learned": latest["model"] is not None,
+                "test": latest["report"].get("test"),
+            }
+            item["paper"] = self.paper_summary(item["trader_id"])
+            out.append(item)
+        return out
+
+    # data
+    def import_trades(self, trader_id: str, trades: list[dict[str, Any]], source: str) -> int:
+        if self.trader(trader_id) is None:
+            raise KeyError("unknown_trader")
+        now, added = self.now_ms(), 0
+        for t in trades:
+            cur = self.db.execute(
+                "INSERT OR IGNORE INTO trader_trades (trader_id, symbol, side, leverage, qty, "
+                "entry_price, exit_price, opened_ms, closed_ms, pnl, fee, source, imported_ms) "
+                "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+                (trader_id, t["symbol"], t["side"], t.get("leverage"), t.get("qty"),
+                 t["entry_price"], t["exit_price"], t["opened_ms"], t["closed_ms"],
+                 t.get("pnl"), t.get("fee"), source, now),
+            )
+            added += cur.rowcount
+        self.db.commit()
+        return added
+
+    def move_trades(self, from_id: str, to_id: str, start_ms: int, end_ms: int) -> int:
+        """The owner says which trader some synced trades came from (never guessed)."""
+        if self.trader(to_id) is None:
+            raise KeyError("unknown_trader")
+        cur = self.db.execute(
+            "UPDATE OR IGNORE trader_trades SET trader_id = ? WHERE trader_id = ? "
+            "AND opened_ms >= ? AND opened_ms < ?", (to_id, from_id, start_ms, end_ms))
+        self.db.commit()
+        return cur.rowcount
+
+    def trades(self, trader_id: str) -> list[dict[str, Any]]:
+        rows = self.db.execute(
+            "SELECT * FROM trader_trades WHERE trader_id = ? ORDER BY opened_ms", (trader_id,))
+        return [dict(row) for row in rows]
+
+    def latest_model(self, trader_id: str) -> dict[str, Any] | None:
+        row = self.db.execute(
+            "SELECT * FROM trader_models WHERE trader_id = ? ORDER BY id DESC LIMIT 1",
+            (trader_id,)).fetchone()
+        if row is None:
+            return None
+        return {"id": row["id"], "created_ms": row["created_ms"],
+                "model": json.loads(row["model"]) if row["model"] else None,
+                "report": json.loads(row["report"])}
+
+    def models(self, trader_id: str) -> list[dict[str, Any]]:
+        rows = self.db.execute(
+            "SELECT id, created_ms, model IS NOT NULL AS learned FROM trader_models "
+            "WHERE trader_id = ? ORDER BY id DESC", (trader_id,))
+        return [dict(row) for row in rows]
+
+    # learning
+    async def study(self, trader_id: str, bars_until: BarsUntil) -> dict[str, Any]:
+        """Analyse, learn on the first 70%, test on the rest, compare, save a new version."""
+        trades = self.trades(trader_id)
+        if not trades:
+            raise ValueError("no_trades")
+        now = self.now_ms()
+        first, last = trades[0]["opened_ms"], max(t["closed_ms"] for t in trades)
+        start = first - (WARMUP + 10) * BAR_MS
+        cache: dict[str, Series] = {}
+
+        async def series_of(symbol: str, begin: int, end: int) -> Series:
+            if symbol not in cache:
+                cache[symbol] = Series(await history(bars_until, symbol, begin, end))
+            return cache[symbol]
+
+        btc = await series_of("BTCUSDT", start, now)
+        rows = []
+        for t in trades:
+            s = await series_of(t["symbol"], start, min(now, last + BAR_MS * 2))
+            row = context(t, s, btc)
+            if row is not None:
+                rows.append(row)
+        report: dict[str, Any] = {
+            "trader_id": trader_id, "made_ms": now, **describe(trades, rows),
+            "data": {"from_ms": first, "to_ms": last, "trades": len(trades),
+                     "usable": len(rows)},
+            "warning": "القواعد المستنتجة تخمين لأنماط في نتائجه، وليست استراتيجيته الحقيقية.",
+        }
+        model = None
+        if len(rows) < MIN_TRADES:
+            report["learn"] = {"status": "not_enough_trades", "need": MIN_TRADES}
+        else:
+            rows.sort(key=lambda r: r["opened_ms"])
+            cut = int(len(rows) * TRAIN_SHARE)
+            split = rows[cut]["opened_ms"]
+            draft = learn(rows[:cut], trades)
+            test_end = min(now, max(last, split + 30 * 86_400_000))
+            for symbol in draft["symbols"]:
+                await series_of(symbol, start, test_end)
+            learned_series = {sym: cache[sym] for sym in draft["symbols"] if cache[sym].t}
+            model = fit(rows[:cut], trades, learned_series, btc, first, split)
+            sonic_start = split - (WARMUP + 10) * BAR_MS
+            sonic_series = {}
+            for symbol in SONIC_SYMBOLS:
+                s = cache.get(symbol) or await series_of(symbol, sonic_start, test_end)
+                if s.t:
+                    sonic_series[symbol] = s
+            report["learn"] = {"status": "ok", "train_trades": cut, "test_trades": len(rows) - cut,
+                               "split_ms": split, "test_end_ms": test_end}
+            report["train"] = {"learned": simulate("learned", model, learned_series, btc,
+                                                   first, split)}
+            report["test"] = {
+                "from_ms": split, "to_ms": test_end,
+                "days": round((test_end - split) / 86_400_000),
+                "learned": simulate("learned", model, learned_series, btc, split, test_end),
+                "sonic": simulate("sonic", None, sonic_series, btc, split, test_end),
+                "trader": actual(trades, split, test_end),
+            }
+            if report["test"]["days"] < 30:
+                report["notes"].append("فترة الاختبار أقل من شهر: النتائج غير موثوقة بعد.")
+        if self.trader(trader_id) is None:
+            # deleted while this study was running: keep nothing of it
+            raise KeyError("unknown_trader")
+        cur = self.db.execute(
+            "INSERT INTO trader_models (trader_id, created_ms, model, report) VALUES (?, ?, ?, ?)",
+            (trader_id, now, json.dumps(model) if model else None, json.dumps(report)),
+        )
+        self.db.commit()
+        report["model_id"] = cur.lastrowid
+        report["model"] = model
+        return report
+
+    # independent paper trading of the latest models
+    async def paper_tick(self, bars: Callable[[str], Awaitable[list[Bar]]]) -> None:
+        """Once per closed 4h bar: close paper trades that hit stop, target or time, then open
+        new ones for watched traders whose model gives a signal on the last closed bar."""
+        btc = Series(await bars("BTCUSDT"))
+        cache: dict[str, Series] = {}
+        for row in self.db.execute("SELECT * FROM trader_paper WHERE closed_ms IS NULL").fetchall():
+            s = cache.get(row["symbol"]) or Series(await bars(row["symbol"]))
+            cache[row["symbol"]] = s
+            d = 1 if row["side"] == "BUY" else -1
+            for j in range(len(s.t)):
+                if s.t[j] < row["opened_ms"]:
+                    continue
+                hi, lo = s.h[j], s.low[j]
+                price, why = None, ""
+                if (lo <= row["stop_price"]) if d == 1 else (hi >= row["stop_price"]):
+                    price, why = row["stop_price"], "stop"
+                elif (hi >= row["target_price"]) if d == 1 else (lo <= row["target_price"]):
+                    price, why = row["target_price"], "target"
+                elif s.t[j] + BAR_MS >= row["until_ms"]:
+                    price, why = s.c[j], "time"
+                if price is not None:
+                    ret = d * (price / row["entry_price"] - 1) - COST
+                    self.db.execute(
+                        "UPDATE trader_paper SET closed_ms = ?, exit_price = ?, ret = ?, reason = ?"
+                        " WHERE id = ?", (s.t[j] + BAR_MS, price, ret, why, row["id"]))
+                    break
+        for trader in self.traders():
+            if trader["status"] != "watching":
+                continue
+            latest = self.latest_model(trader["trader_id"])
+            if latest is None or latest["model"] is None:
+                continue
+            model = latest["model"]
+            for symbol in model["symbols"]:
+                busy = self.db.execute(
+                    "SELECT 1 FROM trader_paper WHERE trader_id = ? AND symbol = ? AND "
+                    "closed_ms IS NULL", (trader["trader_id"], symbol)).fetchone()
+                if busy:
+                    continue
+                s = cache.get(symbol) or Series(await bars(symbol))
+                cache[symbol] = s
+                i = len(s.t) - 1
+                side = model_signal(model, s, btc, i) if i > WARMUP else None
+                if side is None:
+                    continue
+                d = 1 if side == "BUY" else -1
+                atr, entry = s.atr[i], s.c[i]
+                self.db.execute(
+                    "INSERT INTO trader_paper (trader_id, model_id, symbol, side, entry_price, "
+                    "stop_price, target_price, opened_ms, until_ms) VALUES (?,?,?,?,?,?,?,?,?)",
+                    (trader["trader_id"], latest["id"], symbol, side, entry,
+                     entry - d * model["stop_atr"] * atr, entry + d * model["target_atr"] * atr,
+                     s.t[i] + BAR_MS, s.t[i] + BAR_MS + model["max_hold_bars"] * BAR_MS))
+        self.db.commit()
+
+    def paper_summary(self, trader_id: str) -> dict[str, Any]:
+        rows = self.db.execute(
+            "SELECT p.*, m.model FROM trader_paper p JOIN trader_models m ON m.id = p.model_id "
+            "WHERE p.trader_id = ? ORDER BY p.opened_ms", (trader_id,)).fetchall()
+        closed = [r for r in rows if r["closed_ms"] is not None]
+        equity = peak = CAPITAL
+        max_dd = 0.0
+        for r in closed:  # 1% of the amount risked per trade, as in the tests
+            stop_pct = abs(r["entry_price"] - r["stop_price"]) / r["entry_price"]
+            equity *= 1 + RISK * (r["ret"] / stop_pct if stop_pct else 0)
+            peak = max(peak, equity)
+            max_dd = max(max_dd, 1 - equity / peak)
+        wins = sum(1 for r in closed if r["ret"] > 0)
+        return {
+            "open": len(rows) - len(closed), "trades": len(closed),
+            "win_rate": rnd(wins / len(closed)) if closed else None,
+            "net_pnl": rnd(equity - CAPITAL, 2), "max_drawdown": rnd(max_dd),
+        }

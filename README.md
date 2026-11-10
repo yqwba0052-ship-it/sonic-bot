@@ -46,6 +46,29 @@ The app's candle tab replays the bot's trades candle by candle (play, pause, spe
 event) for the bot's own trades now, with the live forming candle, or for the five-year
 engine replay by half-year. See STRATEGY.md.
 
+## Learning from traders (paper only)
+
+The app's "Traders" tab (المتداولون): add any number of traders by name, Binance link or lead
+trader id, import their closed trades, and Sonic learns an independent rule set per trader,
+tests it on the later 30% of the time span (out of sample) next to Sonic's own rules in the
+same simulator ($30, 1% risk, fees and slippage), and paper-trades it in its own table.
+Pause keeps everything; delete asks "are you sure?" and then removes the trader's trades,
+models and paper trades. Nothing here ever places an order or changes Sonic's strategy.
+
+Data access (checked 2026-11-11): Binance's official copy-trading API only serves the caller's
+own lead-trader account; there is no official endpoint for another trader's positions or for
+which lead trader a copied trade came from. Trades therefore come by CSV (`GET
+/traders/template.csv`, or fills paired into positions), or from the owner's own futures history
+through a key that Binance reports as read-only (any trading, transfer or withdrawal permission
+is refused; the client can only GET three fixed paths). Code: `server/sonic/leader.py`,
+`server/sonic/account.py`.
+
+Check on real prices: Sonic's own 224 replay trades imported as a "trader". The lab found
+"buy with the trend while BTC is up, at the first bar after the cross" by itself; out of sample
+(543 days) the learned rules made 65 trades, 78% wins, +$1.02, 5% drawdown, against Sonic's
+65 trades, 77%, +$4.72, 3% in the same simulator. A learned rule set is a guess at patterns in
+a trader's results, not the trader's real strategy.
+
 ## Safety
 
 - **Amount:** a hard total-loss budget. Losing it closes everything and halts the bot.

@@ -11,7 +11,7 @@ from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
 
-from . import awake, chart, journal, risk, strategy
+from . import account, awake, chart, journal, leader, risk, strategy
 from .config import Settings
 from .exchange import Exchange
 from .risk import Limits
@@ -38,6 +38,8 @@ class Engine:
         self.settings = settings
         self.clock = clock
         self.lock = asyncio.Lock()
+        # Learning from traders the owner added: separate tables, paper only (leader.py).
+        self.lab = leader.Lab(store.db, self.now_ms)
         self.failures = 0
         self.failing_since_ms: int | None = None
         self.last_tick_ms = 0
@@ -199,6 +201,7 @@ class Engine:
                 if bar > int(self.store.get("last_bar_ms", 0)):
                     await self._on_bar()
                     self.store.put("last_bar_ms", bar)
+                    await self._lab_tick()
                 if self.failing_since_ms is not None:
                     minutes = (self.now_ms() - self.failing_since_ms) // 60000
                     self.log("info", "connection_restored", f"after {minutes} min")
@@ -288,6 +291,41 @@ class Engine:
 
     async def _bars(self, symbol: str) -> list[strategy.Bar]:
         return await self.exchange.bars(symbol, strategy.INTERVAL, strategy.HISTORY_BARS)
+
+    async def _lab_tick(self) -> None:
+        """Paper-trade the learned models and refresh the owner's synced trades. Never allowed
+        to disturb Sonic: any failure is logged and ignored."""
+        try:
+            await self.lab.paper_tick(
+                lambda symbol: self.exchange.bars(symbol, strategy.INTERVAL, 600))
+            if self.store.get("account_key") and (
+                self.now_ms() - int(self.store.get("account_synced_ms", 0)) >= 6 * 3600 * 1000
+            ):
+                await self.sync_account(None)
+        except Exception as error:  # noqa: BLE001 - the lab must never stop the trading loop
+            self.log("warning", "lab_failed", str(error)[:200])
+
+    async def sync_account(self, trader_id: str | None) -> dict[str, Any]:
+        """Read the owner's own futures fills with the read-only key and store them as closed
+        positions: in the trader the owner chose, or else in the "my-account" bucket."""
+        saved = self.store.get("account_key")
+        if not saved:
+            raise ValueError("no_account_key")
+        target = trader_id or self.store.get("account_target") or leader.ACCOUNT_ID
+        if target == leader.ACCOUNT_ID and self.lab.trader(target) is None:
+            self.lab.add(leader.ACCOUNT_ID, "صفقات حسابي", kind="account")
+        if self.lab.trader(target) is None:
+            raise KeyError("unknown_trader")
+        reader = account.AccountReader(saved["key"], saved["secret"], self.now_ms)
+        since = int(self.store.get("account_synced_ms", 0)) - 7 * DAY_MS
+        fills = await reader.fills(max(since, 0))
+        paired = leader.pair_fills({"fills": fills, "errors": []}, has_pnl=True)
+        added = self.lab.import_trades(target, paired["trades"], "account")
+        self.store.put("account_synced_ms", self.now_ms())
+        self.store.put("account_target", target)
+        self.log("info", "account_synced", f"{added} new trades to {target}")
+        return {"trader_id": target, "fills": len(fills), "added": added,
+                "still_open": paired["skipped"]}
 
     async def _on_bar(self) -> None:
         """Runs once per closed 4-hour bar: exits first, then entries."""

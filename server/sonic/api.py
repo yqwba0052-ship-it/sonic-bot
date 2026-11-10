@@ -10,10 +10,12 @@ from pathlib import Path
 from typing import Annotated, Any
 
 from fastapi import Body, Depends, FastAPI, Header, HTTPException, Query
-from fastapi.responses import FileResponse
+from fastapi import Path as Path_
+from fastapi.responses import FileResponse, PlainTextResponse
 from fastapi.staticfiles import StaticFiles
 from pydantic import ValidationError
 
+from . import account, leader
 from .engine import Engine
 from .risk import ALLOWED_SYMBOLS, Limits
 
@@ -155,6 +157,149 @@ def create_app(engine: Engine, token: str, background: bool = True) -> FastAPI:
         return engine.status()
 
     apk = Path(__file__).resolve().parent.parent / "downloads" / "sonic.apk"
+
+    # ---------- learning from traders the owner added (leader.py), paper only
+
+    trader_path = r"^[A-Za-z0-9_-]{3,40}$"
+
+    def lab_error(error: Exception) -> HTTPException:
+        if isinstance(error, KeyError):
+            return HTTPException(status_code=404, detail="unknown_trader")
+        return HTTPException(status_code=422, detail=str(error))
+
+    @app.get("/traders", dependencies=secured)
+    async def traders() -> list[dict[str, Any]]:
+        return engine.lab.traders()
+
+    @app.get("/traders/template.csv", dependencies=secured, response_class=PlainTextResponse)
+    async def trader_template() -> str:
+        return leader.TEMPLATE
+
+    @app.post("/traders", dependencies=secured)
+    async def add_trader(body: Annotated[dict[str, Any], Body()]) -> dict[str, Any]:
+        ref, name = str(body.get("ref", ""))[:300], str(body.get("name", ""))[:60]
+        if not ref.strip() and name.strip():
+            # added by name only: the name becomes the id (letters, digits, - and _)
+            ref = "-".join(name.split())
+        try:
+            return engine.lab.add(ref, name)
+        except ValueError as error:
+            raise lab_error(error) from error
+
+    @app.get("/traders/{trader_id}", dependencies=secured)
+    async def trader_detail(trader_id: str = Path_(pattern=trader_path)) -> dict[str, Any]:
+        trader = engine.lab.trader(trader_id)
+        if trader is None:
+            raise HTTPException(status_code=404, detail="unknown_trader")
+        trades = engine.lab.trades(trader_id)
+        return {
+            "trader": trader, "trades": len(trades), "recent": trades[-20:][::-1],
+            "latest": engine.lab.latest_model(trader_id),
+            "versions": engine.lab.models(trader_id),
+            "paper": engine.lab.paper_summary(trader_id),
+        }
+
+    @app.put("/traders/{trader_id}", dependencies=secured)
+    async def trader_status(
+        body: Annotated[dict[str, Any], Body()], trader_id: str = Path_(pattern=trader_path)
+    ) -> dict[str, Any]:
+        try:
+            return engine.lab.set_status(trader_id, str(body.get("status")))
+        except (KeyError, ValueError) as error:
+            raise lab_error(error) from error
+
+    @app.delete("/traders/{trader_id}", dependencies=secured)
+    async def delete_trader(
+        trader_id: str = Path_(pattern=trader_path), confirm: bool = Query(default=False)
+    ) -> dict[str, Any]:
+        if not confirm:  # the app sends confirm=true only after "are you sure?" -> OK
+            raise HTTPException(status_code=428, detail="confirm_required")
+        try:
+            return {"deleted": engine.lab.delete(trader_id)}
+        except KeyError as error:
+            raise lab_error(error) from error
+
+    @app.post("/traders/{trader_id}/import", dependencies=secured)
+    async def import_trades(
+        body: Annotated[dict[str, Any], Body()], trader_id: str = Path_(pattern=trader_path)
+    ) -> dict[str, Any]:
+        text = str(body.get("csv", ""))
+        if len(text) > 5_000_000:
+            raise HTTPException(status_code=413, detail="too_large")
+        parsed = leader.parse_csv(text)
+        try:
+            added = engine.lab.import_trades(trader_id, parsed["trades"], "csv")
+        except KeyError as error:
+            raise lab_error(error) from error
+        return {"format": parsed["format"], "read": len(parsed["trades"]), "added": added,
+                "still_open": parsed["skipped"], "errors": parsed["errors"][:50]}
+
+    @app.post("/traders/{trader_id}/study", dependencies=secured)
+    async def study_trader(trader_id: str = Path_(pattern=trader_path)) -> dict[str, Any]:
+        if engine.lab.trader(trader_id) is None:
+            raise HTTPException(status_code=404, detail="unknown_trader")
+        try:
+            return await engine.lab.study(trader_id, engine.exchange.bars_until)
+        except (KeyError, ValueError) as error:
+            raise lab_error(error) from error
+
+    @app.post("/traders/{trader_id}/claim", dependencies=secured)
+    async def claim_trades(
+        body: Annotated[dict[str, Any], Body()], trader_id: str = Path_(pattern=trader_path)
+    ) -> dict[str, Any]:
+        """Move the owner's synced trades in a time range to this trader (owner's statement)."""
+        try:
+            start, end = int(body["from_ms"]), int(body["to_ms"])
+            moved = engine.lab.move_trades(leader.ACCOUNT_ID, trader_id, start, end)
+        except (KeyError, ValueError, TypeError) as error:
+            raise lab_error(error) from error
+        return {"moved": moved}
+
+    @app.get("/account", dependencies=secured)
+    async def account_status() -> dict[str, Any]:
+        saved = engine.store.get("account_key")
+        return {
+            "linked": bool(saved),
+            "key_hint": ("..." + saved["key"][-4:]) if saved else None,
+            "checked_ms": saved.get("checked_ms") if saved else None,
+            "synced_ms": engine.store.get("account_synced_ms"),
+            "target": engine.store.get("account_target"),
+        }
+
+    @app.put("/account", dependencies=secured)
+    async def link_account(body: Annotated[dict[str, Any], Body()]) -> dict[str, Any]:
+        key, secret = str(body.get("key", "")).strip(), str(body.get("secret", "")).strip()
+        if not (16 <= len(key) <= 128 and 16 <= len(secret) <= 128):
+            raise HTTPException(status_code=422, detail="invalid_values")
+        reader = account.AccountReader(key, secret, engine.now_ms)
+        try:
+            await reader.check()
+        except account.NotReadOnly as error:
+            raise HTTPException(status_code=422, detail={
+                "code": "key_not_read_only", "permissions": error.problems}) from error
+        except Exception as error:  # noqa: BLE001 - wrong key, network, region
+            raise HTTPException(status_code=502, detail="key_check_failed") from error
+        engine.store.put("account_key", {"key": key, "secret": secret,
+                                         "checked_ms": engine.now_ms()})
+        engine.log("info", "account_linked", "read-only key " + key[-4:])
+        return await account_status()
+
+    @app.delete("/account", dependencies=secured)
+    async def unlink_account() -> dict[str, Any]:
+        engine.store.put("account_key", None)
+        engine.log("info", "account_unlinked")
+        return await account_status()
+
+    @app.post("/account/sync", dependencies=secured)
+    async def sync_account(body: Annotated[dict[str, Any], Body()]) -> dict[str, Any]:
+        trader_id = body.get("trader_id") or None
+        try:
+            return await engine.sync_account(trader_id)
+        except account.NotReadOnly as error:
+            raise HTTPException(status_code=422, detail={
+                "code": "key_not_read_only", "permissions": error.problems}) from error
+        except (KeyError, ValueError) as error:
+            raise lab_error(error) from error
 
     @app.get("/sonic.apk", include_in_schema=False)
     async def download_apk() -> FileResponse:

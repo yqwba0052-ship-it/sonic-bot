@@ -36,6 +36,7 @@ export default function Layout() {
         <Tabs.Screen name="safety" options={{ title: 'الأمان', tabBarIcon: icon('⛨') }} />
         <Tabs.Screen name="chart" options={{ title: 'الشموع', tabBarIcon: icon('▥') }} />
         <Tabs.Screen name="trades" options={{ title: 'الصفقات', tabBarIcon: icon('☰') }} />
+        <Tabs.Screen name="traders" options={{ title: 'المتداولون', tabBarIcon: icon('♟') }} />
         <Tabs.Screen name="connection" options={{ title: 'الاتصال', tabBarIcon: icon('⇄') }} />
       </Tabs>
     </BotProvider>

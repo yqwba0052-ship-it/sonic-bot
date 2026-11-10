@@ -132,10 +132,10 @@ export class ApiError extends Error {
 export async function request<T>(
   connection: Connection,
   path: string,
-  options: { method?: string; body?: unknown } = {}
+  options: { method?: string; body?: unknown; timeoutMs?: number } = {}
 ): Promise<T> {
   const controller = new AbortController();
-  const timer = setTimeout(() => controller.abort(), 8000);
+  const timer = setTimeout(() => controller.abort(), options.timeoutMs ?? 8000);
   try {
     const response = await fetch(`${connection.url.replace(/\/+$/, '')}${path}`, {
       method: options.method ?? 'GET',
@@ -148,7 +148,12 @@ export async function request<T>(
     });
     const data = await response.json().catch(() => null);
     if (!response.ok) {
-      const detail = typeof data?.detail === 'string' ? data.detail : 'invalid_values';
+      const detail =
+        typeof data?.detail === 'string'
+          ? data.detail
+          : typeof data?.detail?.code === 'string'
+            ? data.detail.code
+            : 'invalid_values';
       throw new ApiError(detail, response.status);
     }
     return data as T;
