@@ -76,22 +76,27 @@ type Ranked = {
     days: number;
   }) | null;
 };
-type Ranking = {
-  total: number;
-  choose_from: number;
+type Best = {
+  trader_id: string;
+  name: string;
+  model_id: number;
+  score: number;
+  reasons: string[];
+  paper?: Result & { open: number; needed: number };
+};
+type Coin = {
+  symbol: string;
+  strategies: number;
+  same_period: boolean;
+  from_ms: number | null;
+  to_ms: number | null;
   ranked: Ranked[];
   excluded: Ranked[];
-  no_choice: string | null;
-  champion: null | {
-    name: string;
-    trader_id: string;
-    model_id: number;
-    score: number;
-    reasons: string[];
-    since_ms: number;
-    paper: Result & { open: number; needed: number };
-  };
+  best: Best | null;
+  approved_model: number | null;
+  better_than_approved: boolean;
 };
+type Ranking = { made_ms: number | null; total: number; coins: Record<string, Coin> };
 type Account = { linked: boolean; key_hint: string | null; synced_ms: number | null; target: string | null };
 
 const STUDY_MS = 180_000;
@@ -122,57 +127,64 @@ function rules(model: Model): string {
 
 function Strategies({ ranking }: { ranking: Ranking | null }) {
   if (!ranking) return null;
-  const champion = ranking.champion;
+  const coins = Object.values(ranking.coins);
   return (
     <Card>
-      <Body>تقييم الاستراتيجيات المحفوظة ({ranking.total})</Body>
+      <Body>أفضل استراتيجية لكل عملة ({ranking.total} استراتيجية محفوظة)</Body>
       <Body color={colors.muted}>
-        يُقيَّم كل استراتيجية على فترة لم تتعلم منها: الربح بعد الرسوم، ومعامل الربح، واستقرار الأرباح شهريًا، وأقصى
-        تراجع، وأسوأ صفقة، ثم نسبة الفوز (وزنها أقل). تدخل استراتيجيات المتداولين المحذوفين أيضًا.
+        إذا تداول متداولان أو أكثر نفس العملة تُقارن استراتيجياتهم على نفس الفترة (فترة لم تتعلم منها أي واحدة). وإذا
+        كانت استراتيجية واحدة فقط تُقيَّم وحدها. المعايير: الربح بعد الرسوم واستقراره شهريًا، ومعامل الربح، وأقصى
+        تراجع، وأسوأ صفقة، ثم نسبة الفوز. تدخل استراتيجيات المتداولين المحذوفين أيضًا، وتُعاد المقارنة بعد كل تحليل
+        وكل يوم.
+        {ranking.made_ms ? ` آخر مقارنة: ${when(ranking.made_ms)}.` : ''}
       </Body>
-      {champion ? (
-        <View style={styles.champion}>
-          <Text style={styles.championTitle}>
-            الأفضل الآن: {champion.name} (تقييم {champion.score})
-          </Text>
-          {champion.reasons.map((reason) => (
-            <Body key={reason}>• {reason}</Body>
-          ))}
-          <Row
-            label="تداولها الوهمي المستقل"
-            value={`${champion.paper.trades} من ${champion.paper.needed} صفقة، فوز ${percent(champion.paper.win_rate)}، ${dollars(champion.paper.net_pnl)}`}
-          />
-          <Body color={colors.warn}>
-            غير معتمدة: تحت الاختبار الوهمي، مستقلة عن Sonic، ولا تُستخدم في تداول حقيقي.
-          </Body>
-        </View>
-      ) : (
-        <Body color={colors.warn}>{ranking.no_choice}</Body>
-      )}
-      {ranking.ranked.slice(0, 10).map((item, index) => (
-        <View key={item.model_id} style={styles.rankRow}>
+      {coins.length === 0 ? <Body color={colors.muted}>لا توجد استراتيجيات محللة بعد.</Body> : null}
+      {coins.map((coin) => (
+        <View key={coin.symbol} style={styles.rankRow}>
           <Text style={styles.rankName}>
-            {index + 1}. {item.name}
-            {item.status === 'removed' ? ' (محذوف من القائمة)' : ''} — {item.score}
+            {coin.symbol.replace('USDT', '')}: {coin.strategies === 1 ? 'استراتيجية واحدة' : `${coin.strategies} استراتيجيات`}
+            {coin.strategies > 1 ? (coin.same_period ? ' — على نفس الفترة' : ' — فترات مختلفة (التداخل قصير)') : ''}
           </Text>
-          <Text style={styles.rankLine}>
-            سنويًا {percent(item.result?.yearly_pct)}، معامل الربح {item.result?.profit_factor ?? '—'}، أشهر رابحة{' '}
-            {percent(item.result?.months_positive)}، تراجع {percent(item.result?.max_drawdown)}، فوز{' '}
-            {percent(item.result?.win_rate)}
-          </Text>
-        </View>
-      ))}
-      {ranking.excluded.length ? (
-        <>
-          <Body color={colors.muted}>مستبعدة ({ranking.excluded.length}):</Body>
-          {ranking.excluded.slice(0, 10).map((item) => (
+          {coin.best ? (
+            <View style={styles.champion}>
+              <Text style={styles.championTitle}>
+                الأفضل: {coin.best.name} (تقييم {coin.best.score})
+              </Text>
+              {coin.best.reasons.map((reason) => (
+                <Text key={reason} style={styles.rankLine}>
+                  • {reason}
+                </Text>
+              ))}
+              {coin.best.paper ? (
+                <Text style={styles.rankLine}>
+                  تداولها الوهمي على هذه العملة: {coin.best.paper.trades} من {coin.best.paper.needed} صفقة، فوز{' '}
+                  {percent(coin.best.paper.win_rate)}، {dollars(coin.best.paper.net_pnl)}
+                </Text>
+              ) : null}
+            </View>
+          ) : (
+            <Text style={styles.rankLine}>لا توجد استراتيجية تجاوزت الشروط على هذه العملة.</Text>
+          )}
+          {coin.better_than_approved ? (
+            <Text style={[styles.rankLine, { color: colors.warn }]}>
+              يوجد أفضل من الاستراتيجية التي اعتمدتها لهذه العملة. لا تُستبدل ولا يتغير مبلغها إلا بموافقتك.
+            </Text>
+          ) : null}
+          {coin.ranked.slice(1).map((item) => (
             <Text key={item.model_id} style={styles.rankLine}>
-              • {item.name}
+              {item.name}
+              {item.status === 'removed' ? ' (محذوف)' : ''}: تقييم {item.score}، صافي {dollars(item.result?.net_pnl)}، معامل
+              الربح {item.result?.profit_factor ?? '—'}
+            </Text>
+          ))}
+          {coin.excluded.map((item) => (
+            <Text key={item.model_id} style={styles.rankLine}>
+              ✗ {item.name}
               {item.status === 'removed' ? ' (محذوف)' : ''}: {item.why}
             </Text>
           ))}
-        </>
-      ) : null}
+        </View>
+      ))}
     </Card>
   );
 }

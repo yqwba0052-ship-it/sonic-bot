@@ -351,36 +351,78 @@ def test_a_high_win_rate_alone_does_not_win() -> None:
     assert steady > lucky
 
 
-def test_choice_needs_ten_strategies_and_keeps_deleted_ones() -> None:
+def hold_trader(symbol: str, hold: int) -> list[dict]:
+    """Same entries as trend_trader, a different exit: the bars held."""
+    out = []
+    for t in trend_trader(symbol):
+        bars = MARKET[symbol]
+        i = next(k for k, b in enumerate(bars) if b.t + BAR_MS == t["opened_ms"])
+        j = min(i + hold, len(bars) - 1)
+        out.append({**t, "exit_price": bars[j].c, "closed_ms": bars[j].t + BAR_MS,
+                    "pnl": bars[j].c - bars[i].c})
+    return out
+
+
+async def test_strategies_on_the_same_coin_are_compared_over_the_same_period() -> None:
     lab_ = lab()
-    for n in range(9):
-        save(lab_, f"tr{n}", outcome(2 + n * 0.1, win=0.95))
-    nine = lab_.ranking()
-    assert nine["choice"] is None and "10" in nine["no_choice"]
-    best_id = save(lab_, "best", outcome(12, dd=0.03, pf=2.5, months_pos=0.9, yearly=0.4, win=0.6))
-    save(lab_, "loser", outcome(-4))
-    lab_.delete("best")  # deleted traders' strategies still count
-    ranked = lab_.ranking()
-    assert ranked["total"] == 11 and ranked["choice"]["model_id"] == best_id
-    assert ranked["champion"]["model_id"] == best_id and ranked["champion"]["reasons"]
-    assert any(e["trader_id"] == "loser" and "خاسرة" in e["why"] for e in ranked["excluded"])
-    newer = save(lab_, "tr0", outcome(30, dd=0.02, pf=3.0, months_pos=1.0, yearly=1.0))
-    again = lab_.ranking()  # new test results: re-ranked, new choice
-    assert again["choice"]["model_id"] == newer
-    assert again["ranked"][0]["trader_id"] == "tr0"
+    lab_.add("aaa", "A")
+    lab_.import_trades("aaa", four_coins(), "csv")
+    lab_.add("bbb", "B")
+    lab_.import_trades("bbb", [t for s in ("SOLUSDT", "DOGEUSDT", "ADAUSDT", "XRPUSDT")
+                               for t in hold_trader(s, 12)], "csv")
+    await lab_.study("aaa", bars_until)
+    await lab_.study("bbb", bars_until)
+    lab_.delete("bbb")  # a deleted trader's strategy still competes
+    state = await lab_.compare_coins(bars_until)
+    shared = [c for c in state["coins"].values() if c["strategies"] == 2]
+    assert shared, state["coins"].keys()
+    coin = shared[0]
+    names = {e["trader_id"] for e in coin["ranked"] + coin["excluded"]}
+    assert names == {"aaa", "bbb"}
+    if coin["same_period"]:
+        windows = {(e["from_ms"], e["to_ms"]) for e in coin["ranked"] + coin["excluded"]}
+        assert len(windows) == 1  # same market for both
+    for e in coin["excluded"]:
+        assert e["why"]  # every strategy left out says why
+    if coin["best"]:
+        assert coin["best"]["reasons"]
+    view = lab_.ranking()
+    assert view["total"] == 2 and view["coins"].keys() == state["coins"].keys()
 
 
-async def test_chosen_strategy_paper_trades_on_its_own() -> None:
+def test_a_single_strategy_is_judged_alone_and_approved_ones_are_kept() -> None:
+    lab_ = lab()
+    good = outcome(12, dd=0.03, pf=2.5, months_pos=0.9, yearly=0.4)
+    alone = leader.rank([{"trader_id": "aaa", "name": "A", "status": "watching",
+                          "model_id": 1, "result": good}])
+    assert alone["best"]["model_id"] == 1 and alone["best"]["reasons"]
+    weak = leader.rank([{"trader_id": "aaa", "name": "A", "status": "watching",
+                         "model_id": 1, "result": outcome(5, trades=4)}])
+    assert weak["best"] is None and "بيانات غير كافية" in weak["excluded"][0]["why"]
+    lab_.put_state("coins", {"made_ms": END, "coins": {"ZECUSDT": {
+        "symbol": "ZECUSDT", "strategies": 2, "same_period": True, "from_ms": 1, "to_ms": 2,
+        "ranked": [], "excluded": [],
+        "best": {"trader_id": "aaa", "model_id": 7, "name": "A", "score": 70, "reasons": []}}}})
+    view = lab_.ranking(approved={"ZECUSDT": 3})
+    zec = view["coins"]["ZECUSDT"]
+    assert zec["approved_model"] == 3 and zec["better_than_approved"] is True
+    same = lab_.ranking(approved={"ZECUSDT": 7})["coins"]["ZECUSDT"]
+    assert same["better_than_approved"] is False
+
+
+async def test_best_per_coin_paper_trades_that_coin_only() -> None:
     lab_ = lab()
     lab_.add("trend1", "")
     lab_.import_trades("trend1", four_coins(), "csv")
     await lab_.study("trend1", bars_until)
-    model = lab_.latest_model("trend1")["model"]
+    latest = lab_.latest_model("trend1")
+    model = latest["model"]
     model["rsi"], model["dist"], model["age"] = [0, 100], [-99, 99], [0, 500]
     lab_.db.execute("UPDATE trader_models SET model = ?", (json.dumps(model),))
-    lab_.delete("trend1")  # its own paper trading stops; the chosen track does not
-    lab_.put_state("champion", {"trader_id": "trend1", "model_id": lab_.latest_model(
-        "trend1")["id"], "name": "trend1", "score": 50, "reasons": []})
+    lab_.delete("trend1")  # its own paper trading stops; the coin's best track does not
+    lab_.put_state("coins", {"made_ms": END, "coins": {"SOLUSDT": {
+        "best": {"trader_id": "trend1", "model_id": latest["id"], "name": "t", "score": 50,
+                 "reasons": []}}}})
     upto = {"n": 2000}
 
     async def bars(symbol: str) -> list[Bar]:
@@ -389,6 +431,6 @@ async def test_chosen_strategy_paper_trades_on_its_own() -> None:
     for _ in range(300):
         await lab_.paper_tick(bars)
         upto["n"] += 1
-    champion = lab_.db.execute("SELECT COUNT(*) FROM champion_paper").fetchone()[0]
-    own = lab_.db.execute("SELECT COUNT(*) FROM trader_paper").fetchone()[0]
-    assert champion > 0 and own == 0
+    symbols = {r[0] for r in lab_.db.execute("SELECT symbol FROM champion_paper")}
+    assert symbols == {"SOLUSDT"}
+    assert lab_.db.execute("SELECT COUNT(*) FROM trader_paper").fetchone()[0] == 0

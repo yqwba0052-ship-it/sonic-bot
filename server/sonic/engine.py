@@ -298,6 +298,10 @@ class Engine:
         try:
             await self.lab.paper_tick(
                 lambda symbol: self.exchange.bars(symbol, strategy.INTERVAL, 600))
+            made = (self.lab.state("coins") or {}).get("made_ms") or 0
+            if self.lab.strategies() and self.now_ms() - made >= DAY_MS:
+                # new prices and paper results: compare the strategies per coin again daily
+                await self.lab.compare_coins(self.exchange.bars_until)
             if self.store.get("account_key") and (
                 self.now_ms() - int(self.store.get("account_synced_ms", 0)) >= 6 * 3600 * 1000
             ):

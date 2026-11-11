@@ -236,8 +236,8 @@ def create_app(engine: Engine, token: str, background: bool = True) -> FastAPI:
 
     @app.get("/strategies", dependencies=secured)
     async def strategies() -> dict[str, Any]:
-        """Every saved strategy scored on its out-of-sample test, deleted traders included,
-        and the chosen one (with 10 or more) with its reasons and its own paper trading."""
+        """The best strategy per coin, compared out of sample over the same period, with
+        reasons; deleted traders' strategies included. Approved ones are never swapped."""
         return engine.lab.ranking()
 
     @app.post("/traders/{trader_id}/study", dependencies=secured)
@@ -248,7 +248,9 @@ def create_app(engine: Engine, token: str, background: bool = True) -> FastAPI:
             report = await engine.lab.study(trader_id, engine.exchange.bars_until)
         except (KeyError, ValueError) as error:
             raise lab_error(error) from error
-        engine.lab.ranking()  # new test results: re-rank and update the chosen strategy
+        # new test results: compare again, coin by coin (a failure here keeps the report)
+        with suppress(Exception):
+            await engine.lab.compare_coins(engine.exchange.bars_until)
         return report
 
     @app.post("/traders/{trader_id}/claim", dependencies=secured)

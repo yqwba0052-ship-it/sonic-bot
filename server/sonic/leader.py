@@ -21,12 +21,15 @@ stay saved and keep taking part in the strategy ranking; adding the same trader 
 back. Paper trading runs in its own tables, never sends an order, never touches Sonic's strategy,
 and no model is ever used for real trading.
 
-Ranking (rank()): the latest learned version of every trader's strategy, deleted traders
-included, is scored on its OUT-OF-SAMPLE test only: profit after fees (per year), profit factor,
-share of profitable months, deepest drawdown, worst single trade, and win rate. Strategies with
-too little data, losses, deep drawdowns, big single losses or unstable months are left out, with
-the reason. With 10 or more saved strategies the best one is chosen and paper-traded on its own
-("champion"); it is never used for real trading.
+Ranking per coin (compare_coins()): the latest learned version of every trader's strategy,
+deleted traders included, is run again on each coin it trades, OUT OF SAMPLE only. When two or
+more strategies trade the same coin they are compared over the same period (the overlap of their
+test periods, so the same market for all); a coin with one strategy is judged on its own. Score:
+profit after fees per year, profit factor, profitable months, deepest drawdown, worst single
+trade, and win rate. Too little data, losses, deep drawdowns, big single losses or unstable
+months leave a strategy out, with the reason. The best per coin is paper-traded on that coin
+("champion" track). It is never used for real trading, and it never replaces a strategy the
+owner approved or changes its money.
 """
 
 from __future__ import annotations
@@ -811,10 +814,10 @@ def actual(trades: list[dict[str, Any]], start_ms: int, end_ms: int) -> dict[str
 
 # ---------- ranking every saved strategy (out-of-sample results only)
 
-CHOOSE_FROM = 10  # pick a best strategy only when at least this many are saved
-CHAMPION_PAPER_TRADES = 20  # paper trades the chosen strategy needs before any judgement
-LIMITS = {  # a strategy outside any of these is left out of the choice
-    "min_trades": 20, "min_days": 60, "min_months": 3,
+CHAMPION_PAPER_TRADES = 20  # paper trades a coin's best strategy needs before any judgement
+COMMON_MIN_DAYS = 60  # shorter overlap: each strategy is judged on its own test period
+LIMITS = {  # a strategy outside any of these is left out of the choice (one coin)
+    "min_trades": 10, "min_days": 60, "min_months": 3,
     "max_drawdown": 0.20, "worst_trade": -0.03, "min_profit_factor": 1.2,
     "min_months_positive": 0.5,
 }
@@ -877,8 +880,8 @@ def reasons(best: dict[str, Any], runner: dict[str, Any] | None) -> list[str]:
 
 
 def rank(entries: list[dict[str, Any]]) -> dict[str, Any]:
-    """entries: {trader_id, name, status, model_id, created_ms, result}. Returns the ranking,
-    the excluded strategies with reasons, and the choice (only with CHOOSE_FROM or more)."""
+    """entries: {trader_id, name, status, model_id, result}. Scores the eligible ones, lists the
+    rest with the reason, and picks the best (alone or against others)."""
     ranked, excluded = [], []
     for entry in entries:
         why = exclusion(entry["result"])
@@ -889,21 +892,13 @@ def rank(entries: list[dict[str, Any]]) -> dict[str, Any]:
         rounded = {k: round(v, 3) for k, v in parts.items()}
         ranked.append({**entry, "score": value, "parts": rounded})
     ranked.sort(key=lambda e: (e["score"], e["result"]["yearly_pct"] or 0), reverse=True)
-    choice, why_none = None, None
-    if len(entries) < CHOOSE_FROM:
-        why_none = (f"الاختيار التلقائي يبدأ عند {CHOOSE_FROM} استراتيجيات محفوظة "
-                    f"(عندك {len(entries)}).")
-    elif not ranked:
-        why_none = "لا توجد استراتيجية تجاوزت شروط الربح والاستقرار والمخاطر."
-    else:
-        best = ranked[0]
-        choice = {"trader_id": best["trader_id"], "model_id": best["model_id"],
-                  "name": best["name"], "score": best["score"],
-                  "reasons": reasons(best, ranked[1] if len(ranked) > 1 else None)}
-    return {"total": len(entries), "ranked": ranked, "excluded": excluded, "choice": choice,
-            "no_choice": why_none, "limits": LIMITS, "weights": WEIGHTS,
-            "choose_from": CHOOSE_FROM}
-
+    best = None
+    if ranked:
+        top = ranked[0]
+        best = {"trader_id": top["trader_id"], "model_id": top["model_id"], "name": top["name"],
+                "score": top["score"],
+                "reasons": reasons(top, ranked[1] if len(ranked) > 1 else None)}
+    return {"ranked": ranked, "excluded": excluded, "best": best}
 
 # ---------- the lab: traders, data, models, paper trading
 
@@ -1117,37 +1112,82 @@ class Lab:
                         "value = excluded.value", (key, json.dumps(value)))
         self.db.commit()
 
-    def ranking(self) -> dict[str, Any]:
-        """Score the latest learned version of every trader (deleted ones too), and keep the
-        chosen strategy in step: a new best starts a new paper track."""
-        entries = []
+    def strategies(self) -> list[dict[str, Any]]:
+        """The latest learned version of every trader's strategy, deleted traders included."""
+        out = []
         for row in self.db.execute(
-            "SELECT m.id, m.trader_id, m.created_ms, m.report, t.name, t.status "
+            "SELECT m.id, m.trader_id, m.created_ms, m.model, m.report, t.name, t.status "
             "FROM trader_models m JOIN traders t ON t.trader_id = m.trader_id "
-            "WHERE m.model IS NOT NULL AND m.id = "
-            "(SELECT MAX(id) FROM trader_models x WHERE x.trader_id = m.trader_id "
-            "AND x.model IS NOT NULL)"
+            "WHERE m.model IS NOT NULL AND m.id = (SELECT MAX(id) FROM trader_models x "
+            "WHERE x.trader_id = m.trader_id AND x.model IS NOT NULL)"
         ).fetchall():
             report = json.loads(row["report"])
-            entries.append({"trader_id": row["trader_id"], "name": row["name"],
-                            "status": row["status"], "model_id": row["id"],
-                            "created_ms": row["created_ms"],
-                            "result": (report.get("test") or {}).get("learned"),
-                            "sonic": (report.get("test") or {}).get("sonic")})
-        result = rank(entries)
-        choice = result["choice"]
-        current = self.state("champion")
-        if choice and (current is None or current["model_id"] != choice["model_id"]):
-            self.put_state("champion", {**choice, "since_ms": self.now_ms()})
-        elif choice is None and current is not None:
-            self.put_state("champion", None)
-        champion = self.state("champion")
-        if champion:
-            champion["paper"] = self.paper_summary(champion["model_id"], table="champion_paper",
-                                                   by="model_id")
-            champion["paper"]["needed"] = CHAMPION_PAPER_TRADES
-        result["champion"] = champion
-        return result
+            test = report.get("test") or {}
+            out.append({"trader_id": row["trader_id"], "name": row["name"],
+                        "status": row["status"], "model_id": row["id"],
+                        "created_ms": row["created_ms"], "model": json.loads(row["model"]),
+                        "from_ms": test.get("from_ms"), "to_ms": test.get("to_ms")})
+        return out
+
+    async def compare_coins(self, bars_until: BarsUntil) -> dict[str, Any]:
+        """Run every saved strategy again on each of its coins, out of sample, and pick the best
+        per coin. Strategies sharing a coin are compared over their common test period."""
+        strategies = [e for e in self.strategies() if e["from_ms"] and e["to_ms"]]
+        coins: dict[str, list[dict[str, Any]]] = {}
+        for entry in strategies:
+            for symbol in entry["model"]["symbols"]:
+                coins.setdefault(symbol, []).append(entry)
+        cache: dict[str, Series] = {}
+        earliest = min((e["from_ms"] for e in strategies), default=self.now_ms())
+        start = earliest - (WARMUP + 10) * BAR_MS
+
+        async def series_of(symbol: str) -> Series:
+            if symbol not in cache:
+                cache[symbol] = Series(await history(bars_until, symbol, start, self.now_ms()))
+            return cache[symbol]
+
+        btc = await series_of("BTCUSDT") if strategies else None
+        result: dict[str, Any] = {}
+        for symbol, entries in sorted(coins.items()):
+            s = await series_of(symbol)
+            if not s.t or btc is None:
+                continue
+            common_from = max(e["from_ms"] for e in entries)
+            common_to = min(e["to_ms"] for e in entries)
+            same = len(entries) > 1 and common_to - common_from >= COMMON_MIN_DAYS * 86_400_000
+            rows = []
+            for entry in entries:
+                begin, end = ((common_from, common_to) if same
+                              else (entry["from_ms"], entry["to_ms"]))
+                outcome = simulate("learned", entry["model"], {symbol: s}, btc, begin, end)
+                rows.append({k: entry[k] for k in ("trader_id", "name", "status", "model_id")}
+                            | {"result": outcome, "from_ms": begin, "to_ms": end})
+            ranked = rank(rows)
+            result[symbol] = {
+                "symbol": symbol, "strategies": len(entries),
+                "same_period": same, "from_ms": common_from if same else None,
+                "to_ms": common_to if same else None, **ranked,
+            }
+        state = {"made_ms": self.now_ms(), "coins": result}
+        self.put_state("coins", state)
+        return state
+
+    def ranking(self, approved: dict[str, int] | None = None) -> dict[str, Any]:
+        """The last per-coin comparison, with each coin's paper track. `approved` maps a coin to
+        the model the owner approved for it: a better one is only flagged, never swapped in."""
+        state = self.state("coins") or {"made_ms": None, "coins": {}}
+        for symbol, coin in state["coins"].items():
+            best = coin.get("best")
+            if best:
+                paper = self.paper_summary(best["model_id"], table="champion_paper", by="model_id",
+                                           symbol=symbol)
+                best["paper"] = {**paper, "needed": CHAMPION_PAPER_TRADES}
+            mine = (approved or {}).get(symbol)
+            coin["approved_model"] = mine
+            coin["better_than_approved"] = bool(best and mine and best["model_id"] != mine)
+        state["total"] = len(self.strategies())
+        state["limits"], state["weights"] = LIMITS, WEIGHTS
+        return state
 
     # independent paper trading of the latest models
     async def paper_tick(self, bars: Callable[[str], Awaitable[list[Bar]]]) -> None:
@@ -1183,13 +1223,15 @@ class Lab:
             latest = self.latest_model(trader["trader_id"])
             if trader["status"] == "watching" and latest and latest["model"]:
                 tracks.append(("trader_paper", trader["trader_id"], latest["id"], latest["model"]))
-        champion = self.state("champion")
-        if champion:
+        for symbol, coin in ((self.state("coins") or {}).get("coins") or {}).items():
+            best = coin.get("best")
+            if not best:
+                continue
             row = self.db.execute("SELECT model FROM trader_models WHERE id = ?",
-                                  (champion["model_id"],)).fetchone()
+                                  (best["model_id"],)).fetchone()
             if row and row["model"]:
-                tracks.append(("champion_paper", champion["trader_id"], champion["model_id"],
-                               json.loads(row["model"])))
+                model = {**json.loads(row["model"]), "symbols": [symbol]}
+                tracks.append(("champion_paper", best["trader_id"], best["model_id"], model))
         for table, trader_id, model_id, model in tracks:
             for symbol in model["symbols"]:
                 busy = self.db.execute(
@@ -1213,10 +1255,11 @@ class Lab:
                      s.t[i] + BAR_MS, s.t[i] + BAR_MS + model["max_hold_bars"] * BAR_MS))
         self.db.commit()
 
-    def paper_summary(self, key: Any, table: str = "trader_paper",
-                      by: str = "trader_id") -> dict[str, Any]:
+    def paper_summary(self, key: Any, table: str = "trader_paper", by: str = "trader_id",
+                      symbol: str | None = None) -> dict[str, Any]:
         rows = self.db.execute(
-            f"SELECT * FROM {table} WHERE {by} = ? ORDER BY opened_ms", (key,)).fetchall()
+            f"SELECT * FROM {table} WHERE {by} = ? AND (? IS NULL OR symbol = ?) "
+            "ORDER BY opened_ms", (key, symbol, symbol)).fetchall()
         closed = [r for r in rows if r["closed_ms"] is not None]
         equity = peak = CAPITAL
         max_dd = 0.0
@@ -1226,8 +1269,11 @@ class Lab:
             peak = max(peak, equity)
             max_dd = max(max_dd, 1 - equity / peak)
         wins = sum(1 for r in closed if r["ret"] > 0)
+        gain = sum(r["ret"] for r in closed if r["ret"] > 0)
+        loss = -sum(r["ret"] for r in closed if r["ret"] < 0)
         return {
             "open": len(rows) - len(closed), "trades": len(closed),
             "win_rate": rnd(wins / len(closed)) if closed else None,
             "net_pnl": rnd(equity - CAPITAL, 2), "max_drawdown": rnd(max_dd),
+            "profit_factor": rnd(min(gain / loss, 10.0), 2) if loss else (10.0 if gain else None),
         }

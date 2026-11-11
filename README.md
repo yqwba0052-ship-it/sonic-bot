@@ -55,13 +55,17 @@ same simulator ($30, 1% risk, fees and slippage), and paper-trades it in its own
 Pause stops a trader's paper trading; delete asks "are you sure?" and then takes the trader
 off the list and stops watching it, while its trades, strategies and test results stay saved.
 
-Every saved strategy (the latest learned version per trader, deleted traders included) is
-scored on its out-of-sample test: profit after fees per year, profit factor, share of profitable
-months, deepest drawdown, worst single trade and win rate (`GET /strategies`). Strategies with
-too little data, losses, big drawdowns or single losses, or unstable months are left out with
-the reason. With 10 or more saved strategies the best is chosen automatically, with its
-reasons, re-chosen when new test results arrive, and paper-traded on its own (it needs 20 paper
-trades before any judgement). Nothing here ever places an order or changes Sonic's strategy.
+Strategies are compared per coin (`GET /strategies`): the latest learned version of every
+trader's strategy, deleted traders included, is run again on each of its coins, out of sample.
+When two or more trade the same coin they are compared over the same period (the overlap of
+their test periods); a coin with one strategy is judged on its own. Score: profit after fees per
+year, profit factor, profitable months, deepest drawdown, worst single trade and win rate.
+Too little data (under 10 trades, 60 days or 3 months on that coin), losses, drawdowns over 20%,
+single losses over 3%, profit factor under 1.2 or under half the months profitable leave a
+strategy out, with the reason. The comparison reruns after every study and daily; the best per
+coin is paper-traded on that coin. A better strategy never replaces one the owner approved or
+changes its money without the owner. Nothing here ever places an order or changes Sonic's
+strategy.
 
 Data access (checked 2026-11-11): Binance's official copy-trading API only serves the caller's
 own lead-trader account; there is no official endpoint for another trader's positions or for
