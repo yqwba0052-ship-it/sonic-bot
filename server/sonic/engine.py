@@ -11,7 +11,7 @@ from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
 
-from . import account, awake, chart, journal, leader, risk, strategy
+from . import account, awake, capital, chart, journal, leader, risk, strategy
 from .config import Settings
 from .exchange import Exchange
 from .risk import Limits
@@ -40,6 +40,9 @@ class Engine:
         self.lock = asyncio.Lock()
         # Learning from traders the owner added: separate tables, paper only (leader.py).
         self.lab = leader.Lab(store.db, self.now_ms)
+        # Money for approved strategies: approve, allocate and activate are separate steps.
+        self.capital = capital.Capital(store.db, self.lab, self.now_ms)
+        self.strategy_clients: dict[str, Any] = {}
         self.failures = 0
         self.failing_since_ms: int | None = None
         self.last_tick_ms = 0
@@ -308,6 +311,25 @@ class Engine:
                 await self.sync_account(None)
         except Exception as error:  # noqa: BLE001 - the lab must never stop the trading loop
             self.log("warning", "lab_failed", str(error)[:200])
+        try:
+            await self.capital.tick(
+                self.strategy_client,
+                lambda symbol: self.exchange.bars(symbol, strategy.INTERVAL, 600), self.log)
+        except Exception as error:  # noqa: BLE001 - logged loudly, Sonic carries on
+            self.log("critical", "strategies_failed", str(error)[:200])
+
+    async def strategy_client(self, mode: str) -> Any:
+        """Signed client for approved strategies: Binance Demo, or real futures only when the
+        server switch allows it. Uses the owner's trading key (futures only)."""
+        saved = self.store.get("trade_key")
+        if not saved:
+            raise ValueError("no_trade_key")
+        if mode not in self.strategy_clients:
+            client = capital.demo_or_real_client(mode, saved["key"], saved["secret"],
+                                                 capital.live_allowed())
+            await client.sync_time()
+            self.strategy_clients[mode] = client
+        return self.strategy_clients[mode]
 
     async def sync_account(self, trader_id: str | None) -> dict[str, Any]:
         """Read the owner's own futures fills with the read-only key and store them as closed

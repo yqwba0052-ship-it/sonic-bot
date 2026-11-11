@@ -279,6 +279,9 @@ def test_traders_api_add_import_and_confirmed_delete() -> None:
     with TestClient(create_app(engine, "secret", background=False)) as client:
         added = client.post("/traders", json={"ref": "", "name": "Abu Fahad"}, headers=headers)
         assert added.status_code == 200 and added.json()["trader_id"] == "Abu-Fahad"
+        arabic = client.post("/traders", json={"ref": "", "name": "أبو فهد"}, headers=headers)
+        assert arabic.status_code == 200 and arabic.json()["name"] == "أبو فهد"
+        assert arabic.json()["trader_id"].startswith("t-")
         bad = client.post("/traders", json={"ref": "!!", "name": ""}, headers=headers)
         assert bad.status_code == 422
         imported = client.post("/traders/Abu-Fahad/import", json={"csv": leader.TEMPLATE},
@@ -291,7 +294,8 @@ def test_traders_api_add_import_and_confirmed_delete() -> None:
         assert client.get("/traders", headers=headers).json()[0]["trades"] == 2
         done = client.delete("/traders/Abu-Fahad?confirm=true", headers=headers).json()
         assert done["removed"]["status"] == "removed"
-        assert client.get("/traders", headers=headers).json() == []
+        listed = [t["name"] for t in client.get("/traders", headers=headers).json()]
+        assert listed == ["أبو فهد"]  # only the deleted one left the list
         assert client.get("/traders/Abu-Fahad", headers=headers).status_code == 404
         assert len(engine.lab.trades("Abu-Fahad")) == 2  # kept
         assert client.get("/strategies", headers=headers).status_code == 200

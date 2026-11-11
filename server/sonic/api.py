@@ -4,6 +4,8 @@ from __future__ import annotations
 
 import asyncio
 import hmac
+import json
+import uuid
 from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager, suppress
 from pathlib import Path
@@ -15,7 +17,7 @@ from fastapi.responses import FileResponse, PlainTextResponse
 from fastapi.staticfiles import StaticFiles
 from pydantic import ValidationError
 
-from . import account, leader
+from . import account, capital, leader
 from .engine import Engine
 from .risk import ALLOWED_SYMBOLS, Limits
 
@@ -179,8 +181,10 @@ def create_app(engine: Engine, token: str, background: bool = True) -> FastAPI:
     async def add_trader(body: Annotated[dict[str, Any], Body()]) -> dict[str, Any]:
         ref, name = str(body.get("ref", ""))[:300], str(body.get("name", ""))[:60]
         if not ref.strip() and name.strip():
-            # added by name only: the name becomes the id (letters, digits, - and _)
-            ref = "-".join(name.split())
+            # added by name only: a Latin name becomes the id; any other name (Arabic...) gets
+            # a short generated id, and the name is shown as written
+            slug = "-".join(name.split())
+            ref = slug if leader.TRADER_ID.fullmatch(slug) else f"t-{uuid.uuid4().hex[:10]}"
         try:
             return engine.lab.add(ref, name)
         except ValueError as error:
@@ -238,7 +242,126 @@ def create_app(engine: Engine, token: str, background: bool = True) -> FastAPI:
     async def strategies() -> dict[str, Any]:
         """The best strategy per coin, compared out of sample over the same period, with
         reasons; deleted traders' strategies included. Approved ones are never swapped."""
-        return engine.lab.ranking()
+        return engine.lab.ranking(engine.capital.approved_by_coin())
+
+    # ---------- money for approved strategies: approve -> allocate -> activate (capital.py)
+
+    def cap_error(error: Exception) -> HTTPException:
+        if isinstance(error, KeyError):
+            return HTTPException(status_code=404, detail=str(error).strip("'"))
+        return HTTPException(status_code=422, detail=str(error))
+
+    def trade_key_view() -> dict[str, Any]:
+        saved = engine.store.get("trade_key")
+        return {"linked": bool(saved), "hint": ("..." + saved["key"][-4:]) if saved else None,
+                "checked_ms": saved.get("checked_ms") if saved else None}
+
+    @app.get("/allocations", dependencies=secured)
+    async def allocations() -> dict[str, Any]:
+        return {"items": engine.capital.views(), "trade_key": trade_key_view(),
+                "live_allowed": capital.live_allowed(), "phrase": capital.LIVE_PHRASE}
+
+    @app.post("/allocations/{model_id}/approve", dependencies=secured)
+    async def approve_strategy(model_id: int) -> dict[str, Any]:
+        try:
+            return engine.capital.approve(model_id)
+        except (KeyError, ValueError) as error:
+            raise cap_error(error) from error
+
+    async def bounds_for(model_id: int) -> dict[str, Any]:
+        saved = engine.store.get("account_key")
+        if not saved:
+            raise ValueError("no_account_key")  # the balance is read with the read-only key
+        row = engine.capital.row(model_id)
+        if row is None:
+            raise KeyError("not_approved")
+        model_row = engine.lab.db.execute("SELECT model FROM trader_models WHERE id = ?",
+                                          (model_id,)).fetchone()
+        model = json.loads(model_row["model"])
+        reader = account.AccountReader(saved["key"], saved["secret"], engine.now_ms)
+        money = await reader.balance()
+        minimums = await capital.coin_minimums(engine.exchange, model["symbols"], model,
+                                               int(max(1, min(5, row["leverage"]))))
+        return engine.capital.bounds(model_id, money["wallet"], money["available"], minimums)
+
+    @app.get("/allocations/{model_id}/bounds", dependencies=secured)
+    async def allocation_bounds(model_id: int) -> dict[str, Any]:
+        try:
+            return await bounds_for(model_id)
+        except (KeyError, ValueError) as error:
+            raise cap_error(error) from error
+        except account.NotReadOnly as error:
+            raise HTTPException(status_code=422, detail="key_not_read_only") from error
+
+    @app.put("/allocations/{model_id}", dependencies=secured)
+    async def allocate(model_id: int, body: Annotated[dict[str, Any], Body()]) -> dict[str, Any]:
+        try:
+            amount = float(body.get("amount"))
+            return engine.capital.allocate(model_id, amount, await bounds_for(model_id))
+        except (TypeError, ValueError, KeyError) as error:
+            raise cap_error(error) from error
+
+    @app.put("/allocations/{model_id}/limits", dependencies=secured)
+    async def allocation_limits(
+        model_id: int, body: Annotated[dict[str, Any], Body()]
+    ) -> dict[str, Any]:
+        try:
+            return engine.capital.set_limits(model_id, float(body.get("max_loss")),
+                                             float(body.get("daily_loss")))
+        except (TypeError, ValueError, KeyError) as error:
+            raise cap_error(error) from error
+
+    @app.post("/allocations/{model_id}/stop", dependencies=secured)
+    async def stop_strategy(model_id: int, body: Annotated[dict[str, Any], Body()]) -> dict:
+        try:
+            return engine.capital.stop(model_id, bool(body.get("close_open")))
+        except KeyError as error:
+            raise cap_error(error) from error
+
+    @app.post("/allocations/{model_id}/activate", dependencies=secured)
+    async def activate_strategy(
+        model_id: int, body: Annotated[dict[str, Any], Body()]
+    ) -> dict[str, Any]:
+        saved = engine.store.get("trade_key")
+        try:
+            return engine.capital.activate(model_id, str(body.get("mode")),
+                                           str(body.get("phrase", "")), saved)
+        except (KeyError, ValueError) as error:
+            raise cap_error(error) from error
+
+    @app.get("/allocations/{model_id}/gate", dependencies=secured)
+    async def strategy_gate(model_id: int, mode: str = Query(default="demo")) -> list[dict]:
+        return engine.capital.gate(model_id, engine.store.get("trade_key"), mode)
+
+    @app.post("/allocations/emergency", dependencies=secured)
+    async def strategies_emergency() -> dict[str, Any]:
+        closed = await engine.capital.emergency(engine.strategy_client, engine.log)
+        return {"closed": closed}
+
+    @app.put("/trade-key", dependencies=secured)
+    async def link_trade_key(body: Annotated[dict[str, Any], Body()]) -> dict[str, Any]:
+        key, secret = str(body.get("key", "")).strip(), str(body.get("secret", "")).strip()
+        if not (16 <= len(key) <= 128 and 16 <= len(secret) <= 128):
+            raise HTTPException(status_code=422, detail="invalid_values")
+        try:
+            permissions = await account.AccountReader(key, secret, engine.now_ms).permissions()
+        except Exception as error:  # noqa: BLE001 - wrong key, network, region
+            raise HTTPException(status_code=502, detail="key_check_failed") from error
+        problems = capital.trade_key_problems(permissions)
+        if problems:
+            raise HTTPException(status_code=422, detail={
+                "code": "trade_key_not_safe", "permissions": problems})
+        engine.store.put("trade_key", {"key": key, "secret": secret,
+                                       "checked_ms": engine.now_ms(), "problems": []})
+        engine.strategy_clients.clear()
+        engine.log("info", "trade_key_linked", "futures only, " + key[-4:])
+        return trade_key_view()
+
+    @app.delete("/trade-key", dependencies=secured)
+    async def unlink_trade_key() -> dict[str, Any]:
+        engine.store.put("trade_key", None)
+        engine.strategy_clients.clear()
+        return trade_key_view()
 
     @app.post("/traders/{trader_id}/study", dependencies=secured)
     async def study_trader(trader_id: str = Path_(pattern=trader_path)) -> dict[str, Any]:

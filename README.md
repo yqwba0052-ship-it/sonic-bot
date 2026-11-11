@@ -81,6 +81,23 @@ Check on real prices: Sonic's own 224 replay trades imported as a "trader". The 
 65 trades, 77%, +$4.72, 3% in the same simulator. A learned rule set is a guess at patterns in
 a trader's results, not the trader's real strategy.
 
+Money for approved strategies (`server/sonic/capital.py`), three separate steps:
+1. approve (the check mark): only a strategy that passed out of sample on a coin; no money, no
+   trading;
+2. allocate an amount in USDT: the futures balance is read with the read-only key; the app shows
+   the minimum (Binance's smallest order on every coin of the strategy at 1% risk) and the
+   maximum (free balance minus other strategies' amounts, at most half the wallet for one
+   strategy and 80% for all), and says "الرصيد غير كافٍ" or "لا يوجد رصيد متاح". Reservations are
+   Sonic's own bookkeeping: Binance does not isolate money per strategy inside one account;
+3. activate, only with: a successful paper test (20+ trades, profit after fees, profit factor
+   1.2+, drawdown 20% or less), the owner's typed approval, a futures-only trading key (no
+   withdrawal, no transfer), total and daily loss limits, and the emergency stop. Target:
+   Binance Demo; real money also needs `SONIC_LIVE_TRADING=yes` in the server's `.env`, which
+   only the owner sets. A strategy trades only its trader's coins, never beyond its amount,
+   never a coin used by another live strategy or holding a position Sonic did not open. Stop
+   keeps open trades with their stop and target, or closes them at market. The order client
+   was tested with simulated Binance replies only: run on Binance Demo first.
+
 ## Safety
 
 - **Amount:** a hard total-loss budget. Losing it closes everything and halts the bot.

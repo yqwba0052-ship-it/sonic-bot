@@ -2,6 +2,7 @@ import { useFocusEffect } from 'expo-router';
 import { useCallback, useState } from 'react';
 import { Modal, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
 
+import { type Allocations, AllocationsCard } from '@/components/allocations';
 import { Body, Button, Card, colors, Field, Row, Screen } from '@/components/ui';
 import { errorCode, useBot } from '@/lib/bot-context';
 import { message, when } from '@/lib/text';
@@ -125,7 +126,25 @@ function rules(model: Model): string {
   );
 }
 
-function Strategies({ ranking }: { ranking: Ranking | null }) {
+function Approve({ modelId, approved, onApprove }: { modelId: number; approved: boolean; onApprove: (id: number) => void }) {
+  return approved ? (
+    <Text style={[styles.rankLine, { color: colors.gain }]}>✓ معتمدة</Text>
+  ) : (
+    <Pressable accessibilityRole="button" accessibilityLabel="اعتماد الاستراتيجية" onPress={() => onApprove(modelId)} style={styles.approve}>
+      <Text style={styles.smallText}>✓ اعتماد</Text>
+    </Pressable>
+  );
+}
+
+function Strategies({
+  ranking,
+  approvedIds,
+  onApprove,
+}: {
+  ranking: Ranking | null;
+  approvedIds: Set<number>;
+  onApprove: (id: number) => void;
+}) {
   if (!ranking) return null;
   const coins = Object.values(ranking.coins);
   return (
@@ -155,6 +174,7 @@ function Strategies({ ranking }: { ranking: Ranking | null }) {
                   • {reason}
                 </Text>
               ))}
+              <Approve modelId={coin.best.model_id} approved={approvedIds.has(coin.best.model_id)} onApprove={onApprove} />
               {coin.best.paper ? (
                 <Text style={styles.rankLine}>
                   تداولها الوهمي على هذه العملة: {coin.best.paper.trades} من {coin.best.paper.needed} صفقة، فوز{' '}
@@ -171,11 +191,14 @@ function Strategies({ ranking }: { ranking: Ranking | null }) {
             </Text>
           ) : null}
           {coin.ranked.slice(1).map((item) => (
-            <Text key={item.model_id} style={styles.rankLine}>
-              {item.name}
-              {item.status === 'removed' ? ' (محذوف)' : ''}: تقييم {item.score}، صافي {dollars(item.result?.net_pnl)}، معامل
-              الربح {item.result?.profit_factor ?? '—'}
-            </Text>
+            <View key={item.model_id}>
+              <Text style={styles.rankLine}>
+                {item.name}
+                {item.status === 'removed' ? ' (محذوف)' : ''}: تقييم {item.score}، صافي {dollars(item.result?.net_pnl)}، معامل
+                الربح {item.result?.profit_factor ?? '—'}
+              </Text>
+              <Approve modelId={item.model_id} approved={approvedIds.has(item.model_id)} onApprove={onApprove} />
+            </View>
           ))}
           {coin.excluded.map((item) => (
             <Text key={item.model_id} style={styles.rankLine}>
@@ -247,6 +270,7 @@ export default function TradersScreen() {
   const [confirm, setConfirm] = useState<Trader | null>(null);
   const [account, setAccount] = useState<Account | null>(null);
   const [ranking, setRanking] = useState<Ranking | null>(null);
+  const [allocations, setAllocations] = useState<Allocations | null>(null);
   const [key, setKey] = useState('');
   const [secret, setSecret] = useState('');
 
@@ -258,6 +282,7 @@ export default function TradersScreen() {
       setList(await call<Trader[]>('/traders', 'GET'));
       setAccount(await call<Account>('/account', 'GET'));
       setRanking(await call<Ranking>('/strategies', 'GET'));
+      setAllocations(await call<Allocations>('/allocations', 'GET'));
     } catch {
       // the status line on the first tab already says when the server is unreachable
     }
@@ -382,6 +407,26 @@ export default function TradersScreen() {
     }
   };
 
+  const report = async (text: string, ok: boolean) => {
+    const shown = ok
+      ? text
+      : text.startsWith('gate_not_met')
+        ? 'لم تكتمل شروط التفعيل. اضغط «افحص الشروط» لترى الناقص.'
+        : message(text);
+    setNotice({ text: shown, color: ok ? colors.gain : colors.loss });
+    await load();
+  };
+
+  const approve = async (id: number) => {
+    try {
+      await call(`/allocations/${id}/approve`, 'POST');
+      await report('اعتُمدت الاستراتيجية (بلا مال ولا تداول). حدّد مبلغها من «الاستراتيجيات المعتمدة».', true);
+    } catch (failure) {
+      fail(failure);
+    }
+  };
+
+  const approvedIds = new Set((allocations?.items ?? []).filter((a) => a.state !== 'stopped').map((a) => a.model_id));
   const latest = detail?.latest;
   return (
     <Screen title="التعلم من المتداولين">
@@ -412,7 +457,8 @@ export default function TradersScreen() {
 
       {notice ? <Body color={notice.color}>{notice.text}</Body> : null}
 
-      <Strategies ranking={ranking} />
+      <Strategies ranking={ranking} approvedIds={approvedIds} onApprove={approve} />
+      <AllocationsCard data={allocations} call={call} report={report} />
 
       {list.length === 0 ? (
         <Card>
@@ -580,6 +626,14 @@ const styles = StyleSheet.create({
   small: { backgroundColor: colors.line, borderRadius: 8, paddingHorizontal: 14, paddingVertical: 9 },
   smallText: { color: colors.text, fontSize: 14, fontWeight: '700' },
   danger: { backgroundColor: colors.loss },
+  approve: {
+    alignSelf: 'flex-start',
+    backgroundColor: colors.gain,
+    borderRadius: 8,
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    marginTop: 4,
+  },
   detail: { marginTop: 10, gap: 6 },
   csv: {
     minHeight: 110,

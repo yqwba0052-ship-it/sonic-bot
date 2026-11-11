@@ -31,6 +31,7 @@ ALLOWED = {
     (SPOT, "/sapi/v1/account/apiRestrictions"),
     (FUTURES, "/fapi/v1/income"),
     (FUTURES, "/fapi/v1/userTrades"),
+    (FUTURES, "/fapi/v2/balance"),
 }
 NOT_PERMISSIONS = {"ipRestrict", "createTime", "tradingAuthorityExpirationTime", "enableReading",
                    "enableFixReadOnly"}
@@ -85,6 +86,22 @@ class AccountReader:
         if problems:
             raise NotReadOnly(problems)
         return permissions
+
+    async def permissions(self) -> dict[str, Any]:
+        """Binance's report of this key's permissions, unchecked (for the trading key)."""
+        async with self._client() as client:
+            return await self._get(client, SPOT, "/sapi/v1/account/apiRestrictions", {})
+
+    async def balance(self) -> dict[str, float]:
+        """USDT in the futures wallet: total and available (read-only key)."""
+        await self.check()
+        async with self._client() as client:
+            rows = await self._get(client, FUTURES, "/fapi/v2/balance", {})
+        for row in rows:
+            if row.get("asset") == "USDT":
+                return {"wallet": float(row["balance"]),
+                        "available": float(row["availableBalance"])}
+        return {"wallet": 0.0, "available": 0.0}
 
     async def fills(self, start_ms: int) -> list[dict[str, Any]]:
         """Own futures fills since start_ms (at most the last ~90 days), oldest first."""
