@@ -395,7 +395,10 @@ def create_app(engine: Engine, token: str, background: bool = True) -> FastAPI:
             "linked": bool(saved),
             "key_hint": ("..." + saved["key"][-4:]) if saved else None,
             "checked_ms": saved.get("checked_ms") if saved else None,
+            "ip_restricted": saved.get("ip_restricted") if saved else None,
+            "server_ip": account.server_ip(),
             "synced_ms": engine.store.get("account_synced_ms"),
+            "every_hours": 6,
             "target": engine.store.get("account_target"),
         }
 
@@ -406,16 +409,49 @@ def create_app(engine: Engine, token: str, background: bool = True) -> FastAPI:
             raise HTTPException(status_code=422, detail="invalid_values")
         reader = account.AccountReader(key, secret, engine.now_ms)
         try:
-            await reader.check()
+            permissions = await reader.check()
         except account.NotReadOnly as error:
             raise HTTPException(status_code=422, detail={
                 "code": "key_not_read_only", "permissions": error.problems}) from error
         except Exception as error:  # noqa: BLE001 - wrong key, network, region
             raise HTTPException(status_code=502, detail="key_check_failed") from error
-        engine.store.put("account_key", {"key": key, "secret": secret,
-                                         "checked_ms": engine.now_ms()})
-        engine.log("info", "account_linked", "read-only key " + key[-4:])
+        engine.store.put("account_key", {
+            "key": key, "secret": secret, "checked_ms": engine.now_ms(),
+            "ip_restricted": bool(permissions.get("ipRestrict"))})
+        engine.log("info", "account_linked", "read-only key ..." + key[-4:])
+        engine.store.put("account_synced_ms", 0)  # first sync starts at once, in the background
+        engine.maybe_sync_account()
         return await account_status()
+
+    @app.post("/account/test", dependencies=secured)
+    async def test_account() -> dict[str, Any]:
+        """Check the key again, then read the balance and the recent history (read only)."""
+        saved = engine.store.get("account_key")
+        if not saved:
+            raise HTTPException(status_code=422, detail="no_account_key")
+        reader = account.AccountReader(saved["key"], saved["secret"], engine.now_ms)
+        try:
+            permissions = await reader.check()
+            balance = await reader.balance()
+            income = await reader.recent_income(30)
+        except account.NotReadOnly as error:
+            raise HTTPException(status_code=422, detail={
+                "code": "key_not_read_only", "permissions": error.problems}) from error
+        except Exception as error:  # noqa: BLE001 - wrong key, network, region; no key in text
+            raise HTTPException(status_code=502, detail="key_check_failed") from error
+        kinds: dict[str, int] = {}
+        for row in income:
+            kinds[row.get("incomeType", "?")] = kinds.get(row.get("incomeType", "?"), 0) + 1
+        return {
+            "read_only": True,
+            "ip_restricted": bool(permissions.get("ipRestrict")),
+            "server_ip": account.server_ip(),
+            "balance": balance,
+            "income_30d": len(income), "income_kinds": kinds,
+            "symbols_30d": sorted({row["symbol"] for row in income if row.get("symbol")}),
+            "synced_ms": engine.store.get("account_synced_ms"),
+            "synced_trades": len(engine.lab.trades(leader.ACCOUNT_ID)),
+        }
 
     @app.delete("/account", dependencies=secured)
     async def unlink_account() -> dict[str, Any]:

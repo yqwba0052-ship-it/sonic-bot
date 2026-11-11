@@ -23,6 +23,7 @@ FAILURE_HALT_MS = 30 * 60 * 1000
 DAY_MS = 86_400_000
 MARKETS_TTL_MS = 10 * 60 * 1000
 GOAL_WIN_RATE = (0.80, 0.90)  # the owner's goal for a month of trades
+ACCOUNT_SYNC_MS = 6 * 3600 * 1000  # read the owner's futures history this often
 
 
 class Engine:
@@ -43,6 +44,8 @@ class Engine:
         # Money for approved strategies: approve, allocate and activate are separate steps.
         self.capital = capital.Capital(store.db, self.lab, self.now_ms)
         self.strategy_clients: dict[str, Any] = {}
+        self.sync_task: asyncio.Task[None] | None = None
+        self.sync_failed_ms = 0
         self.failures = 0
         self.failing_since_ms: int | None = None
         self.last_tick_ms = 0
@@ -305,10 +308,6 @@ class Engine:
             if self.lab.strategies() and self.now_ms() - made >= DAY_MS:
                 # new prices and paper results: compare the strategies per coin again daily
                 await self.lab.compare_coins(self.exchange.bars_until)
-            if self.store.get("account_key") and (
-                self.now_ms() - int(self.store.get("account_synced_ms", 0)) >= 6 * 3600 * 1000
-            ):
-                await self.sync_account(None)
         except Exception as error:  # noqa: BLE001 - the lab must never stop the trading loop
             self.log("warning", "lab_failed", str(error)[:200])
         try:
@@ -676,4 +675,23 @@ class Engine:
             self.log("info", "resumed_after_restart")
         while True:
             await self.tick()
+            self.maybe_sync_account()
             await asyncio.sleep(self.settings.tick_seconds)
+
+    def maybe_sync_account(self) -> None:
+        """Every 6 hours, read the owner's futures history with the read-only key, in the
+        background so Sonic's own loop never waits for it. After a failure, retry in 30 min."""
+        if not self.store.get("account_key") or (self.sync_task and not self.sync_task.done()):
+            return
+        now = self.now_ms()
+        due = now - int(self.store.get("account_synced_ms", 0)) >= ACCOUNT_SYNC_MS
+        if due and now - self.sync_failed_ms >= 30 * 60 * 1000:
+            self.sync_task = asyncio.create_task(self._sync_in_background())
+
+    async def _sync_in_background(self) -> None:
+        try:
+            await self.sync_account(None)
+        except Exception as error:  # noqa: BLE001 - logged without any key, retried later
+            self.sync_failed_ms = self.now_ms()
+            self.log("warning", "account_sync_failed", type(error).__name__ + ": "
+                     + str(error)[:120])

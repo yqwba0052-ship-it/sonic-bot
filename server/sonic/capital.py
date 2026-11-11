@@ -111,7 +111,13 @@ class LiveClient(BinanceDemo):
 
 
 def live_allowed() -> bool:
-    return os.environ.get("SONIC_LIVE_TRADING", "").strip().lower() == "yes"
+    """Only the owner sets SONIC_LIVE_TRADING=yes, in server/.env or the environment."""
+    from pathlib import Path
+
+    from .config import read_env_file
+
+    values = {**read_env_file(Path(__file__).resolve().parent.parent / ".env"), **os.environ}
+    return values.get("SONIC_LIVE_TRADING", "").strip().lower() == "yes"
 
 
 class Capital:

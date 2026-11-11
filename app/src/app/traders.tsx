@@ -98,7 +98,23 @@ type Coin = {
   better_than_approved: boolean;
 };
 type Ranking = { made_ms: number | null; total: number; coins: Record<string, Coin> };
-type Account = { linked: boolean; key_hint: string | null; synced_ms: number | null; target: string | null };
+type Account = {
+  linked: boolean;
+  key_hint: string | null;
+  synced_ms: number | null;
+  target: string | null;
+  ip_restricted: boolean | null;
+  server_ip: string | null;
+  every_hours: number;
+};
+type AccountTest = {
+  read_only: boolean;
+  ip_restricted: boolean;
+  balance: { wallet: number; available: number };
+  income_30d: number;
+  symbols_30d: string[];
+  synced_trades: number;
+};
 
 const STUDY_MS = 180_000;
 
@@ -270,6 +286,7 @@ export default function TradersScreen() {
   const [confirm, setConfirm] = useState<Trader | null>(null);
   const [account, setAccount] = useState<Account | null>(null);
   const [ranking, setRanking] = useState<Ranking | null>(null);
+  const [tested, setTested] = useState<AccountTest | null>(null);
   const [allocations, setAllocations] = useState<Allocations | null>(null);
   const [key, setKey] = useState('');
   const [secret, setSecret] = useState('');
@@ -381,12 +398,22 @@ export default function TradersScreen() {
     }
   };
 
+  const testAccount = async () => {
+    try {
+      setTested(await call<AccountTest>('/account/test', 'POST', {}, 120_000));
+      setNotice({ text: 'نجح الاتصال: قُرئ الرصيد وسجل العقود (قراءة فقط).', color: colors.gain });
+    } catch (failure) {
+      fail(failure);
+    }
+  };
+
   const link = async () => {
     try {
       setAccount(await call<Account>('/account', 'PUT', { key: key.trim(), secret: secret.trim() }, 30_000));
       setKey('');
       setSecret('');
       setNotice({ text: 'رُبط حسابك بمفتاح قراءة فقط (تحققت Binance من صلاحياته).', color: colors.gain });
+      await testAccount();
     } catch (failure) {
       fail(failure);
     }
@@ -566,8 +593,33 @@ export default function TradersScreen() {
         </Body>
         {account?.linked ? (
           <>
-            <Row label="المفتاح" value={account.key_hint ?? ''} />
-            <Row label="آخر مزامنة" value={account.synced_ms ? when(account.synced_ms) : 'لم تتم'} />
+            <Row label="المفتاح (لا يُعرض بعد الحفظ)" value={account.key_hint ?? ''} />
+            <Row
+              label="مقيّد بعنوان الخادم"
+              value={account.ip_restricted ? 'نعم' : 'لا'}
+              color={account.ip_restricted ? colors.gain : colors.warn}
+            />
+            {!account.ip_restricted ? (
+              <Body color={colors.warn}>
+                للأمان: في Binance افتح إدارة API، ثم «تعديل القيود»، واختر «Restrict access to trusted IPs only» وأضف{' '}
+                {account.server_ip ?? 'عنوان الخادم'}، ثم اربط المفتاح من جديد هنا.
+              </Body>
+            ) : null}
+            <Row label="آخر مزامنة" value={account.synced_ms ? when(account.synced_ms) : 'تبدأ الآن تلقائيًا'} />
+            <Row label="المزامنة التلقائية" value={`كل ${account.every_hours} ساعات`} />
+            <Button label="اختبر الاتصال" color={colors.line} onPress={testAccount} />
+            {tested ? (
+              <>
+                <Row label="رصيد محفظة العقود" value={`${tested.balance.wallet.toFixed(2)} USDT`} />
+                <Row label="المتاح" value={`${tested.balance.available.toFixed(2)} USDT`} />
+                <Row label="سجلات آخر 30 يومًا" value={String(tested.income_30d)} />
+                <Row
+                  label="عملات تداولت عليها"
+                  value={tested.symbols_30d.map((x) => x.replace('USDT', '')).join('، ') || '—'}
+                />
+                <Row label="صفقات محفوظة من حسابك" value={String(tested.synced_trades)} />
+              </>
+            ) : null}
             <Button label={open ? `زامن إلى المتداول المفتوح` : 'زامن إلى «صفقات حسابي»'} onPress={sync} />
             <Button
               label="فك الربط"

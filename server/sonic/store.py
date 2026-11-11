@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+import os
 import sqlite3
 from typing import Any
 
@@ -36,6 +37,8 @@ CREATE TABLE IF NOT EXISTS events (
 class Store:
     def __init__(self, path: str) -> None:
         self.db = sqlite3.connect(path, check_same_thread=False)
+        if path != ":memory:" and os.name == "posix":
+            os.chmod(path, 0o600)  # holds the owner's API keys: the bot's user only
         self.db.row_factory = sqlite3.Row
         self.db.executescript(SCHEMA)
         columns = {row["name"] for row in self.db.execute("PRAGMA table_info(trades)")}

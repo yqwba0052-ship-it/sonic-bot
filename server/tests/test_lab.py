@@ -215,6 +215,9 @@ def mock_binance(permissions: dict, seen: list) -> httpx.MockTransport:
         seen.append((request.method, request.url.host, request.url.path))
         if request.url.path == "/sapi/v1/account/apiRestrictions":
             return httpx.Response(200, json=permissions)
+        if request.url.path == "/fapi/v2/balance":
+            return httpx.Response(200, json=[{"asset": "USDT", "balance": "120.5",
+                                              "availableBalance": "80.25"}])
         if request.url.path == "/fapi/v1/income":
             return httpx.Response(200, json=[{"symbol": "SOLUSDT", "incomeType": "REALIZED_PNL"}])
         if request.url.path == "/fapi/v1/userTrades":
@@ -250,14 +253,23 @@ def test_api_refuses_a_trading_key_and_syncs_a_read_only_one(monkeypatch) -> Non
         linked = client.put("/account", json=key, headers=headers).json()
         assert linked["linked"] and linked["key_hint"].endswith("kkkk")
         assert "secret" not in json.dumps(linked)
+        # the first sync starts by itself after linking; a manual one adds nothing twice
         synced = client.post("/account/sync", json={}, headers=headers).json()
-        assert synced["trader_id"] == leader.ACCOUNT_ID and synced["added"] == 1
+        assert synced["trader_id"] == leader.ACCOUNT_ID and synced["added"] in (0, 1)
+        assert len(engine.lab.trades(leader.ACCOUNT_ID)) == 1
+        tested = client.post("/account/test", headers=headers).json()
+        assert tested["read_only"] and tested["balance"] == {"wallet": 120.5, "available": 80.25}
+        assert tested["income_30d"] > 0 and tested["symbols_30d"] == ["SOLUSDT"]
+        assert "secret" not in json.dumps(tested) and "s" * 20 not in json.dumps(tested)
+        events = json.dumps(client.get("/events", headers=headers).json())
+        assert "k" * 20 not in events and "s" * 20 not in events  # keys never in the log
         trade = engine.lab.trades(leader.ACCOUNT_ID)[0]
         assert trade["entry_price"] == 100 and trade["exit_price"] == 104 and trade["pnl"] == 4
     assert {method for method, _, _ in seen} == {"GET"}
     assert {(host, path) for _, host, path in seen} <= {
         ("api.binance.com", "/sapi/v1/account/apiRestrictions"),
-        ("fapi.binance.com", "/fapi/v1/income"), ("fapi.binance.com", "/fapi/v1/userTrades")}
+        ("fapi.binance.com", "/fapi/v1/income"), ("fapi.binance.com", "/fapi/v1/userTrades"),
+        ("fapi.binance.com", "/fapi/v2/balance")}
 
 
 def test_reader_cannot_call_any_other_path() -> None:
@@ -438,3 +450,36 @@ async def test_best_per_coin_paper_trades_that_coin_only() -> None:
     symbols = {r[0] for r in lab_.db.execute("SELECT symbol FROM champion_paper")}
     assert symbols == {"SOLUSDT"}
     assert lab_.db.execute("SELECT COUNT(*) FROM trader_paper").fetchone()[0] == 0
+
+
+async def test_account_sync_runs_every_six_hours_in_the_background(monkeypatch) -> None:
+    engine, _, _, clock = build()
+    engine.store.put("account_key", {"key": "k" * 20, "secret": "s" * 20})
+    calls: list = []
+
+    async def fake_sync(trader_id):
+        calls.append(engine.now_ms())
+        engine.store.put("account_synced_ms", engine.now_ms())
+        return {}
+
+    monkeypatch.setattr(engine, "sync_account", fake_sync)
+    engine.maybe_sync_account()
+    await engine.sync_task
+    engine.maybe_sync_account()  # just synced: nothing new
+    assert len(calls) == 1
+    clock.now += 5 * 3600
+    engine.maybe_sync_account()
+    assert engine.sync_task.done() and len(calls) == 1
+    clock.now += 3600
+    engine.maybe_sync_account()
+    await engine.sync_task
+    assert len(calls) == 2
+
+
+def test_live_switch_is_off_unless_the_owner_sets_it(monkeypatch) -> None:
+    from sonic import capital
+
+    monkeypatch.delenv("SONIC_LIVE_TRADING", raising=False)
+    assert capital.live_allowed() is False
+    monkeypatch.setenv("SONIC_LIVE_TRADING", "yes")
+    assert capital.live_allowed() is True

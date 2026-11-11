@@ -42,6 +42,21 @@ Transport = Callable[[], httpx.AsyncBaseTransport | None]
 transport: Transport = lambda: None  # noqa: E731 - tests swap in a mock transport
 
 
+def server_ip() -> str | None:
+    """The cloud server's address, for the key's IP restriction (from SONIC_PUBLIC_URL like
+    https://138-68-90-218.sslip.io)."""
+    import os
+    import re
+    from pathlib import Path
+
+    from .config import read_env_file
+
+    values = {**read_env_file(Path(__file__).resolve().parent.parent / ".env"), **os.environ}
+    found = re.search(r"(\d{1,3})-(\d{1,3})-(\d{1,3})-(\d{1,3})\.sslip\.io",
+                      values.get("SONIC_PUBLIC_URL", ""))
+    return ".".join(found.groups()) if found else None
+
+
 class NotReadOnly(Exception):
     def __init__(self, problems: list[str]) -> None:
         super().__init__(",".join(problems))
@@ -102,6 +117,16 @@ class AccountReader:
                 return {"wallet": float(row["balance"]),
                         "available": float(row["availableBalance"])}
         return {"wallet": 0.0, "available": 0.0}
+
+    async def recent_income(self, days: int = 30) -> list[dict[str, Any]]:
+        """Futures income records (realized profit, fees, funding) of the last days."""
+        now = self.now_ms()
+        rows: list[dict[str, Any]] = []
+        async with self._client() as client:
+            for begin in range(now - days * 86_400_000, now, WEEK_MS):
+                rows += await self._get(client, FUTURES, "/fapi/v1/income", {
+                    "startTime": begin, "endTime": min(begin + WEEK_MS, now) - 1, "limit": 1000})
+        return rows
 
     async def fills(self, start_ms: int) -> list[dict[str, Any]]:
         """Own futures fills since start_ms (at most the last ~90 days), oldest first."""
