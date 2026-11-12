@@ -132,6 +132,13 @@ Automatic import (no manual completion needed when the data exists):
   futures history file (requested once; 5 requests a month are allowed), so learning from the
   account covers 6 months.
 
+How trades arrive, shown per trader in the app: a lead trader's trades are never collected
+by themselves (Binance offers no official access to other traders' trades, and copy trades do
+not appear in the owner's futures account through the API); they come only from what the owner
+imports (file or screenshot), with the time of the last one. Only the owner's own account is
+read automatically, every 6 hours, with the read-only key. "Active" means used for analysis
+and paper trading, not that trades are being collected.
+
 ## Safety
 
 - **Amount:** a hard total-loss budget. Losing it closes everything and halts the bot.

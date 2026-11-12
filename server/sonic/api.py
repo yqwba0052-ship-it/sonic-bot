@@ -171,7 +171,13 @@ def create_app(engine: Engine, token: str, background: bool = True) -> FastAPI:
 
     @app.get("/traders", dependencies=secured)
     async def traders() -> list[dict[str, Any]]:
-        return engine.lab.traders()
+        listed = engine.lab.traders()
+        synced = engine.store.get("account_synced_ms")
+        for item in listed:
+            if item["collection"]["automatic"]:
+                item["collection"]["linked"] = engine.account_key() is not None
+                item["collection"]["synced_ms"] = synced
+        return listed
 
     @app.get("/traders/template.csv", dependencies=secured, response_class=PlainTextResponse)
     async def trader_template() -> str:

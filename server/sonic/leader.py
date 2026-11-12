@@ -1115,6 +1115,19 @@ class Lab:
                 "test": latest["report"].get("test"),
             }
             item["paper"] = self.paper_summary(item["trader_id"])
+            last = self.db.execute(
+                "SELECT MAX(m) AS m FROM (SELECT MAX(imported_ms) AS m FROM trader_trades "
+                "WHERE trader_id = ? UNION ALL SELECT MAX(imported_ms) FROM trader_drafts "
+                "WHERE trader_id = ?)", (item["trader_id"], item["trader_id"])).fetchone()["m"]
+            # How trades really arrive. Binance has no official way to read another trader's
+            # trades, so a lead trader only gets what the owner imports; nothing is collected
+            # by itself. Only the owner's own account is read automatically (read-only key).
+            item["collection"] = (
+                {"automatic": True, "source": "own_account_api", "every_hours": 6,
+                 "last_ms": last}
+                if item["kind"] == "account"
+                else {"automatic": False, "source": "owner_import", "last_ms": last}
+            )
             out.append(item)
         return out
 

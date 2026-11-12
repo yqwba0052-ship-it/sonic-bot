@@ -24,6 +24,14 @@ type Trader = {
   status: 'watching' | 'paused';
   trades: number;
   drafts: number;
+  collection: {
+    automatic: boolean;
+    source: string;
+    every_hours?: number;
+    last_ms: number | null;
+    linked?: boolean;
+    synced_ms?: number | null;
+  };
   model: null | {
     id: number;
     created_ms: number;
@@ -624,9 +632,35 @@ export default function TradersScreen() {
             }}>
             <Row
               label={`${trader.name}${trader.kind === 'account' ? ' (حسابي)' : ''}`}
-              value={trader.status === 'watching' ? '● يُراقَب' : '⏸ موقوف'}
+              value={trader.status === 'watching' ? '● مفعّل للتحليل' : '⏸ موقوف'}
               color={trader.status === 'watching' ? colors.gain : colors.muted}
             />
+            {trader.collection.automatic ? (
+              <Row
+                label="جمع الصفقات"
+                value={
+                  trader.collection.linked
+                    ? `تلقائي كل ${trader.collection.every_hours} ساعات (حسابك، قراءة فقط)`
+                    : 'متوقف: الحساب غير مربوط'
+                }
+                color={trader.collection.linked ? colors.gain : colors.warn}
+              />
+            ) : (
+              <Row label="جمع الصفقات" value="غير تلقائي: يدوي (ملف أو صورة)" color={colors.warn} />
+            )}
+            {trader.collection.automatic && trader.collection.synced_ms ? (
+              <Row label="آخر مزامنة" value={when(trader.collection.synced_ms)} />
+            ) : null}
+            <Row
+              label="آخر صفقة وصلت"
+              value={trader.collection.last_ms ? when(trader.collection.last_ms) : 'لم تصل أي صفقة بعد'}
+            />
+            {!trader.collection.automatic ? (
+              <Text style={styles.rankLine}>
+                Binance لا توفّر رسميًا صفقات المتداولين الآخرين، ولا تظهر صفقات النسخ في حسابك عبر المفتاح. لذلك لا
+                يجمع Sonic صفقاته بنفسه: يتعلم فقط مما تستورده من سجله.
+              </Text>
+            ) : null}
             <Row label="الصفقات المحفوظة" value={String(trader.trades)} />
             {trader.drafts ? (
               <Row label="مسودات ناقصة الأوقات" value={String(trader.drafts)} color={colors.warn} />

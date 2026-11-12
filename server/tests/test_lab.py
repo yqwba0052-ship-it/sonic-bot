@@ -765,3 +765,17 @@ async def test_paper_result_includes_fees() -> None:
     row = lab_.db.execute("SELECT * FROM trader_paper").fetchone()
     assert row["reason"] == "target" and row["exit_price"] == 102
     assert row["ret"] == pytest.approx(0.02 - leader.COST)  # +2% minus fees and slippage
+
+
+def test_list_says_how_trades_really_arrive() -> None:
+    engine, _, _, _ = build()
+    engine.lab.add("5141621486582775041", "lead")
+    engine.lab.add(leader.ACCOUNT_ID, "mine", kind="account")
+    headers = {"Authorization": "Bearer secret"}
+    with TestClient(create_app(engine, "secret", background=False)) as client:
+        listed = {t["trader_id"]: t for t in client.get("/traders", headers=headers).json()}
+    lead = listed["5141621486582775041"]["collection"]
+    assert lead["automatic"] is False and lead["source"] == "owner_import"
+    assert lead["last_ms"] is None  # nothing has arrived: shown as such, not as "watching"
+    mine = listed[leader.ACCOUNT_ID]["collection"]
+    assert mine["automatic"] is True and mine["linked"] is False
