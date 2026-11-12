@@ -685,3 +685,83 @@ async def test_study_starts_by_itself_at_twenty_complete_trades(monkeypatch) -> 
     assert engine.queue_study("auto") is True
     await engine.study_tasks["auto"]
     assert started == ["auto"]
+
+
+def test_own_account_never_syncs_into_a_lead_trader(monkeypatch) -> None:
+    engine, exchange, _, clock = build()
+    engine.lab.add("5141621486582775041", "lead")
+    engine.store.put("account_target", "5141621486582775041")  # as set by an older version
+    fresh = type(engine)(engine.store, exchange, engine.settings, clock=clock)
+    assert fresh.store.get("account_target") == leader.ACCOUNT_ID and fresh.account_target_reset
+    clock.now = END / 1000
+    monkeypatch.setattr(account, "transport", lambda: mock_binance({"enableReading": True}, []))
+    fresh.store.put("account_key", {"key": "k" * 20, "secret": "s" * 20})
+    headers = {"Authorization": "Bearer secret"}
+    with TestClient(create_app(fresh, "secret", background=False)) as client:
+        result = client.post("/account/sync", json={"trader_id": "5141621486582775041"},
+                             headers=headers).json()
+    assert result["trader_id"] == leader.ACCOUNT_ID  # the request cannot redirect it
+    assert fresh.lab.trades("5141621486582775041") == []
+
+
+def test_screenshot_is_only_saved_after_the_owner_confirms(monkeypatch) -> None:
+    import base64
+
+    from sonic import ocr
+
+    engine, _, _, _ = build()
+    engine.lab.add("5141621486582775041", "lead")
+    engine.lab.save_drafts("5141621486582775041", leader.parse_csv(OWNER_CSV)["drafts"])
+    monkeypatch.setattr(ocr, "read_image", lambda data: SCREEN)
+    png = base64.b64encode(b"\x89PNG fake").decode()
+    headers = {"Authorization": "Bearer secret"}
+    with TestClient(create_app(engine, "secret", background=False)) as client:
+        read = client.post("/traders/5141621486582775041/import-image",
+                           json={"image_base64": png, "tz_offset_min": 180},
+                           headers=headers).json()
+        assert read["trades"][0]["entry_price"] == 1220.64 and "ocr_text" in read
+        assert engine.lab.trades("5141621486582775041") == []  # nothing saved yet
+        assert len(engine.lab.drafts("5141621486582775041")) == 7
+        done = client.post(f"/traders/5141621486582775041/import-preview/{read['preview_id']}",
+                           headers=headers).json()
+        assert done["added"] == 1 and done["drafts_completed"] == 1
+        again = client.post(f"/traders/5141621486582775041/import-preview/{read['preview_id']}",
+                            headers=headers)
+        assert again.status_code == 404  # a preview is saved once
+
+
+async def test_no_rules_from_a_record_of_winners_only() -> None:
+    lab_ = lab()
+    lab_.add("lucky", "")
+    winners = []
+    for t in four_coins():
+        bars = MARKET[t["symbol"]]
+        i = next(k for k, b in enumerate(bars) if b.t + BAR_MS == t["opened_ms"])
+        best = max(bars[i + 1:i + 7], key=lambda b: b.c)  # pretend it always sold the top
+        winners.append({**t, "exit_price": max(best.c, t["entry_price"] * 1.001),
+                        "pnl": 1.0})
+    lab_.import_trades("lucky", winners, "csv")
+    report = await lab_.study("lucky", bars_until)
+    assert report["learn"]["status"] == "needs_losses" and report["model"] is None
+    assert any("خاسرة" in note for note in report["notes"])
+
+
+async def test_paper_result_includes_fees() -> None:
+    lab_ = lab()
+    lab_.add("fees", "")
+    lab_.db.execute(
+        "INSERT INTO trader_models (trader_id, created_ms, model, report) VALUES "
+        "('fees', 0, ?, '{}')", (json.dumps({"symbols": []}),))
+    lab_.db.execute(
+        "INSERT INTO trader_paper (trader_id, model_id, symbol, side, entry_price, stop_price, "
+        "target_price, opened_ms, until_ms) VALUES ('fees', 1, 'SOLUSDT', 'BUY', 100, 98, 102, "
+        "?, ?)", (MARKET["SOLUSDT"][2100].t, MARKET["SOLUSDT"][2100].t + 999 * BAR_MS))
+    lab_.db.commit()
+
+    async def bars(symbol: str):
+        return [leader.Bar(MARKET["SOLUSDT"][2100].t, 100, 103, 99.5, 102.5)]
+
+    await lab_.paper_tick(bars)
+    row = lab_.db.execute("SELECT * FROM trader_paper").fetchone()
+    assert row["reason"] == "target" and row["exit_price"] == 102
+    assert row["ret"] == pytest.approx(0.02 - leader.COST)  # +2% minus fees and slippage

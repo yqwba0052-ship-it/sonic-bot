@@ -41,6 +41,12 @@ class Engine:
         self.lock = asyncio.Lock()
         # Learning from traders the owner added: separate tables, paper only (leader.py).
         self.lab = leader.Lab(store.db, self.now_ms)
+        if store.get("account_target") not in (None, leader.ACCOUNT_ID):
+            # older versions could point the owner's own sync at a lead trader
+            store.put("account_target", leader.ACCOUNT_ID)
+            self.account_target_reset = True
+        else:
+            self.account_target_reset = False
         # Money for approved strategies: approve, allocate and activate are separate steps.
         self.capital = capital.Capital(store.db, self.lab, self.now_ms)
         self.strategy_clients: dict[str, Any] = {}
@@ -336,17 +342,17 @@ class Engine:
         Every use re-checks with Binance that it can only read."""
         return account.env_key() or self.store.get("account_key")
 
-    async def sync_account(self, trader_id: str | None) -> dict[str, Any]:
+    async def sync_account(self, trader_id: str | None = None) -> dict[str, Any]:
         """Read the owner's own futures fills with the read-only key and store them as closed
-        positions: in the trader the owner chose, or else in the "my-account" bucket."""
+        positions, always in the "my-account" bucket: the owner's trades never mix with a lead
+        trader's. Moving some of them to a trader is a separate, explicit owner action
+        (POST /traders/{id}/claim with a time range). `trader_id` is ignored."""
         saved = self.account_key()
         if not saved:
             raise ValueError("no_account_key")
-        target = trader_id or self.store.get("account_target") or leader.ACCOUNT_ID
-        if target == leader.ACCOUNT_ID and self.lab.trader(target) is None:
-            self.lab.add(leader.ACCOUNT_ID, "صفقات حسابي", kind="account")
+        target = leader.ACCOUNT_ID
         if self.lab.trader(target) is None:
-            raise KeyError("unknown_trader")
+            self.lab.add(leader.ACCOUNT_ID, "صفقات حسابي", kind="account")
         reader = account.AccountReader(saved["key"], saved["secret"], self.now_ms)
         since = int(self.store.get("account_synced_ms", 0)) - 7 * DAY_MS
         fills = await reader.fills(max(since, 0))  # the API keeps the last 3 months

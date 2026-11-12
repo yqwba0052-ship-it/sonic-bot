@@ -11,6 +11,7 @@ const MESSAGES: Record<string, string> = {
   trader_studied: 'اكتمل تحليل متداول تلقائيًا',
   trader_study_failed: 'تعذر تحليل متداول تلقائيًا',
   account_sync_failed: 'تعذرت مزامنة حسابك (يُعاد المحاولة بعد 30 دقيقة)',
+  preview_expired: 'انتهت مهلة المراجعة. اختر الصورة مرة ثانية.',
   not_eligible: 'لا تُعتمد إلا استراتيجية نجحت في الاختبار على فترة لم تتعلم منها.',
   not_approved: 'اعتمد الاستراتيجية (✓) أولًا.',
   no_balance: 'لا يوجد رصيد متاح.',

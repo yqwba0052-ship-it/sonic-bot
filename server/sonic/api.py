@@ -233,6 +233,8 @@ def create_app(engine: Engine, token: str, background: bool = True) -> FastAPI:
             raise HTTPException(status_code=413, detail="too_large")
         return save_import(trader_id, leader.parse_csv(text, offset_of(body)), "csv")
 
+    previews: dict[str, dict[str, Any]] = {}  # screenshot reads waiting for confirmation
+
     def offset_of(body: dict[str, Any]) -> int:
         """Minutes east of UTC of the times in the file (the phone's zone); -12h..+14h."""
         try:
@@ -275,9 +277,28 @@ def create_app(engine: Engine, token: str, background: bool = True) -> FastAPI:
             text = await asyncio.to_thread(ocr.read_image, data)
         except ocr.OcrError as error:
             raise HTTPException(status_code=422, detail=str(error)) from error
-        result = save_import(trader_id, leader.parse_screenshot(text, offset_of(body)),
-                             "screenshot")
-        return {**result, "ocr_text": text[:3000]}
+        if engine.lab.listed(trader_id) is None:
+            raise HTTPException(status_code=404, detail="unknown_trader")
+        parsed = leader.parse_screenshot(text, offset_of(body))
+        preview_id = uuid.uuid4().hex[:16]
+        previews[preview_id] = {"trader_id": trader_id, "parsed": parsed,
+                                "until_ms": engine.now_ms() + 3600 * 1000}
+        for key in [k for k, v in previews.items() if v["until_ms"] < engine.now_ms()]:
+            previews.pop(key, None)
+        # OCR is never certain: nothing is saved until the owner confirms what was read
+        return {"preview_id": preview_id, "trades": parsed["trades"],
+                "drafts": parsed["drafts"], "errors": parsed["errors"],
+                "rows": parsed["rows"], "utc_offset": parsed["utc_offset"],
+                "ocr_text": text[:3000]}
+
+    @app.post("/traders/{trader_id}/import-preview/{preview_id}", dependencies=secured)
+    async def confirm_preview(
+        preview_id: str, trader_id: str = Path_(pattern=trader_path)
+    ) -> dict[str, Any]:
+        preview = previews.pop(preview_id, None)
+        if preview is None or preview["trader_id"] != trader_id:
+            raise HTTPException(status_code=404, detail="preview_expired")
+        return save_import(trader_id, preview["parsed"], "screenshot")
 
     @app.put("/traders/{trader_id}/drafts/{draft_id}", dependencies=secured)
     async def complete_draft(
@@ -520,9 +541,8 @@ def create_app(engine: Engine, token: str, background: bool = True) -> FastAPI:
 
     @app.post("/account/sync", dependencies=secured)
     async def sync_account(body: Annotated[dict[str, Any], Body()]) -> dict[str, Any]:
-        trader_id = body.get("trader_id") or None
-        try:
-            return await engine.sync_account(trader_id)
+        try:  # always into "my-account": the owner's trades never mix with a trader's
+            return await engine.sync_account()
         except account.NotReadOnly as error:
             raise HTTPException(status_code=422, detail={
                 "code": "key_not_read_only", "permissions": error.problems}) from error

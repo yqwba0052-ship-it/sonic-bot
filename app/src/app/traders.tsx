@@ -112,6 +112,26 @@ type Account = {
   server_ip: string | null;
   every_hours: number;
 };
+type PreviewTrade = {
+  symbol: string;
+  side: string;
+  leverage: number | null;
+  qty: number | null;
+  entry_price: number | null;
+  exit_price: number | null;
+  opened_ms: number | null;
+  closed_ms: number | null;
+  pnl: number | null;
+  fee: number | null;
+};
+type Preview = {
+  preview_id: string;
+  trader: string;
+  trades: PreviewTrade[];
+  drafts: PreviewTrade[];
+  rows: ImportRow[];
+  ocr_text: string;
+};
 type AccountTest = {
   read_only: boolean;
   ip_restricted: boolean;
@@ -295,6 +315,7 @@ export default function TradersScreen() {
   const [rows, setRows] = useState<ImportRow[]>([]);
   const [zone, setZone] = useState<'device' | 'utc'>('device');
   const [ocrText, setOcrText] = useState('');
+  const [preview, setPreview] = useState<Preview | null>(null);
   const [allocations, setAllocations] = useState<Allocations | null>(null);
   const [key, setKey] = useState('');
   const [secret, setSecret] = useState('');
@@ -453,13 +474,34 @@ export default function TradersScreen() {
       const image = await pickScreenshotBase64();
       if (!image) return;
       setNotice({ text: 'يقرأ الصورة على الخادم (OCR)... قد يأخذ نصف دقيقة.', color: colors.muted });
-      const result = await call<ImportResult>(
+      const read = await call<Preview>(
         `/traders/${id}/import-image`,
         'POST',
         { image_base64: image, tz_offset_min: deviceOffsetMinutes() },
         150_000
       );
-      await showImport(id, result);
+      setPreview({ ...read, trader: id });
+      setOcrText(read.ocr_text);
+      setNotice({
+        text: 'راجع ما قُرئ من الصورة، ثم اضغط «اعتمد» ليُحفظ. لا يُحفظ شيء قبل موافقتك.',
+        color: colors.warn,
+      });
+    } catch (failure) {
+      fail(failure);
+    }
+  };
+
+  const confirmPreview = async () => {
+    if (!preview) return;
+    try {
+      const result = await call<ImportResult>(
+        `/traders/${preview.trader}/import-preview/${preview.preview_id}`,
+        'POST',
+        {},
+        60_000
+      );
+      setPreview(null);
+      await showImport(preview.trader, result);
     } catch (failure) {
       fail(failure);
     }
@@ -500,13 +542,11 @@ export default function TradersScreen() {
 
   const sync = async () => {
     try {
-      const result = await call<{ added: number; fills: number; trader_id: string }>(
-        '/account/sync',
-        'POST',
-        { trader_id: open },
-        STUDY_MS
-      );
-      setNotice({ text: `قُرئت ${result.fills} عملية، وأُضيفت ${result.added} صفقة إلى ${result.trader_id}.`, color: colors.gain });
+      const result = await call<{ added: number; fills: number }>('/account/sync', 'POST', {}, STUDY_MS);
+      setNotice({
+        text: `قُرئت ${result.fills} عملية، وأُضيفت ${result.added} صفقة إلى «صفقات حسابي» (لا تختلط بالمتداولين).`,
+        color: colors.gain,
+      });
       await load();
     } catch (failure) {
       fail(failure);
@@ -659,6 +699,31 @@ export default function TradersScreen() {
                 سطر لكل صفقة مغلقة. الخانات غير المعروفة اتركها فارغة، ولا تُخمَّن.
               </Body>
               <Button label="استورد وحلل" disabled={!csv.trim()} onPress={() => importCsv(trader.trader_id)} />
+              {preview && preview.trader === trader.trader_id ? (
+                <View style={styles.reviewBox}>
+                  <Body>ما قُرئ من الصورة (للمراجعة قبل الحفظ):</Body>
+                  {[...preview.trades, ...preview.drafts].map((t, k) => (
+                    <Text key={k} style={styles.rankLine}>
+                      {t.symbol} {t.side === 'BUY' ? 'شراء' : 'بيع'}
+                      {t.leverage ? ` ×${t.leverage}` : ''}، دخول {t.entry_price ?? '—'}، خروج {t.exit_price ?? '—'}، فتح{' '}
+                      {t.opened_ms ? when(t.opened_ms) : '—'}، إغلاق {t.closed_ms ? when(t.closed_ms) : '—'}، كمية{' '}
+                      {t.qty ?? '—'}، ربح {t.pnl ?? '—'}، رسوم {t.fee ?? '—'}
+                    </Text>
+                  ))}
+                  {preview.trades.length + preview.drafts.length === 0 ? (
+                    <Body color={colors.warn}>لم تُقرأ أي صفقة بوضوح من هذه الصورة.</Body>
+                  ) : null}
+                  <ImportReport rows={preview.rows} />
+                  <View style={styles.actions}>
+                    <Pressable accessibilityRole="button" onPress={confirmPreview} style={[styles.small, styles.approveBg]}>
+                      <Text style={styles.smallText}>اعتمد واحفظ</Text>
+                    </Pressable>
+                    <Pressable accessibilityRole="button" onPress={() => setPreview(null)} style={styles.small}>
+                      <Text style={styles.smallText}>إلغاء</Text>
+                    </Pressable>
+                  </View>
+                </View>
+              ) : null}
               <ImportReport rows={rows} />
               {ocrText ? (
                 <View>
@@ -737,7 +802,7 @@ export default function TradersScreen() {
                 <Row label="صفقات محفوظة من حسابك" value={String(tested.synced_trades)} />
               </>
             ) : null}
-            <Button label={open ? `زامن إلى المتداول المفتوح` : 'زامن إلى «صفقات حسابي»'} onPress={sync} />
+            <Button label="زامن الآن إلى «صفقات حسابي»" onPress={sync} />
             {account.source !== 'env' ? (
               <Button
                 label="فك الربط"
@@ -797,6 +862,8 @@ const styles = StyleSheet.create({
   small: { backgroundColor: colors.line, borderRadius: 8, paddingHorizontal: 14, paddingVertical: 9 },
   smallText: { color: colors.text, fontSize: 14, fontWeight: '700' },
   danger: { backgroundColor: colors.loss },
+  reviewBox: { borderWidth: 1, borderColor: colors.warn, borderRadius: 10, padding: 10, gap: 6 },
+  approveBg: { backgroundColor: colors.gain },
   ocr: {
     color: colors.muted,
     fontSize: 11,

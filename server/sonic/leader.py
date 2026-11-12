@@ -57,6 +57,7 @@ SLIP = 0.0002  # slippage per side
 COST = 2 * (FEE + SLIP)  # round trip, as a share of the price
 TRAIN_SHARE = 0.7
 MIN_TRADES = 20  # fewer usable closed trades than this is too little to learn from
+MIN_LOSSES = 3  # a record of winners only says nothing about risk: no rules from it
 MAX_PAGES = 12  # 1500 bars a page: about 8 years of 4h bars
 CAPITAL = 30.0
 RISK = 0.01
@@ -1272,8 +1273,14 @@ class Lab:
             "warning": "القواعد المستنتجة تخمين لأنماط في نتائجه، وليست استراتيجيته الحقيقية.",
         }
         model = None
+        losses = sum(1 for r in rows if not r["win"])
         if len(rows) < MIN_TRADES:
             report["learn"] = {"status": "not_enough_trades", "need": MIN_TRADES}
+        elif losses < MIN_LOSSES:
+            report["learn"] = {"status": "needs_losses", "need": MIN_LOSSES, "have": losses}
+            report["notes"].append(
+                f"السجل فيه {losses} صفقة خاسرة فقط: لا تُستنتج قواعد من صفقات رابحة فقط، "
+                f"لأنها لا تكشف المخاطر. أضف سجله كاملًا ({MIN_LOSSES} خاسرة على الأقل).")
         else:
             rows.sort(key=lambda r: r["opened_ms"])
             cut = int(len(rows) * TRAIN_SHARE)
