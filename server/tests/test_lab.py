@@ -510,3 +510,56 @@ async def test_command_line_check_refuses_a_trading_key(monkeypatch) -> None:
         {"enableReading": True, "ipRestrict": True}, []))
     lines, ok = await check_account.check("k" * 20, "s" * 20)
     assert ok and any("80.25" in line for line in lines) and any("IPs" in line for line in lines)
+
+
+OWNER_CSV = """symbol,side,leverage,qty,entry_price,exit_price,opened_at,closed_at,pnl,fee
+ZECUSDT,SHORT,20,0.021,1270.91,1254.28,,,0.33038772,
+ZECUSDT,LONG,20,0.01,1220.64,1236.08,,,0.1421164,
+ETHUSDT,SHORT,20,0.009,2293.48,2285.69,,,0.04941331,
+ZECUSDT,LONG,20,0.004,1316.87,1328.02,,,0.03931022,
+ZECUSDT,LONG,20,0.005,1306.84,1315.0,,,0.0342454,
+ZECUSDT,LONG,20,0.004,1318.57,1322.26,,,0.00947834,
+ZECUSDT,LONG,20,0.004,1320.47,1326.59,,,0.01892201,
+"""
+
+
+async def test_rows_without_times_become_drafts_and_are_never_learned_from() -> None:
+    parsed = leader.parse_csv(OWNER_CSV)
+    assert parsed["trades"] == [] and len(parsed["drafts"]) == 7 and parsed["errors"] == []
+    assert parsed["rows"][0] == {"line": 2, "status": "draft",
+                                 "missing": ["opened_at", "closed_at", "fee"]}
+    first = parsed["drafts"][0]
+    assert first["side"] == "SELL" and first["opened_ms"] is None and first["fee"] is None
+    lab_ = lab()
+    lab_.add("5141621486582775041", "trader")
+    assert lab_.save_drafts("5141621486582775041", parsed["drafts"]) == 7
+    assert lab_.save_drafts("5141621486582775041", parsed["drafts"]) == 0  # no duplicates
+    assert lab_.traders()[0]["drafts"] == 7 and lab_.traders()[0]["trades"] == 0
+    with pytest.raises(ValueError, match="no_trades"):
+        await lab_.study("5141621486582775041", bars_until)  # drafts are not learned from
+    draft = lab_.drafts("5141621486582775041")[0]
+    with pytest.raises(ValueError, match="draft_times"):
+        lab_.complete_draft("5141621486582775041", draft["id"], None, None, None)
+    done = lab_.complete_draft("5141621486582775041", draft["id"],
+                               leader.moment("2026-11-01 10:00"),
+                               leader.moment("2026-11-01 14:00"), None)
+    assert done["added"] == 1 and len(lab_.drafts("5141621486582775041")) == 6
+    trade = lab_.trades("5141621486582775041")[0]
+    assert trade["fee"] is None and trade["leverage"] == 20  # the fee stays unknown
+    # importing the same trades again with their times replaces the drafts
+    full = OWNER_CSV.replace(",,,0.1421164,", ",2026-11-02 08:00,2026-11-02 09:00,0.1421164,")
+    again = leader.parse_csv(full)
+    assert len(again["trades"]) == 1 and again["rows"][1]["status"] == "saved"
+    assert again["rows"][1]["missing"] == ["fee"]
+    lab_.import_trades("5141621486582775041", again["trades"], "csv")
+    assert lab_.drop_completed_drafts("5141621486582775041", again["trades"]) == 1
+
+
+def test_binance_position_history_columns() -> None:
+    text = ("Symbol,Direction,Opened,Closed,Avg. Entry Price,Avg. Close Price,Closing PnL\n"
+            "ZECUSDT Perpetual,Long,2026-11-01 10:00:00,2026-11-01 12:30:00,1300,1310,0.05\n")
+    parsed = leader.parse_csv(text)
+    assert parsed["format"] == "positions" and len(parsed["trades"]) == 1
+    trade = parsed["trades"][0]
+    assert trade["symbol"] == "ZECUSDT" and trade["side"] == "BUY" and trade["pnl"] == 0.05
+    assert parsed["rows"][0]["missing"] == ["leverage", "qty", "fee"]

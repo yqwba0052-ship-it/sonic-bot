@@ -3,6 +3,7 @@ import { useCallback, useState } from 'react';
 import { Modal, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
 
 import { type Allocations, AllocationsCard } from '@/components/allocations';
+import { type Draft, Drafts, ImportReport, type ImportRow } from '@/components/drafts';
 import { Body, Button, Card, colors, Field, Row, Screen } from '@/components/ui';
 import { errorCode, useBot } from '@/lib/bot-context';
 import { message, when } from '@/lib/text';
@@ -21,6 +22,7 @@ type Trader = {
   kind: string;
   status: 'watching' | 'paused';
   trades: number;
+  drafts: number;
   model: null | {
     id: number;
     created_ms: number;
@@ -58,6 +60,7 @@ type Model = {
 type Detail = {
   trader: Trader;
   trades: number;
+  drafts: Draft[];
   latest: null | { id: number; created_ms: number; model: Model | null; report: Report };
   versions: { id: number; created_ms: number; learned: number }[];
   paper: Result & { open: number };
@@ -288,6 +291,7 @@ export default function TradersScreen() {
   const [account, setAccount] = useState<Account | null>(null);
   const [ranking, setRanking] = useState<Ranking | null>(null);
   const [tested, setTested] = useState<AccountTest | null>(null);
+  const [rows, setRows] = useState<ImportRow[]>([]);
   const [allocations, setAllocations] = useState<Allocations | null>(null);
   const [key, setKey] = useState('');
   const [secret, setSecret] = useState('');
@@ -381,19 +385,40 @@ export default function TradersScreen() {
 
   const importCsv = async (id: string) => {
     try {
-      const result = await call<{ read: number; added: number; still_open: number; errors: [number, string][] }>(
-        `/traders/${id}/import`,
-        'POST',
-        { csv },
-        60_000
-      );
+      const result = await call<{
+        read: number;
+        added: number;
+        drafts: number;
+        drafts_completed: number;
+        still_open: number;
+        errors: [number, string][];
+        rows: ImportRow[];
+      }>(`/traders/${id}/import`, 'POST', { csv }, 60_000);
       const bad = result.errors.length ? `، وأسطر فيها خطأ: ${result.errors.map((e) => e[0]).join('، ')}` : '';
+      const drafts = result.drafts
+        ? `، وحُفظت ${result.drafts} مسودة ناقصة الأوقات (لا تدخل في التعلم حتى تكتمل)`
+        : '';
       setNotice({
-        text: `قُرئت ${result.read} صفقة، الجديد منها ${result.added}، والمفتوحة ${result.still_open}${bad}.`,
+        text: `صفقات كاملة جديدة ${result.added}${drafts}، ومفتوحة تُركت ${result.still_open}${bad}.`,
         color: result.added ? colors.gain : colors.warn,
       });
+      setRows(result.rows);
       setCsv('');
+      await loadDetail(id);
+      await load();
       if (result.added) await study(id);
+    } catch (failure) {
+      fail(failure);
+    }
+  };
+
+  const saveDraft = async (draftId: number, opened: string, closed: string, fee: string) => {
+    if (!open) return;
+    try {
+      await call(`/traders/${open}/drafts/${draftId}`, 'PUT', { opened_at: opened, closed_at: closed, fee });
+      setNotice({ text: 'اكتملت الصفقة وانتقلت من المسودات إلى الصفقات المحفوظة.', color: colors.gain });
+      await loadDetail(open);
+      await load();
     } catch (failure) {
       fail(failure);
     }
@@ -510,6 +535,9 @@ export default function TradersScreen() {
               color={trader.status === 'watching' ? colors.gain : colors.muted}
             />
             <Row label="الصفقات المحفوظة" value={String(trader.trades)} />
+            {trader.drafts ? (
+              <Row label="مسودات ناقصة الأوقات" value={String(trader.drafts)} color={colors.warn} />
+            ) : null}
             {trader.model?.test ? (
               <Row
                 label="المستنتجة في الاختبار"
@@ -552,6 +580,8 @@ export default function TradersScreen() {
                 سطر لكل صفقة مغلقة، والأوقات بتوقيت UTC. الخانات غير المعروفة اتركها فارغة، ولا تُخمَّن.
               </Body>
               <Button label="استورد وحلل" disabled={!csv.trim()} onPress={() => importCsv(trader.trader_id)} />
+              <ImportReport rows={rows} />
+              <Drafts drafts={detail.drafts} onSave={saveDraft} />
               <Button
                 label="حدّث التحليل والاستراتيجية"
                 color={colors.line}

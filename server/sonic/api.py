@@ -198,6 +198,7 @@ def create_app(engine: Engine, token: str, background: bool = True) -> FastAPI:
         trades = engine.lab.trades(trader_id)
         return {
             "trader": trader, "trades": len(trades), "recent": trades[-20:][::-1],
+            "drafts": engine.lab.drafts(trader_id),
             "latest": engine.lab.latest_model(trader_id),
             "versions": engine.lab.models(trader_id),
             "paper": engine.lab.paper_summary(trader_id),
@@ -233,10 +234,27 @@ def create_app(engine: Engine, token: str, background: bool = True) -> FastAPI:
         parsed = leader.parse_csv(text)
         try:
             added = engine.lab.import_trades(trader_id, parsed["trades"], "csv")
+            drafts = engine.lab.save_drafts(trader_id, parsed["drafts"])
+            completed = engine.lab.drop_completed_drafts(trader_id, parsed["trades"])
         except KeyError as error:
             raise lab_error(error) from error
         return {"format": parsed["format"], "read": len(parsed["trades"]), "added": added,
-                "still_open": parsed["skipped"], "errors": parsed["errors"][:50]}
+                "drafts": drafts, "drafts_completed": completed,
+                "still_open": parsed["skipped"], "errors": parsed["errors"][:50],
+                "rows": parsed["rows"][:500]}
+
+    @app.put("/traders/{trader_id}/drafts/{draft_id}", dependencies=secured)
+    async def complete_draft(
+        draft_id: int, body: Annotated[dict[str, Any], Body()],
+        trader_id: str = Path_(pattern=trader_path),
+    ) -> dict[str, Any]:
+        opened = leader.moment(str(body.get("opened_at", "")))
+        closed = leader.moment(str(body.get("closed_at", "")))
+        fee = leader.number(str(body.get("fee", ""))) if body.get("fee") not in (None, "") else None
+        try:
+            return engine.lab.complete_draft(trader_id, draft_id, opened, closed, fee)
+        except (KeyError, ValueError) as error:
+            raise lab_error(error) from error
 
     @app.get("/strategies", dependencies=secured)
     async def strategies() -> dict[str, Any]:

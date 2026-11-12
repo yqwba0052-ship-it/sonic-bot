@@ -108,6 +108,14 @@ Read-only Binance key, two safe places (never in chat, never in git):
 Either way the key is refused unless Binance reports it as read-only, it is re-checked before
 every use, and the account is synced every 6 hours.
 
+CSV import never invents data. Every row is reported as saved, draft, still open or error, with
+the fields it lacks. A row with prices but no open/close time is kept as a draft: it is never
+used for learning, ranking or paper trading until the real times are added in the app or the
+same trades are imported again with their times (the drafts are then replaced). A missing fee,
+leverage, size or profit stays empty. Column names of Binance's position history (Opened,
+Closed, Avg. Entry Price, Avg. Close Price, Closing PnL, Direction) and trade history (single
+fills) are recognised.
+
 ## Safety
 
 - **Amount:** a hard total-loss budget. Losing it closes everything and halts the bot.

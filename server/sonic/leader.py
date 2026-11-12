@@ -108,6 +108,22 @@ CREATE TABLE IF NOT EXISTS trader_models (
     model TEXT,
     report TEXT NOT NULL
 );
+CREATE TABLE IF NOT EXISTS trader_drafts (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    trader_id TEXT NOT NULL,
+    symbol TEXT NOT NULL,
+    side TEXT NOT NULL,
+    leverage REAL,
+    qty REAL,
+    entry_price REAL NOT NULL,
+    exit_price REAL NOT NULL,
+    opened_ms INTEGER,
+    closed_ms INTEGER,
+    pnl REAL,
+    fee REAL,
+    missing TEXT NOT NULL,
+    imported_ms INTEGER NOT NULL
+);
 CREATE TABLE IF NOT EXISTS lab_state (key TEXT PRIMARY KEY, value TEXT NOT NULL);
 CREATE TABLE IF NOT EXISTS champion_paper (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -250,17 +266,22 @@ def trader_ref(text: str) -> str | None:
 
 ALIASES = {
     "symbol": ("symbol", "pair", "contract", "coin", "العملة", "الرمز", "الزوج"),
-    "side": ("side", "direction", "position side", "position", "الاتجاه", "النوع"),
+    "side": ("side", "direction", "position side", "position", "الاتجاه", "النوع", "long/short"),
     "leverage": ("leverage", "lev", "الرافعة"),
     "qty": ("qty", "quantity", "size", "position size", "max open interest", "amount",
             "الكمية", "الحجم"),
     "entry_price": ("entry_price", "entry price", "entry", "open price", "avg entry price",
+                    "avg. entry price", "average entry price", "opening price",
                     "سعر الدخول"),
     "exit_price": ("exit_price", "exit price", "close price", "closing price",
+                   "avg. close price", "average close price", "avg close price",
                    "avg close price", "سعر الخروج"),
-    "opened_at": ("opened_at", "opened at", "open time", "opened", "entry time", "وقت الدخول"),
-    "closed_at": ("closed_at", "closed at", "close time", "closed", "exit time", "وقت الخروج"),
-    "pnl": ("pnl", "realized pnl", "closed pnl", "realized profit", "profit", "الربح"),
+    "opened_at": ("opened_at", "opened at", "open time", "opened", "entry time", "time opened",
+                  "وقت الدخول", "وقت الفتح"),
+    "closed_at": ("closed_at", "closed at", "close time", "closed", "exit time", "time closed",
+                  "وقت الخروج", "وقت الإغلاق"),
+    "pnl": ("pnl", "realized pnl", "closed pnl", "closing pnl", "realized profit", "profit",
+            "الربح", "الربح والخسارة"),
     "fee": ("fee", "fees", "commission", "الرسوم", "العمولة"),
     "time": ("date(utc)", "date (utc)", "date", "time", "datetime", "التاريخ", "الوقت"),
     "price": ("price", "السعر"),
@@ -288,22 +309,32 @@ def parse_csv(text: str) -> dict[str, Any]:
     Missing values stay missing (None); nothing is guessed."""
     rows = list(csv.reader(io.StringIO(text.strip())))
     if len(rows) < 2:
-        return {"trades": [], "errors": [[1, "empty"]], "skipped": 0, "format": None}
+        return {"trades": [], "drafts": [], "errors": [[1, "empty"]], "skipped": 0,
+                "format": None, "rows": []}
     cols = _columns(rows[0])
     position_keys = {"symbol", "side", "entry_price", "exit_price", "opened_at", "closed_at"}
     fill_keys = {"symbol", "side", "price", "qty", "time"}
-    if position_keys <= cols.keys():
+    if {"symbol", "side", "entry_price", "exit_price"} <= cols.keys():
         return {**_positions(rows[1:], cols), "format": "positions"}
     if fill_keys <= cols.keys():
         return {**pair_fills(_fill_rows(rows[1:], cols), "pnl" in cols), "format": "fills"}
     missing = sorted(position_keys - cols.keys())
-    return {"trades": [], "errors": [[1, "unknown_columns:" + ",".join(missing)]],
-            "skipped": 0, "format": None}
+    return {"trades": [], "drafts": [], "errors": [[1, "unknown_columns:" + ",".join(missing)]],
+            "skipped": 0, "format": None, "rows": []}
+
+
+NEEDED_TO_LEARN = ("opened_at", "closed_at")  # without these a trade cannot be linked to the market
+OPTIONAL = ("leverage", "qty", "pnl", "fee")
 
 
 def _positions(rows: list[list[str]], cols: dict[str, int]) -> dict[str, Any]:
+    """Each row ends as: a trade (complete), a draft (prices known, times missing: kept, but
+    never used for learning or paper trading), still open (skipped) or an error. Every row
+    reports the fields it lacks; nothing is filled in by guessing."""
     trades: list[dict[str, Any]] = []
+    drafts: list[dict[str, Any]] = []
     errors: list[list[Any]] = []
+    report: list[dict[str, Any]] = []
     skipped = 0
     for line, row in enumerate(rows, start=2):
         if not any(cell.strip() for cell in row):
@@ -316,19 +347,20 @@ def _positions(rows: list[list[str]], cols: dict[str, int]) -> dict[str, Any]:
         closed = moment(_cell(row, cols, "closed_at"))
         if exit_ is None and closed is None and symbol and side and entry and opened:
             skipped += 1  # still open: nothing to learn from yet
+            report.append({"line": line, "status": "open", "missing": ["exit_price", "closed_at"]})
             continue
         problem = (
             "symbol" if symbol is None else "side" if side is None
             else "entry_price" if not entry or entry <= 0
             else "exit_price" if not exit_ or exit_ <= 0
-            else "opened_at" if opened is None
-            else "closed_at" if closed is None or closed < opened
+            else "closed_at" if opened is not None and closed is not None and closed < opened
             else ""
         )
         if problem:
             errors.append([line, problem])
+            report.append({"line": line, "status": "error", "missing": [problem]})
             continue
-        trades.append({
+        item = {
             "symbol": symbol, "side": side,
             "leverage": number(_cell(row, cols, "leverage")),
             "qty": number(_cell(row, cols, "qty")),
@@ -336,8 +368,17 @@ def _positions(rows: list[list[str]], cols: dict[str, int]) -> dict[str, Any]:
             "opened_ms": opened, "closed_ms": closed,
             "pnl": number(_cell(row, cols, "pnl")),
             "fee": number(_cell(row, cols, "fee")),
-        })
-    return {"trades": trades, "errors": errors, "skipped": skipped}
+        }
+        lacking = [k for k, v in (("opened_at", opened), ("closed_at", closed)) if v is None]
+        optional = [k for k in OPTIONAL if item[k] is None]
+        if lacking:
+            drafts.append({**item, "line": line, "missing": lacking + optional})
+            report.append({"line": line, "status": "draft", "missing": lacking + optional})
+        else:
+            trades.append(item)
+            report.append({"line": line, "status": "saved", "missing": optional})
+    return {"trades": trades, "drafts": drafts, "errors": errors, "skipped": skipped,
+            "rows": report}
 
 
 def _fill_rows(rows: list[list[str]], cols: dict[str, int]) -> dict[str, Any]:
@@ -400,7 +441,8 @@ def pair_fills(parsed: dict[str, Any], has_pnl: bool) -> dict[str, Any]:
                     "fee": book["fee"] or None,
                 })
                 del books[symbol]
-    return {"trades": trades, "errors": parsed["errors"], "skipped": len(books)}
+    return {"trades": trades, "drafts": [], "errors": parsed["errors"], "skipped": len(books),
+            "rows": []}
 
 
 # ---------- indicators on 4h bars
@@ -963,7 +1005,8 @@ class Lab:
     def traders(self) -> list[dict[str, Any]]:
         rows = self.db.execute(
             "SELECT t.*, (SELECT COUNT(*) FROM trader_trades x WHERE x.trader_id = t.trader_id) "
-            "AS trades FROM traders t ORDER BY added_ms"
+            "AS trades, (SELECT COUNT(*) FROM trader_drafts d WHERE d.trader_id = t.trader_id) "
+            "AS drafts FROM traders t ORDER BY added_ms"
         ).fetchall()
         out = []
         for row in rows:
@@ -997,6 +1040,66 @@ class Lab:
             added += cur.rowcount
         self.db.commit()
         return added
+
+    def save_drafts(self, trader_id: str, drafts: list[dict[str, Any]]) -> int:
+        """Rows with prices but without times: kept as they are, never used for learning."""
+        if self.listed(trader_id) is None:
+            raise KeyError("unknown_trader")
+        added = 0
+        for d in drafts:
+            same = self.db.execute(
+                "SELECT 1 FROM trader_drafts WHERE trader_id = ? AND symbol = ? AND side = ? AND "
+                "entry_price = ? AND exit_price = ? AND COALESCE(qty, -1) = COALESCE(?, -1)",
+                (trader_id, d["symbol"], d["side"], d["entry_price"], d["exit_price"],
+                 d.get("qty")),
+            ).fetchone()
+            if same:
+                continue
+            self.db.execute(
+                "INSERT INTO trader_drafts (trader_id, symbol, side, leverage, qty, entry_price, "
+                "exit_price, opened_ms, closed_ms, pnl, fee, missing, imported_ms) "
+                "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+                (trader_id, d["symbol"], d["side"], d.get("leverage"), d.get("qty"),
+                 d["entry_price"], d["exit_price"], d.get("opened_ms"), d.get("closed_ms"),
+                 d.get("pnl"), d.get("fee"), json.dumps(d["missing"]), self.now_ms()))
+            added += 1
+        self.db.commit()
+        return added
+
+    def drafts(self, trader_id: str) -> list[dict[str, Any]]:
+        rows = self.db.execute("SELECT * FROM trader_drafts WHERE trader_id = ? ORDER BY id",
+                               (trader_id,))
+        return [{**dict(r), "missing": json.loads(r["missing"])} for r in rows]
+
+    def complete_draft(self, trader_id: str, draft_id: int, opened_ms: int | None,
+                       closed_ms: int | None, fee: float | None) -> dict[str, Any]:
+        """The owner adds the real times (and the fee if known): the draft becomes a trade."""
+        row = self.db.execute("SELECT * FROM trader_drafts WHERE id = ? AND trader_id = ?",
+                              (draft_id, trader_id)).fetchone()
+        if row is None:
+            raise KeyError("unknown_draft")
+        opened = opened_ms if opened_ms is not None else row["opened_ms"]
+        closed = closed_ms if closed_ms is not None else row["closed_ms"]
+        if opened is None or closed is None or closed < opened:
+            raise ValueError("draft_times")
+        trade = {k: row[k] for k in ("symbol", "side", "leverage", "qty", "entry_price",
+                                     "exit_price", "pnl")}
+        trade.update(opened_ms=opened, closed_ms=closed, fee=fee if fee is not None else row["fee"])
+        added = self.import_trades(trader_id, [trade], "draft")
+        self.db.execute("DELETE FROM trader_drafts WHERE id = ?", (draft_id,))
+        self.db.commit()
+        return {"added": added}
+
+    def drop_completed_drafts(self, trader_id: str, trades: list[dict[str, Any]]) -> int:
+        """A full import of the same trades replaces their drafts."""
+        removed = 0
+        for t in trades:
+            removed += self.db.execute(
+                "DELETE FROM trader_drafts WHERE trader_id = ? AND symbol = ? AND side = ? AND "
+                "entry_price = ? AND exit_price = ?",
+                (trader_id, t["symbol"], t["side"], t["entry_price"], t["exit_price"])).rowcount
+        self.db.commit()
+        return removed
 
     def move_trades(self, from_id: str, to_id: str, start_ms: int, end_ms: int) -> int:
         """The owner says which trader some synced trades came from (never guessed)."""
