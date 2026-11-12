@@ -1044,6 +1044,12 @@ class Lab:
         self.db = db
         self.now_ms = now_ms
         self.db.executescript(SCHEMA)
+        columns = {r[1] for r in self.db.execute("PRAGMA table_info(trader_trades)")}
+        if "source_ref" not in columns:  # the source's own id of a position (Kopyon positionId)
+            self.db.execute("ALTER TABLE trader_trades ADD COLUMN source_ref TEXT")
+        self.db.execute(
+            "CREATE UNIQUE INDEX IF NOT EXISTS trader_trades_source_ref ON trader_trades "
+            "(trader_id, source, source_ref) WHERE source_ref IS NOT NULL AND source_ref != ''")
         self.db.commit()
 
     # traders
@@ -1140,6 +1146,11 @@ class Lab:
             raise KeyError("unknown_trader")
         now, added = self.now_ms(), 0
         for t in trades:
+            ref = t.get("source_ref") or None
+            if ref and self.db.execute(
+                "SELECT 1 FROM trader_trades WHERE trader_id = ? AND source = ? AND source_ref = ?",
+                (trader_id, source, ref)).fetchone():
+                continue  # this position from this source is already saved
             known = [dict(r) for r in self.db.execute(
                 "SELECT * FROM trader_trades WHERE trader_id = ? AND symbol = ? AND side = ? AND "
                 "ABS(opened_ms - ?) <= 60000", (trader_id, t["symbol"], t["side"], t["opened_ms"]))]
@@ -1153,11 +1164,11 @@ class Lab:
                     break
             cur = self.db.execute(
                 "INSERT OR IGNORE INTO trader_trades (trader_id, symbol, side, leverage, qty, "
-                "entry_price, exit_price, opened_ms, closed_ms, pnl, fee, source, imported_ms) "
-                "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+                "entry_price, exit_price, opened_ms, closed_ms, pnl, fee, source, imported_ms, "
+                "source_ref) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
                 (trader_id, t["symbol"], t["side"], t.get("leverage"), t.get("qty"),
                  t["entry_price"], t["exit_price"], t["opened_ms"], t["closed_ms"],
-                 t.get("pnl"), t.get("fee"), source, now),
+                 t.get("pnl"), t.get("fee"), source, now, ref),
             )
             added += cur.rowcount
         self.db.commit()
@@ -1217,13 +1228,21 @@ class Lab:
         return removed
 
     def needs_study(self, trader_id: str) -> bool:
-        """At least MIN_TRADES complete trades, and more of them than the last study saw."""
-        count = len(self.trades(trader_id))
-        if count < MIN_TRADES:
+        """At least MIN_TRADES complete trades with MIN_LOSSES losing ones, and then again
+        after 5 more trades, or a day later if any arrived (not on every 10-minute sync)."""
+        trades = self.trades(trader_id)
+        losses = sum(1 for t in trades
+                     if (t["pnl"] if t["pnl"] is not None else
+                         (t["exit_price"] - t["entry_price"]) * (1 if t["side"] == "BUY" else -1))
+                     <= 0)
+        if len(trades) < MIN_TRADES or losses < MIN_LOSSES:
             return False
         latest = self.latest_model(trader_id)
-        seen = (latest or {}).get("report", {}).get("data", {}).get("trades", 0) if latest else 0
-        return count > seen
+        if latest is None:
+            return True
+        seen = latest["report"].get("data", {}).get("trades", 0)
+        new = len(trades) - seen
+        return new >= 5 or (new > 0 and self.now_ms() - latest["created_ms"] >= 86_400_000)
 
     def move_trades(self, from_id: str, to_id: str, start_ms: int, end_ms: int) -> int:
         """The owner says which trader some synced trades came from (never guessed)."""

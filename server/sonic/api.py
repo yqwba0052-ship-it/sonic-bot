@@ -17,7 +17,7 @@ from fastapi.responses import FileResponse, PlainTextResponse
 from fastapi.staticfiles import StaticFiles
 from pydantic import ValidationError
 
-from . import account, capital, leader, ocr
+from . import account, capital, kopyon, leader, ocr
 from .engine import Engine
 from .risk import ALLOWED_SYMBOLS, Limits
 
@@ -173,11 +173,77 @@ def create_app(engine: Engine, token: str, background: bool = True) -> FastAPI:
     async def traders() -> list[dict[str, Any]]:
         listed = engine.lab.traders()
         synced = engine.store.get("account_synced_ms")
+        linked = engine.kopyon_key() is not None
+        state = engine.store.get("kopyon_state") or {}
+        every = kopyon.interval_minutes(len(engine.kopyon_targets()))
         for item in listed:
             if item["collection"]["automatic"]:
                 item["collection"]["linked"] = engine.account_key() is not None
                 item["collection"]["synced_ms"] = synced
+            elif item["kind"] == "lead":
+                has_id = bool(kopyon.PORTFOLIO_ID.match(item["trader_id"]))
+                st = state.get(item["trader_id"]) or {}
+                item["collection"] = {
+                    **item["collection"],
+                    "kopyon": {"linked": linked, "has_binance_id": has_id,
+                               "active": linked and has_id and item["status"] == "watching",
+                               "every_minutes": every, "last_ms": st.get("last_ms"),
+                               "collected": st.get("collected", 0),
+                               "last_added": st.get("last_added"),
+                               "error": st.get("last_error")},
+                }
         return listed
+
+    def kopyon_view() -> dict[str, Any]:
+        saved = engine.kopyon_key()
+        usage = engine.store.get("kopyon_usage") or {}
+        return {"linked": bool(saved),
+                "source": (saved or {}).get("source", "app") if saved else None,
+                "hint": ("..." + saved["key"][-4:]) if saved else None,
+                "every_minutes": kopyon.interval_minutes(len(engine.kopyon_targets())),
+                "used_30d": kopyon.used_30d(usage, engine.now_ms()),
+                "budget_30d": kopyon.BUDGET_30D, "free_plan_30d": 10_000,
+                "state": engine.store.get("kopyon_state") or {}}
+
+    @app.get("/kopyon", dependencies=secured)
+    async def kopyon_status() -> dict[str, Any]:
+        return kopyon_view()
+
+    @app.put("/kopyon", dependencies=secured)
+    async def link_kopyon(body: Annotated[dict[str, Any], Body()]) -> dict[str, Any]:
+        key = str(body.get("key", "")).strip()
+        if not (16 <= len(key) <= 200):
+            raise HTTPException(status_code=422, detail="invalid_values")
+        targets = engine.kopyon_targets()
+        probe = targets[0]["trader_id"] if targets else "5141621486582775041"
+        try:  # one request to check the key works
+            await kopyon.Kopyon(key).profile(probe)
+        except kopyon.KopyonError as error:
+            if error.code != "kopyon_unknown_trader":
+                raise HTTPException(status_code=422, detail=error.code) from error
+        except Exception as error:  # noqa: BLE001 - network; no key in the message
+            raise HTTPException(status_code=502, detail="kopyon_unreachable") from error
+        engine.store.put("kopyon_key", {"key": key, "checked_ms": engine.now_ms()})
+        usage = engine.store.get("kopyon_usage") or {}
+        day = kopyon.today(engine.now_ms())
+        engine.store.put("kopyon_usage", {**usage, day: usage.get(day, 0) + 1})
+        engine.log("info", "kopyon_linked", "key ..." + key[-4:])
+        engine.maybe_sync_kopyon()  # history starts at once, in the background
+        return kopyon_view()
+
+    @app.delete("/kopyon", dependencies=secured)
+    async def unlink_kopyon() -> dict[str, Any]:
+        engine.store.put("kopyon_key", None)
+        return kopyon_view()
+
+    @app.post("/kopyon/sync", dependencies=secured)
+    async def kopyon_sync_now(body: Annotated[dict[str, Any], Body()]) -> dict[str, Any]:
+        only = body.get("trader_id") or None
+        try:
+            report = await engine.sync_kopyon(only=only, force=True)
+        except ValueError as error:
+            raise HTTPException(status_code=422, detail=str(error)) from error
+        return {"report": report, **kopyon_view()}
 
     @app.get("/traders/template.csv", dependencies=secured, response_class=PlainTextResponse)
     async def trader_template() -> str:

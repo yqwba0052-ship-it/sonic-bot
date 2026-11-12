@@ -11,7 +11,9 @@ from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
 
-from . import account, awake, capital, chart, journal, leader, risk, strategy
+import httpx
+
+from . import account, awake, capital, chart, journal, kopyon, leader, risk, strategy
 from .config import Settings
 from .exchange import Exchange
 from .risk import Limits
@@ -52,6 +54,7 @@ class Engine:
         self.strategy_clients: dict[str, Any] = {}
         self.sync_task: asyncio.Task[None] | None = None
         self.study_tasks: dict[str, asyncio.Task[None]] = {}
+        self.kopyon_task: asyncio.Task[Any] | None = None
         self.sync_failed_ms = 0
         self.failures = 0
         self.failing_since_ms: int | None = None
@@ -748,7 +751,92 @@ class Engine:
         while True:
             await self.tick()
             self.maybe_sync_account()
+            self.maybe_sync_kopyon()
             await asyncio.sleep(self.settings.tick_seconds)
+
+    # ---------- Kopyon: lead traders' closed positions (third-party source, see kopyon.py)
+    def kopyon_key(self) -> dict[str, Any] | None:
+        """The owner's Kopyon key: KOPYON_API_KEY in the environment / server/.env first, else
+        saved from the app. Never sent anywhere but api.kopyon.com."""
+        import os
+
+        from .config import read_env_file
+
+        values = {**read_env_file(Path(__file__).resolve().parent.parent / ".env"), **os.environ}
+        if values.get("KOPYON_API_KEY", "").strip():
+            return {"key": values["KOPYON_API_KEY"].strip(), "source": "env"}
+        return self.store.get("kopyon_key")
+
+    def kopyon_targets(self) -> list[dict[str, Any]]:
+        return [t for t in self.lab.traders() if t["kind"] == "lead"
+                and t["status"] == "watching" and kopyon.PORTFOLIO_ID.match(t["trader_id"])]
+
+    def maybe_sync_kopyon(self) -> None:
+        if not self.kopyon_key() or (self.kopyon_task and not self.kopyon_task.done()):
+            return
+        targets = self.kopyon_targets()
+        if not targets:
+            return
+        state = self.store.get("kopyon_state") or {}
+        every = kopyon.interval_minutes(len(targets)) * 60_000
+        if any(self.now_ms() - (state.get(t["trader_id"]) or {}).get("last_ms", 0) >= every
+               for t in targets):
+            self.kopyon_task = asyncio.create_task(self.sync_kopyon())
+
+    async def sync_kopyon(self, only: str | None = None, force: bool = False) -> dict[str, Any]:
+        """Due traders (or `only`, now): history once, then positions closed since the last
+        seen. Budget-checked before every trader; errors are kept per trader and logged."""
+        saved = self.kopyon_key()
+        if not saved:
+            raise ValueError("no_kopyon_key")
+        targets = [t for t in self.kopyon_targets() if only in (None, t["trader_id"])]
+        state: dict[str, Any] = self.store.get("kopyon_state") or {}
+        usage: dict[str, int] = self.store.get("kopyon_usage") or {}
+        every = kopyon.interval_minutes(len(self.kopyon_targets())) * 60_000
+        report = {}
+        for trader in targets:
+            tid = trader["trader_id"]
+            st = state.get(tid) or {"collected": 0, "backfilled": False, "high_ms": 0}
+            now = self.now_ms()
+            if not force and now - st.get("last_ms", 0) < every:
+                continue
+            if kopyon.used_30d(usage, now) >= kopyon.BUDGET_30D:
+                st.update(last_error="kopyon_budget", last_ms=now)
+                state[tid] = st
+                report[tid] = st
+                continue
+            client = kopyon.Kopyon(saved["key"])
+            backfill = not st.get("backfilled")
+            try:
+                positions = await client.closed_since(
+                    tid, 0 if backfill else int(st.get("high_ms", 0)),
+                    kopyon.BACKFILL_PAGES if backfill else kopyon.INCREMENT_PAGES,
+                    now - kopyon.HISTORY_MS)
+            except (kopyon.KopyonError, httpx.HTTPError) as error:
+                code = getattr(error, "code", type(error).__name__)
+                st.update(last_error=code, last_ms=now)
+                self.log("warning", "kopyon_failed", f"{tid}: {code}")
+                positions = None
+            finally:
+                day = kopyon.today(now)
+                usage[day] = usage.get(day, 0) + client.requests
+            if positions is not None:
+                trades = [t for t in map(kopyon.to_trade, positions) if t]
+                added = self.lab.import_trades(tid, trades, "kopyon")
+                newest = max((int(p.get("closedAt") or 0) for p in positions), default=0)
+                st.update(last_ms=now, last_error=None, backfilled=True,
+                          high_ms=max(int(st.get("high_ms", 0)), newest),
+                          collected=int(st.get("collected", 0)) + added, last_added=added,
+                          last_seen=len(positions), not_closed=len(positions) - len(trades))
+                self.log("info", "kopyon_synced", f"{tid}: {added} new of {len(positions)}")
+                if added:
+                    self.queue_study(tid)
+            state[tid] = st
+            report[tid] = st
+        keep = kopyon.today(self.now_ms() - 40 * 86_400_000)
+        self.store.put("kopyon_usage", {d: n for d, n in usage.items() if d > keep})
+        self.store.put("kopyon_state", state)
+        return report
 
     def maybe_sync_account(self) -> None:
         """Every 6 hours, read the owner's futures history with the read-only key, in the

@@ -139,6 +139,17 @@ imports (file or screenshot), with the time of the last one. Only the owner's ow
 read automatically, every 6 hours, with the read-only key. "Active" means used for analysis
 and paper trading, not that trades are being collected.
 
+Kopyon (owner's choice, 2026-11-13; third-party, NOT an official Binance API, `server/sonic/kopyon.py`):
+closed positions of the lead traders the owner added (by their Binance link/id), every 10
+minutes, after a one-time history of up to 6 months. Only GET positionHistory with the owner's
+Kopyon key (app Traders tab, or KOPYON_API_KEY in server/.env; separate from the Binance keys,
+which never go to Kopyon). Each trade keeps source "kopyon" and Kopyon's positionId, so nothing
+is saved twice; times are Binance's milliseconds; fees are not published and stay empty;
+positions not fully closed are skipped until closed. Sonic counts its own requests and stays
+under 9,500 per 30 days (free plan 10,000), widening the interval when more traders are watched.
+The app shows the last sync, trades collected and connection errors per trader. Study starts
+by itself at 20 complete trades with 3 losing ones, then after 5 more (or daily).
+
 ## Safety
 
 - **Amount:** a hard total-loss budget. Losing it closes everything and halts the bot.

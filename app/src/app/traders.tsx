@@ -4,6 +4,7 @@ import { Modal, Pressable, StyleSheet, Text, TextInput, View } from 'react-nativ
 
 import { type Allocations, AllocationsCard } from '@/components/allocations';
 import { type Draft, Drafts, ImportReport, type ImportRow } from '@/components/drafts';
+import { KopyonCard, kopyonError, type KopyonStatus } from '@/components/kopyon';
 import { Body, Button, Card, colors, Field, Row, Screen } from '@/components/ui';
 import { errorCode, useBot } from '@/lib/bot-context';
 import { deviceOffsetMinutes, offsetLabel, pickCsvText, pickScreenshotBase64 } from '@/lib/pick';
@@ -31,6 +32,16 @@ type Trader = {
     last_ms: number | null;
     linked?: boolean;
     synced_ms?: number | null;
+    kopyon?: {
+      linked: boolean;
+      has_binance_id: boolean;
+      active: boolean;
+      every_minutes: number;
+      last_ms: number | null;
+      collected: number;
+      last_added: number | null;
+      error: string | null;
+    };
   };
   model: null | {
     id: number;
@@ -324,6 +335,7 @@ export default function TradersScreen() {
   const [zone, setZone] = useState<'device' | 'utc'>('device');
   const [ocrText, setOcrText] = useState('');
   const [preview, setPreview] = useState<Preview | null>(null);
+  const [kopyonStatus, setKopyonStatus] = useState<KopyonStatus | null>(null);
   const [allocations, setAllocations] = useState<Allocations | null>(null);
   const [key, setKey] = useState('');
   const [secret, setSecret] = useState('');
@@ -337,6 +349,7 @@ export default function TradersScreen() {
       setAccount(await call<Account>('/account', 'GET'));
       setRanking(await call<Ranking>('/strategies', 'GET'));
       setAllocations(await call<Allocations>('/allocations', 'GET'));
+      setKopyonStatus(await call<KopyonStatus>('/kopyon', 'GET'));
     } catch {
       // the status line on the first tab already says when the server is unreachable
     }
@@ -612,6 +625,12 @@ export default function TradersScreen() {
       {notice ? <Body color={notice.color}>{notice.text}</Body> : null}
 
       <Strategies ranking={ranking} approvedIds={approvedIds} onApprove={approve} />
+      <KopyonCard
+        data={kopyonStatus}
+        names={Object.fromEntries(list.map((t) => [t.trader_id, t.name]))}
+        call={call}
+        report={report}
+      />
       <AllocationsCard data={allocations} call={call} report={report} />
 
       {list.length === 0 ? (
@@ -645,9 +664,34 @@ export default function TradersScreen() {
                 }
                 color={trader.collection.linked ? colors.gain : colors.warn}
               />
+            ) : trader.collection.kopyon?.active ? (
+              <Row
+                label="جمع الصفقات"
+                value={`تلقائي كل ${trader.collection.kopyon.every_minutes} دقائق عبر Kopyon (غير رسمي)`}
+                color={colors.gain}
+              />
             ) : (
-              <Row label="جمع الصفقات" value="غير تلقائي: يدوي (ملف أو صورة)" color={colors.warn} />
+              <Row
+                label="جمع الصفقات"
+                value={
+                  trader.collection.kopyon && !trader.collection.kopyon.has_binance_id
+                    ? 'يدوي: أضفه برابطه في Binance ليُجمع تلقائيًا'
+                    : trader.status !== 'watching'
+                      ? 'متوقف (المتداول موقوف)'
+                      : 'يدوي: أضف مفتاح Kopyon للجمع التلقائي'
+                }
+                color={colors.warn}
+              />
             )}
+            {trader.collection.kopyon?.active ? (
+              <Row
+                label="Kopyon"
+                value={`آخر مزامنة ${trader.collection.kopyon.last_ms ? when(trader.collection.kopyon.last_ms) : '—'}، جُمعت ${trader.collection.kopyon.collected}`}
+              />
+            ) : null}
+            {trader.collection.kopyon?.error ? (
+              <Row label="خطأ اتصال" value={kopyonError(trader.collection.kopyon.error)} color={colors.loss} />
+            ) : null}
             {trader.collection.automatic && trader.collection.synced_ms ? (
               <Row label="آخر مزامنة" value={when(trader.collection.synced_ms)} />
             ) : null}
@@ -655,7 +699,7 @@ export default function TradersScreen() {
               label="آخر صفقة وصلت"
               value={trader.collection.last_ms ? when(trader.collection.last_ms) : 'لم تصل أي صفقة بعد'}
             />
-            {!trader.collection.automatic ? (
+            {!trader.collection.automatic && !trader.collection.kopyon?.active ? (
               <Text style={styles.rankLine}>
                 Binance لا توفّر رسميًا صفقات المتداولين الآخرين، ولا تظهر صفقات النسخ في حسابك عبر المفتاح. لذلك لا
                 يجمع Sonic صفقاته بنفسه: يتعلم فقط مما تستورده من سجله.
