@@ -57,6 +57,20 @@ def server_ip() -> str | None:
     return ".".join(found.groups()) if found else None
 
 
+def env_key() -> dict[str, Any] | None:
+    """The read-only key from the environment or server/.env (BINANCE_READ_KEY and
+    BINANCE_READ_SECRET), if both are set. Takes precedence over a key saved from the app."""
+    import os
+    from pathlib import Path
+
+    from .config import read_env_file
+
+    values = {**read_env_file(Path(__file__).resolve().parent.parent / ".env"), **os.environ}
+    key = values.get("BINANCE_READ_KEY", "").strip()
+    secret = values.get("BINANCE_READ_SECRET", "").strip()
+    return {"key": key, "secret": secret, "source": "env"} if key and secret else None
+
+
 class NotReadOnly(Exception):
     def __init__(self, problems: list[str]) -> None:
         super().__init__(",".join(problems))

@@ -483,3 +483,30 @@ def test_live_switch_is_off_unless_the_owner_sets_it(monkeypatch) -> None:
     assert capital.live_allowed() is False
     monkeypatch.setenv("SONIC_LIVE_TRADING", "yes")
     assert capital.live_allowed() is True
+
+
+def test_key_from_env_file_wins_and_cannot_be_unlinked_from_the_app(monkeypatch) -> None:
+    engine, _, _, _ = build()
+    monkeypatch.setenv("BINANCE_READ_KEY", "e" * 20)
+    monkeypatch.setenv("BINANCE_READ_SECRET", "f" * 20)
+    engine.store.put("account_key", {"key": "k" * 20, "secret": "s" * 20})
+    assert engine.account_key()["key"] == "e" * 20
+    headers = {"Authorization": "Bearer secret"}
+    with TestClient(create_app(engine, "secret", background=False)) as client:
+        status = client.get("/account", headers=headers).json()
+        assert status["source"] == "env" and status["key_hint"] == "...eeee"
+        assert "f" * 20 not in json.dumps(status)
+        assert client.delete("/account", headers=headers).status_code == 409
+
+
+async def test_command_line_check_refuses_a_trading_key(monkeypatch) -> None:
+    from sonic import check_account
+
+    monkeypatch.setattr(account, "transport", lambda: mock_binance(
+        {"enableReading": True, "enableFutures": True}, []))
+    lines, ok = await check_account.check("k" * 20, "s" * 20)
+    assert not ok and "enableFutures" in lines[1] and "k" * 20 not in "\n".join(lines)
+    monkeypatch.setattr(account, "transport", lambda: mock_binance(
+        {"enableReading": True, "ipRestrict": True}, []))
+    lines, ok = await check_account.check("k" * 20, "s" * 20)
+    assert ok and any("80.25" in line for line in lines) and any("IPs" in line for line in lines)

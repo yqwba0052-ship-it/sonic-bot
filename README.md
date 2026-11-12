@@ -98,6 +98,16 @@ Money for approved strategies (`server/sonic/capital.py`), three separate steps:
    keeps open trades with their stop and target, or closes them at market. The order client
    was tested with simulated Binance replies only: run on Binance Demo first.
 
+Read-only Binance key, two safe places (never in chat, never in git):
+- the app: Traders tab, "ربط حسابك في Binance" (stored on the server in sonic.db, readable by
+  the bot's user only, never shown again);
+- or the server's `server/.env` (git-ignored): `BINANCE_READ_KEY=...` and
+  `BINANCE_READ_SECRET=...`, then `python -m sonic.check_account` (Windows: `check_account.cmd`)
+  for a read-only connection test that places no order, and restart the server. A key in
+  `.env` takes precedence over one saved from the app.
+Either way the key is refused unless Binance reports it as read-only, it is re-checked before
+every use, and the account is synced every 6 hours.
+
 ## Safety
 
 - **Amount:** a hard total-loss budget. Losing it closes everything and halts the bot.

@@ -330,10 +330,15 @@ class Engine:
             self.strategy_clients[mode] = client
         return self.strategy_clients[mode]
 
+    def account_key(self) -> dict[str, Any] | None:
+        """The read-only key: from the environment / server/.env first, else saved from the app.
+        Every use re-checks with Binance that it can only read."""
+        return account.env_key() or self.store.get("account_key")
+
     async def sync_account(self, trader_id: str | None) -> dict[str, Any]:
         """Read the owner's own futures fills with the read-only key and store them as closed
         positions: in the trader the owner chose, or else in the "my-account" bucket."""
-        saved = self.store.get("account_key")
+        saved = self.account_key()
         if not saved:
             raise ValueError("no_account_key")
         target = trader_id or self.store.get("account_target") or leader.ACCOUNT_ID
@@ -681,7 +686,7 @@ class Engine:
     def maybe_sync_account(self) -> None:
         """Every 6 hours, read the owner's futures history with the read-only key, in the
         background so Sonic's own loop never waits for it. After a failure, retry in 30 min."""
-        if not self.store.get("account_key") or (self.sync_task and not self.sync_task.done()):
+        if not self.account_key() or (self.sync_task and not self.sync_task.done()):
             return
         now = self.now_ms()
         due = now - int(self.store.get("account_synced_ms", 0)) >= ACCOUNT_SYNC_MS

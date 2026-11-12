@@ -100,6 +100,7 @@ type Coin = {
 type Ranking = { made_ms: number | null; total: number; coins: Record<string, Coin> };
 type Account = {
   linked: boolean;
+  source: 'env' | 'app' | null;
   key_hint: string | null;
   synced_ms: number | null;
   target: string | null;
@@ -594,6 +595,7 @@ export default function TradersScreen() {
         {account?.linked ? (
           <>
             <Row label="المفتاح (لا يُعرض بعد الحفظ)" value={account.key_hint ?? ''} />
+            <Row label="مصدره" value={account.source === 'env' ? 'ملف الإعدادات على الخادم (.env)' : 'التطبيق'} />
             <Row
               label="مقيّد بعنوان الخادم"
               value={account.ip_restricted ? 'نعم' : 'لا'}
@@ -621,13 +623,15 @@ export default function TradersScreen() {
               </>
             ) : null}
             <Button label={open ? `زامن إلى المتداول المفتوح` : 'زامن إلى «صفقات حسابي»'} onPress={sync} />
-            <Button
-              label="فك الربط"
-              color={colors.line}
-              onPress={async () => {
-                setAccount(await call<Account>('/account', 'DELETE'));
-              }}
-            />
+            {account.source !== 'env' ? (
+              <Button
+                label="فك الربط"
+                color={colors.line}
+                onPress={async () => {
+                  setAccount(await call<Account>('/account', 'DELETE'));
+                }}
+              />
+            ) : null}
           </>
         ) : (
           <>

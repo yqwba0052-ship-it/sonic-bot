@@ -269,7 +269,7 @@ def create_app(engine: Engine, token: str, background: bool = True) -> FastAPI:
             raise cap_error(error) from error
 
     async def bounds_for(model_id: int) -> dict[str, Any]:
-        saved = engine.store.get("account_key")
+        saved = engine.account_key()
         if not saved:
             raise ValueError("no_account_key")  # the balance is read with the read-only key
         row = engine.capital.row(model_id)
@@ -390,9 +390,10 @@ def create_app(engine: Engine, token: str, background: bool = True) -> FastAPI:
 
     @app.get("/account", dependencies=secured)
     async def account_status() -> dict[str, Any]:
-        saved = engine.store.get("account_key")
+        saved = engine.account_key()
         return {
             "linked": bool(saved),
+            "source": (saved or {}).get("source", "app") if saved else None,
             "key_hint": ("..." + saved["key"][-4:]) if saved else None,
             "checked_ms": saved.get("checked_ms") if saved else None,
             "ip_restricted": saved.get("ip_restricted") if saved else None,
@@ -426,7 +427,7 @@ def create_app(engine: Engine, token: str, background: bool = True) -> FastAPI:
     @app.post("/account/test", dependencies=secured)
     async def test_account() -> dict[str, Any]:
         """Check the key again, then read the balance and the recent history (read only)."""
-        saved = engine.store.get("account_key")
+        saved = engine.account_key()
         if not saved:
             raise HTTPException(status_code=422, detail="no_account_key")
         reader = account.AccountReader(saved["key"], saved["secret"], engine.now_ms)
@@ -455,6 +456,8 @@ def create_app(engine: Engine, token: str, background: bool = True) -> FastAPI:
 
     @app.delete("/account", dependencies=secured)
     async def unlink_account() -> dict[str, Any]:
+        if account.env_key():
+            raise HTTPException(status_code=409, detail="key_in_env_file")
         engine.store.put("account_key", None)
         engine.log("info", "account_unlinked")
         return await account_status()
