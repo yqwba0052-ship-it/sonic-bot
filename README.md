@@ -116,6 +116,22 @@ leverage, size or profit stays empty. Column names of Binance's position history
 Closed, Avg. Entry Price, Avg. Close Price, Closing PnL, Direction) and trade history (single
 fills) are recognised.
 
+Automatic import (no manual completion needed when the data exists):
+- a Binance CSV file chosen in the app, or pasted text; a screenshot of the trader's position
+  history read by OCR on the server (Tesseract, English and Arabic; the read text is shown for
+  review). Coin, side, leverage, open and close times, prices, size, profit and fee are taken
+  when present; anything not clearly there stays missing;
+- times are converted to UTC: a file whose time column says UTC is kept as is, other times are
+  the phone's time zone (sent by the app), a time with its own zone keeps it;
+- a complete record of a position completes its draft automatically (same coin and side,
+  prices within 0.05%); fields missing on one side are taken from the other real record; the
+  same position from two sources is never saved twice;
+- a trader's strategy is studied automatically in the background once it has 20 complete
+  trades and new ones since the last study, then all coins are compared again.
+- The owner's own account: the API keeps 3 months; months 4 to 6 come from Binance's official
+  futures history file (requested once; 5 requests a month are allowed), so learning from the
+  account covers 6 months.
+
 ## Safety
 
 - **Amount:** a hard total-loss budget. Losing it closes everything and halts the bot.

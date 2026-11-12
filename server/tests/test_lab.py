@@ -215,6 +215,18 @@ def mock_binance(permissions: dict, seen: list) -> httpx.MockTransport:
         seen.append((request.method, request.url.host, request.url.path))
         if request.url.path == "/sapi/v1/account/apiRestrictions":
             return httpx.Response(200, json=permissions)
+        if request.url.path == "/fapi/v1/trade/asyn":
+            return httpx.Response(200, json={"downloadId": "777", "avgCostTimestampOfLast30d": 1})
+        if request.url.path == "/fapi/v1/trade/asyn/id":
+            return httpx.Response(200, json={"downloadId": "777", "status": "completed",
+                                             "url": "https://bin.bnbstatic.com/history.csv"})
+        if request.url.host == "bin.bnbstatic.com":
+            day = 86_400_000
+            old = END - 120 * day
+            rows = ["Date(UTC),Symbol,Side,Price,Quantity,Fee,Realized Profit",
+                    f"{old},XRPUSDT,BUY,0.5,100,0.01,0",
+                    f"{old + day},XRPUSDT,SELL,0.55,100,0.01,5"]
+            return httpx.Response(200, text=chr(10).join(rows))
         if request.url.path == "/fapi/v2/balance":
             return httpx.Response(200, json=[{"asset": "USDT", "balance": "120.5",
                                               "availableBalance": "80.25"}])
@@ -256,20 +268,22 @@ def test_api_refuses_a_trading_key_and_syncs_a_read_only_one(monkeypatch) -> Non
         # the first sync starts by itself after linking; a manual one adds nothing twice
         synced = client.post("/account/sync", json={}, headers=headers).json()
         assert synced["trader_id"] == leader.ACCOUNT_ID and synced["added"] in (0, 1)
-        assert len(engine.lab.trades(leader.ACCOUNT_ID)) == 1
+        recent = [t for t in engine.lab.trades(leader.ACCOUNT_ID) if t["symbol"] == "SOLUSDT"]
+        assert len(recent) == 1
         tested = client.post("/account/test", headers=headers).json()
         assert tested["read_only"] and tested["balance"] == {"wallet": 120.5, "available": 80.25}
         assert tested["income_30d"] > 0 and tested["symbols_30d"] == ["SOLUSDT"]
         assert "secret" not in json.dumps(tested) and "s" * 20 not in json.dumps(tested)
         events = json.dumps(client.get("/events", headers=headers).json())
         assert "k" * 20 not in events and "s" * 20 not in events  # keys never in the log
-        trade = engine.lab.trades(leader.ACCOUNT_ID)[0]
+        trade = recent[0]
         assert trade["entry_price"] == 100 and trade["exit_price"] == 104 and trade["pnl"] == 4
     assert {method for method, _, _ in seen} == {"GET"}
     assert {(host, path) for _, host, path in seen} <= {
         ("api.binance.com", "/sapi/v1/account/apiRestrictions"),
         ("fapi.binance.com", "/fapi/v1/income"), ("fapi.binance.com", "/fapi/v1/userTrades"),
-        ("fapi.binance.com", "/fapi/v2/balance")}
+        ("fapi.binance.com", "/fapi/v2/balance"), ("fapi.binance.com", "/fapi/v1/trade/asyn"),
+        ("fapi.binance.com", "/fapi/v1/trade/asyn/id"), ("bin.bnbstatic.com", "/history.csv")}
 
 
 def test_reader_cannot_call_any_other_path() -> None:
@@ -551,8 +565,9 @@ async def test_rows_without_times_become_drafts_and_are_never_learned_from() -> 
     again = leader.parse_csv(full)
     assert len(again["trades"]) == 1 and again["rows"][1]["status"] == "saved"
     assert again["rows"][1]["missing"] == ["fee"]
-    lab_.import_trades("5141621486582775041", again["trades"], "csv")
-    assert lab_.drop_completed_drafts("5141621486582775041", again["trades"]) == 1
+    assert lab_.import_trades("5141621486582775041", again["trades"], "csv") == 1
+    assert len(lab_.drafts("5141621486582775041")) == 5  # its draft was completed by it
+    assert lab_.import_trades("5141621486582775041", again["trades"], "csv") == 0  # no twice
 
 
 def test_binance_position_history_columns() -> None:
@@ -563,3 +578,110 @@ def test_binance_position_history_columns() -> None:
     trade = parsed["trades"][0]
     assert trade["symbol"] == "ZECUSDT" and trade["side"] == "BUY" and trade["pnl"] == 0.05
     assert parsed["rows"][0]["missing"] == ["leverage", "qty", "fee"]
+
+
+def test_account_history_reaches_six_months_through_the_official_download(monkeypatch) -> None:
+    engine, _, _, clock = build()
+    clock.now = END / 1000
+    headers = {"Authorization": "Bearer secret"}
+    key = {"key": "k" * 20, "secret": "s" * 20}
+    with TestClient(create_app(engine, "secret", background=False)) as client:
+        monkeypatch.setattr(account, "transport", lambda: mock_binance(
+            {"enableReading": True}, []))
+        client.put("/account", json=key, headers=headers)
+        first = client.post("/account/sync", json={}, headers=headers).json()
+        assert first["older"]["status"] in ("requested", "done")
+        second = client.post("/account/sync", json={}, headers=headers).json()
+        assert second["older"]["status"] == "done"
+        symbols = {t["symbol"] for t in engine.lab.trades(leader.ACCOUNT_ID)}
+        assert symbols == {"SOLUSDT", "XRPUSDT"}  # recent (API) + months 4-6 (file)
+        old = [t for t in engine.lab.trades(leader.ACCOUNT_ID) if t["symbol"] == "XRPUSDT"][0]
+        assert old["pnl"] == 5 and old["opened_ms"] < END - 90 * 86_400_000
+
+
+async def test_download_only_from_binance_file_hosts() -> None:
+    reader = account.AccountReader("k" * 20, "s" * 20)
+    with pytest.raises(PermissionError):
+        await reader.download("https://evil.example.com/x.csv")
+    with pytest.raises(PermissionError):
+        await reader.download("http://bin.bnbstatic.com/x.csv")
+
+
+def test_times_are_converted_to_utc() -> None:
+    riyadh = 180  # UTC+3
+    local = leader.parse_csv(
+        "symbol,side,entry_price,exit_price,opened_at,closed_at\n"
+        "SOLUSDT,long,100,101,2026-11-10 15:00,2026-11-10 18:00\n", riyadh)
+    assert local["utc_offset"] == 180
+    assert local["trades"][0]["opened_ms"] == leader.moment("2026-11-10 12:00")
+    binance = leader.parse_csv(
+        "Symbol,Side,Avg. Entry Price,Avg. Close Price,Opened (UTC),Closed (UTC)\n"
+        "SOLUSDT,long,100,101,2026-11-10 15:00,2026-11-10 18:00\n", riyadh)
+    assert binance["utc_offset"] == 0  # the file says UTC: kept as is
+    assert binance["trades"][0]["opened_ms"] == leader.moment("2026-11-10 15:00")
+    assert leader.moment("2026-11-10T15:00:00+03:00", 0) == leader.moment("2026-11-10 12:00")
+
+
+SCREEN = """ZECUSDT Perpetual
+Long 20x Isolated
+Opened 2026-11-10 15:20:05
+Closed 2026-11-10 19:41:10
+Entry Price 1220.64
+Avg. Close Price 1236.08
+Closing PNL +0.1421 USDT
+Max Open Interest 0.010 ZEC
+ETHUSDT Perpetual
+Short 20x
+Entry Price 2293.48
+Avg. Close Price 2285.69
+Closing PNL +0.0494 USDT
+"""
+
+
+def test_screenshot_text_gives_trades_and_drafts_without_guessing() -> None:
+    parsed = leader.parse_screenshot(SCREEN, 180)
+    trade = parsed["trades"][0]
+    assert trade["symbol"] == "ZECUSDT" and trade["side"] == "BUY" and trade["leverage"] == 20
+    assert trade["entry_price"] == 1220.64 and trade["exit_price"] == 1236.08
+    assert trade["pnl"] == 0.1421 and trade["qty"] == 0.01 and trade["fee"] is None
+    assert trade["opened_ms"] == leader.moment("2026-11-10 12:20:05")  # phone time -> UTC
+    draft = parsed["drafts"][0]  # no times on screen: a draft, nothing invented
+    assert draft["symbol"] == "ETHUSDT" and draft["side"] == "SELL"
+    assert draft["missing"][:2] == ["opened_at", "closed_at"]
+    assert parsed["rows"][0]["missing"] == ["fee"]
+
+
+def test_a_screenshot_completes_the_matching_draft_without_duplicates() -> None:
+    lab_ = lab()
+    lab_.add("5141621486582775041", "trader")
+    lab_.save_drafts("5141621486582775041", leader.parse_csv(OWNER_CSV)["drafts"])
+    shot = leader.parse_screenshot(SCREEN, 180)
+    assert lab_.import_trades("5141621486582775041", shot["trades"], "screenshot") == 1
+    trade = lab_.trades("5141621486582775041")[0]
+    assert trade["qty"] == 0.01 and trade["leverage"] == 20 and trade["pnl"] == 0.1421
+    assert len(lab_.drafts("5141621486582775041")) == 6  # the ZEC 1220.64 draft is done
+    again = dict(shot["trades"][0], opened_ms=shot["trades"][0]["opened_ms"] + 30_000)
+    assert lab_.import_trades("5141621486582775041", [again], "csv") == 0  # same position
+    assert lab_.save_drafts("5141621486582775041", shot["drafts"]) == 0  # ETH draft exists
+
+
+async def test_study_starts_by_itself_at_twenty_complete_trades(monkeypatch) -> None:
+    engine, _, _, _ = build()
+    engine.lab.add("auto", "")
+    started: list = []
+
+    async def fake_study(trader_id, bars_until):
+        started.append(trader_id)
+        return {}
+
+    async def fake_compare(bars_until):
+        return {}
+
+    monkeypatch.setattr(engine.lab, "study", fake_study)
+    monkeypatch.setattr(engine.lab, "compare_coins", fake_compare)
+    engine.lab.import_trades("auto", four_coins()[:19], "csv")
+    assert engine.queue_study("auto") is False  # 19: not yet
+    engine.lab.import_trades("auto", four_coins()[19:25], "csv")
+    assert engine.queue_study("auto") is True
+    await engine.study_tasks["auto"]
+    assert started == ["auto"]

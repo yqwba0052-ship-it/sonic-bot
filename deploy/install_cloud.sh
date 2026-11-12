@@ -32,7 +32,7 @@ fi
 
 export DEBIAN_FRONTEND=noninteractive
 apt-get update -q
-apt-get install -y -q python3-venv git caddy ufw curl
+apt-get install -y -q python3-venv git caddy ufw curl tesseract-ocr tesseract-ocr-ara
 
 id -u sonic >/dev/null 2>&1 || useradd --system --create-home --home-dir "$HOME_DIR" sonic
 

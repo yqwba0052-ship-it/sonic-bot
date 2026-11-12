@@ -17,7 +17,7 @@ from fastapi.responses import FileResponse, PlainTextResponse
 from fastapi.staticfiles import StaticFiles
 from pydantic import ValidationError
 
-from . import account, capital, leader
+from . import account, capital, leader, ocr
 from .engine import Engine
 from .risk import ALLOWED_SYMBOLS, Limits
 
@@ -231,30 +231,67 @@ def create_app(engine: Engine, token: str, background: bool = True) -> FastAPI:
         text = str(body.get("csv", ""))
         if len(text) > 5_000_000:
             raise HTTPException(status_code=413, detail="too_large")
-        parsed = leader.parse_csv(text)
+        return save_import(trader_id, leader.parse_csv(text, offset_of(body)), "csv")
+
+    def offset_of(body: dict[str, Any]) -> int:
+        """Minutes east of UTC of the times in the file (the phone's zone); -12h..+14h."""
         try:
-            added = engine.lab.import_trades(trader_id, parsed["trades"], "csv")
+            value = int(body.get("tz_offset_min", 0))
+        except (TypeError, ValueError):
+            value = 0
+        return max(-720, min(840, value))
+
+    def save_import(trader_id: str, parsed: dict[str, Any], source: str) -> dict[str, Any]:
+        try:
+            drafts_before = len(engine.lab.drafts(trader_id))
+            added = engine.lab.import_trades(trader_id, parsed["trades"], source)
             drafts = engine.lab.save_drafts(trader_id, parsed["drafts"])
-            completed = engine.lab.drop_completed_drafts(trader_id, parsed["trades"])
+            engine.lab.drop_completed_drafts(trader_id, [])
         except KeyError as error:
             raise lab_error(error) from error
-        return {"format": parsed["format"], "read": len(parsed["trades"]), "added": added,
+        completed = max(0, drafts_before + drafts - len(engine.lab.drafts(trader_id)))
+        return {"format": parsed["format"], "utc_offset": parsed.get("utc_offset"),
+                "read": len(parsed["trades"]), "added": added,
                 "drafts": drafts, "drafts_completed": completed,
                 "still_open": parsed["skipped"], "errors": parsed["errors"][:50],
-                "rows": parsed["rows"][:500]}
+                "rows": parsed["rows"][:500],
+                "complete_trades": len(engine.lab.trades(trader_id)),
+                "study_started": engine.queue_study(trader_id)}
+
+    @app.post("/traders/{trader_id}/import-image", dependencies=secured)
+    async def import_image(
+        body: Annotated[dict[str, Any], Body()], trader_id: str = Path_(pattern=trader_path)
+    ) -> dict[str, Any]:
+        """A screenshot of the trader's position history: OCR on this server, then the same
+        import (missing fields stay missing; the read text is returned for review)."""
+        import base64
+        import binascii
+
+        try:
+            data = base64.b64decode(str(body.get("image_base64", "")), validate=True)
+        except (binascii.Error, ValueError) as error:
+            raise HTTPException(status_code=422, detail="image_type") from error
+        try:
+            text = await asyncio.to_thread(ocr.read_image, data)
+        except ocr.OcrError as error:
+            raise HTTPException(status_code=422, detail=str(error)) from error
+        result = save_import(trader_id, leader.parse_screenshot(text, offset_of(body)),
+                             "screenshot")
+        return {**result, "ocr_text": text[:3000]}
 
     @app.put("/traders/{trader_id}/drafts/{draft_id}", dependencies=secured)
     async def complete_draft(
         draft_id: int, body: Annotated[dict[str, Any], Body()],
         trader_id: str = Path_(pattern=trader_path),
     ) -> dict[str, Any]:
-        opened = leader.moment(str(body.get("opened_at", "")))
-        closed = leader.moment(str(body.get("closed_at", "")))
+        opened = leader.moment(str(body.get("opened_at", "")), offset_of(body))
+        closed = leader.moment(str(body.get("closed_at", "")), offset_of(body))
         fee = leader.number(str(body.get("fee", ""))) if body.get("fee") not in (None, "") else None
         try:
-            return engine.lab.complete_draft(trader_id, draft_id, opened, closed, fee)
+            done = engine.lab.complete_draft(trader_id, draft_id, opened, closed, fee)
         except (KeyError, ValueError) as error:
             raise lab_error(error) from error
+        return {**done, "study_started": engine.queue_study(trader_id)}
 
     @app.get("/strategies", dependencies=secured)
     async def strategies() -> dict[str, Any]:
@@ -418,6 +455,7 @@ def create_app(engine: Engine, token: str, background: bool = True) -> FastAPI:
             "server_ip": account.server_ip(),
             "synced_ms": engine.store.get("account_synced_ms"),
             "every_hours": 6,
+            "history_6m": engine.store.get("history_6m"),
             "target": engine.store.get("account_target"),
         }
 

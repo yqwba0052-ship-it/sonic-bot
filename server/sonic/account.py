@@ -32,7 +32,12 @@ ALLOWED = {
     (FUTURES, "/fapi/v1/income"),
     (FUTURES, "/fapi/v1/userTrades"),
     (FUTURES, "/fapi/v2/balance"),
+    (FUTURES, "/fapi/v1/trade/asyn"),
+    (FUTURES, "/fapi/v1/trade/asyn/id"),
 }
+# The finished history file is fetched from the link Binance returns; only these hosts.
+DOWNLOAD_HOSTS = (".binance.com", ".bnbstatic.com", ".amazonaws.com")
+HISTORY_6M_MS = 182 * 86_400_000
 NOT_PERMISSIONS = {"ipRestrict", "createTime", "tradingAuthorityExpirationTime", "enableReading",
                    "enableFixReadOnly"}
 WEEK_MS = 7 * 86_400_000
@@ -141,6 +146,42 @@ class AccountReader:
                 rows += await self._get(client, FUTURES, "/fapi/v1/income", {
                     "startTime": begin, "endTime": min(begin + WEEK_MS, now) - 1, "limit": 1000})
         return rows
+
+    async def request_history(self, start_ms: int, end_ms: int) -> str:
+        """Ask Binance to prepare the futures trade history file (official, up to 1 year,
+        5 requests a month shared with the website). Returns the download id."""
+        await self.check()
+        async with self._client() as client:
+            data = await self._get(client, FUTURES, "/fapi/v1/trade/asyn",
+                                   {"startTime": start_ms, "endTime": end_ms})
+        return str(data["downloadId"])
+
+    async def history_link(self, download_id: str) -> dict[str, Any]:
+        async with self._client() as client:
+            return await self._get(client, FUTURES, "/fapi/v1/trade/asyn/id",
+                                   {"downloadId": download_id})
+
+    async def download(self, url: str) -> str:
+        """The prepared file's text (a zip is opened). Only https and Binance's file hosts."""
+        import io
+        import zipfile
+        from urllib.parse import urlparse
+
+        parts = urlparse(url)
+        if parts.scheme != "https" or not (parts.hostname or "").endswith(DOWNLOAD_HOSTS):
+            raise PermissionError("download_host")
+        async with httpx.AsyncClient(timeout=60, transport=transport()) as client:
+            response = await client.get(url)
+        if response.status_code != 200:
+            raise RuntimeError(f"download_{response.status_code}")
+        data = response.content
+        if data[:2] == b"PK":
+            with zipfile.ZipFile(io.BytesIO(data)) as archive:
+                name = next((n for n in archive.namelist() if n.lower().endswith(".csv")), None)
+                if name is None:
+                    raise RuntimeError("download_no_csv")
+                data = archive.read(name)
+        return data.decode("utf-8-sig", errors="replace")
 
     async def fills(self, start_ms: int) -> list[dict[str, Any]]:
         """Own futures fills since start_ms (at most the last ~90 days), oldest first."""

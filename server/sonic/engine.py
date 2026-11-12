@@ -45,6 +45,7 @@ class Engine:
         self.capital = capital.Capital(store.db, self.lab, self.now_ms)
         self.strategy_clients: dict[str, Any] = {}
         self.sync_task: asyncio.Task[None] | None = None
+        self.study_tasks: dict[str, asyncio.Task[None]] = {}
         self.sync_failed_ms = 0
         self.failures = 0
         self.failing_since_ms: int | None = None
@@ -348,14 +349,74 @@ class Engine:
             raise KeyError("unknown_trader")
         reader = account.AccountReader(saved["key"], saved["secret"], self.now_ms)
         since = int(self.store.get("account_synced_ms", 0)) - 7 * DAY_MS
-        fills = await reader.fills(max(since, 0))
+        fills = await reader.fills(max(since, 0))  # the API keeps the last 3 months
         paired = leader.pair_fills({"fills": fills, "errors": []}, has_pnl=True)
         added = self.lab.import_trades(target, paired["trades"], "account")
+        try:  # months 4-6 never block the recent sync
+            older = await self._older_history(reader, target)
+        except Exception as error:  # noqa: BLE001 - reported, retried after 30 days
+            older = {**(self.store.get("history_6m") or {}), "status": "failed",
+                     "error": type(error).__name__, "requested_ms": self.now_ms()}
+            self.store.put("history_6m", older)
         self.store.put("account_synced_ms", self.now_ms())
         self.store.put("account_target", target)
         self.log("info", "account_synced", f"{added} new trades to {target}")
+        self.queue_study(target)
         return {"trader_id": target, "fills": len(fills), "added": added,
-                "still_open": paired["skipped"]}
+                "still_open": paired["skipped"], "older": older}
+
+    async def _older_history(self, reader: account.AccountReader, target: str) -> dict:
+        """Months 4-6 of the owner's history (the API only keeps 3): Binance's official
+        history file, requested once (5 requests a month are allowed), imported when ready.
+        A file Sonic cannot read is reported, never guessed."""
+        state = self.store.get("history_6m") or {}
+        now = self.now_ms()
+        if not state or (state.get("status") == "failed"
+                         and now - state.get("requested_ms", 0) > 30 * DAY_MS):
+            start = now - account.HISTORY_6M_MS
+            download_id = await reader.request_history(start, now - 85 * DAY_MS)
+            state = {"status": "requested", "id": download_id, "requested_ms": now,
+                     "from_ms": start}
+            self.store.put("history_6m", state)
+            return state
+        if state.get("status") != "requested":
+            return state
+        link = await reader.history_link(state["id"])
+        if link.get("status") != "completed" or not link.get("url"):
+            return state  # still being prepared by Binance
+        try:
+            parsed = leader.parse_csv(await reader.download(link["url"]))
+        except Exception as error:  # noqa: BLE001 - reported, retried after 30 days
+            state.update(status="failed", error=type(error).__name__)
+            self.store.put("history_6m", state)
+            return state
+        if parsed["format"] is None:
+            state.update(status="failed", error="unreadable_file")
+        else:
+            added = self.lab.import_trades(target, parsed["trades"], "account-history")
+            state.update(status="done", added=added, done_ms=now)
+        self.store.put("history_6m", state)
+        return state
+
+    def queue_study(self, trader_id: str) -> bool:
+        """With 20+ complete trades and new ones since the last study: study the trader and
+        compare per coin again, in the background (paper only)."""
+        if not self.lab.needs_study(trader_id):
+            return False
+        running = self.study_tasks.get(trader_id)
+        if running and not running.done():
+            return True
+
+        async def run() -> None:
+            try:
+                await self.lab.study(trader_id, self.exchange.bars_until)
+                await self.lab.compare_coins(self.exchange.bars_until)
+                self.log("info", "trader_studied", trader_id)
+            except Exception as error:  # noqa: BLE001 - logged; Sonic carries on
+                self.log("warning", "trader_study_failed", f"{trader_id}: {str(error)[:120]}")
+
+        self.study_tasks[trader_id] = asyncio.create_task(run())
+        return True
 
     async def _on_bar(self) -> None:
         """Runs once per closed 4-hour bar: exits first, then entries."""

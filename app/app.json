@@ -48,6 +48,14 @@
         {
           "forcesRTL": true
         }
+      ],
+      [
+        "expo-image-picker",
+        {
+          "photosPermission": "Sonic reads a screenshot of a trader's position history that you choose.",
+          "cameraPermission": false,
+          "microphonePermission": false
+        }
       ]
     ],
     "experiments": {

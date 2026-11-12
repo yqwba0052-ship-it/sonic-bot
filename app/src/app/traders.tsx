@@ -6,6 +6,7 @@ import { type Allocations, AllocationsCard } from '@/components/allocations';
 import { type Draft, Drafts, ImportReport, type ImportRow } from '@/components/drafts';
 import { Body, Button, Card, colors, Field, Row, Screen } from '@/components/ui';
 import { errorCode, useBot } from '@/lib/bot-context';
+import { deviceOffsetMinutes, offsetLabel, pickCsvText, pickScreenshotBase64 } from '@/lib/pick';
 import { message, when } from '@/lib/text';
 
 type Result = {
@@ -292,6 +293,8 @@ export default function TradersScreen() {
   const [ranking, setRanking] = useState<Ranking | null>(null);
   const [tested, setTested] = useState<AccountTest | null>(null);
   const [rows, setRows] = useState<ImportRow[]>([]);
+  const [zone, setZone] = useState<'device' | 'utc'>('device');
+  const [ocrText, setOcrText] = useState('');
   const [allocations, setAllocations] = useState<Allocations | null>(null);
   const [key, setKey] = useState('');
   const [secret, setSecret] = useState('');
@@ -383,30 +386,80 @@ export default function TradersScreen() {
     }
   };
 
-  const importCsv = async (id: string) => {
-    try {
-      const result = await call<{
-        read: number;
-        added: number;
-        drafts: number;
-        drafts_completed: number;
-        still_open: number;
-        errors: [number, string][];
-        rows: ImportRow[];
-      }>(`/traders/${id}/import`, 'POST', { csv }, 60_000);
-      const bad = result.errors.length ? `، وأسطر فيها خطأ: ${result.errors.map((e) => e[0]).join('، ')}` : '';
-      const drafts = result.drafts
-        ? `، وحُفظت ${result.drafts} مسودة ناقصة الأوقات (لا تدخل في التعلم حتى تكتمل)`
+  type ImportResult = {
+    read: number;
+    added: number;
+    drafts: number;
+    drafts_completed: number;
+    still_open: number;
+    errors: [number, string][];
+    rows: ImportRow[];
+    complete_trades: number;
+    study_started: boolean;
+    ocr_text?: string;
+  };
+
+  const offset = zone === 'utc' ? 0 : deviceOffsetMinutes();
+
+  const showImport = async (id: string, result: ImportResult) => {
+    const bad = result.errors.length ? `، وأسطر فيها خطأ: ${result.errors.map((e) => e[0]).join('، ')}` : '';
+    const drafts = result.drafts ? `، ومسودات ناقصة الأوقات ${result.drafts}` : '';
+    const done = result.drafts_completed ? `، وأُكملت ${result.drafts_completed} مسودة تلقائيًا` : '';
+    const study = result.study_started
+      ? ' بدأ تحليل استراتيجيته تلقائيًا في الخلفية.'
+      : result.complete_trades < 20
+        ? ` يبدأ التحليل تلقائيًا عند 20 صفقة مكتملة (عنده ${result.complete_trades}).`
         : '';
-      setNotice({
-        text: `صفقات كاملة جديدة ${result.added}${drafts}، ومفتوحة تُركت ${result.still_open}${bad}.`,
-        color: result.added ? colors.gain : colors.warn,
-      });
-      setRows(result.rows);
+    setNotice({
+      text: `صفقات مكتملة جديدة ${result.added}${done}${drafts}، ومفتوحة تُركت ${result.still_open}${bad}.${study}`,
+      color: result.added || result.drafts_completed ? colors.gain : colors.warn,
+    });
+    setRows(result.rows);
+    setOcrText(result.ocr_text ?? '');
+    await loadDetail(id);
+    await load();
+  };
+
+  const importText = async (id: string, text: string) => {
+    try {
+      const result = await call<ImportResult>(
+        `/traders/${id}/import`,
+        'POST',
+        { csv: text, tz_offset_min: offset },
+        60_000
+      );
       setCsv('');
-      await loadDetail(id);
-      await load();
-      if (result.added) await study(id);
+      await showImport(id, result);
+    } catch (failure) {
+      fail(failure);
+    }
+  };
+
+  const importCsv = (id: string) => importText(id, csv);
+
+  const importFile = async (id: string) => {
+    try {
+      const picked = await pickCsvText();
+      if (!picked) return;
+      setNotice({ text: `يقرأ ${picked.name}...`, color: colors.muted });
+      await importText(id, picked.text);
+    } catch (failure) {
+      fail(failure);
+    }
+  };
+
+  const importImage = async (id: string) => {
+    try {
+      const image = await pickScreenshotBase64();
+      if (!image) return;
+      setNotice({ text: 'يقرأ الصورة على الخادم (OCR)... قد يأخذ نصف دقيقة.', color: colors.muted });
+      const result = await call<ImportResult>(
+        `/traders/${id}/import-image`,
+        'POST',
+        { image_base64: image, tz_offset_min: deviceOffsetMinutes() },
+        150_000
+      );
+      await showImport(id, result);
     } catch (failure) {
       fail(failure);
     }
@@ -566,7 +619,33 @@ export default function TradersScreen() {
 
           {open === trader.trader_id && detail?.trader.trader_id === trader.trader_id ? (
             <View style={styles.detail}>
-              <Body>استيراد سجل صفقاته (CSV): الصق النص هنا.</Body>
+              <Body>استيراد سجل صفقاته: ملف CSV من Binance، أو صورة من سجل المراكز، أو الصق النص.</Body>
+              <View style={styles.actions}>
+                <Pressable accessibilityRole="button" onPress={() => importFile(trader.trader_id)} style={styles.small}>
+                  <Text style={styles.smallText}>📄 اختر ملف CSV</Text>
+                </Pressable>
+                <Pressable accessibilityRole="button" onPress={() => importImage(trader.trader_id)} style={styles.small}>
+                  <Text style={styles.smallText}>🖼 صورة سجل المراكز</Text>
+                </Pressable>
+              </View>
+              <View style={styles.actions}>
+                {(['device', 'utc'] as const).map((z) => (
+                  <Pressable
+                    key={z}
+                    accessibilityRole="button"
+                    accessibilityState={{ selected: zone === z }}
+                    onPress={() => setZone(z)}
+                    style={[styles.small, zone === z && { backgroundColor: colors.accent }]}>
+                    <Text style={styles.smallText}>
+                      {z === 'device' ? `أوقات بتوقيت جهازي (${offsetLabel(deviceOffsetMinutes())})` : 'أوقات UTC'}
+                    </Text>
+                  </Pressable>
+                ))}
+              </View>
+              <Body color={colors.muted}>
+                ملفات Binance المكتوب فيها UTC تُقرأ بتوقيت UTC تلقائيًا. الصور تُقرأ بتوقيت جهازك. ما لا يُقرأ بوضوح يبقى ناقصًا ولا
+                يُخمَّن، وتكتمل المسودات تلقائيًا عند وصول نفس الصفقة كاملة.
+              </Body>
               <TextInput
                 multiline
                 value={csv}
@@ -577,10 +656,16 @@ export default function TradersScreen() {
                 accessibilityLabel="نص CSV"
               />
               <Body color={colors.muted}>
-                سطر لكل صفقة مغلقة، والأوقات بتوقيت UTC. الخانات غير المعروفة اتركها فارغة، ولا تُخمَّن.
+                سطر لكل صفقة مغلقة. الخانات غير المعروفة اتركها فارغة، ولا تُخمَّن.
               </Body>
               <Button label="استورد وحلل" disabled={!csv.trim()} onPress={() => importCsv(trader.trader_id)} />
               <ImportReport rows={rows} />
+              {ocrText ? (
+                <View>
+                  <Body color={colors.muted}>النص الذي قُرئ من الصورة (للمراجعة):</Body>
+                  <Text style={styles.ocr}>{ocrText}</Text>
+                </View>
+              ) : null}
               <Drafts drafts={detail.drafts} onSave={saveDraft} />
               <Button
                 label="حدّث التحليل والاستراتيجية"
@@ -712,6 +797,17 @@ const styles = StyleSheet.create({
   small: { backgroundColor: colors.line, borderRadius: 8, paddingHorizontal: 14, paddingVertical: 9 },
   smallText: { color: colors.text, fontSize: 14, fontWeight: '700' },
   danger: { backgroundColor: colors.loss },
+  ocr: {
+    color: colors.muted,
+    fontSize: 11,
+    lineHeight: 16,
+    writingDirection: 'ltr',
+    textAlign: 'left',
+    borderWidth: 1,
+    borderColor: colors.line,
+    borderRadius: 8,
+    padding: 8,
+  },
   approve: {
     alignSelf: 'flex-start',
     backgroundColor: colors.gain,

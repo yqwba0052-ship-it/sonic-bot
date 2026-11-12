@@ -209,8 +209,10 @@ TIME_FORMATS = ("%Y-%m-%d %H:%M:%S", "%Y-%m-%d %H:%M", "%Y/%m/%d %H:%M:%S", "%Y/
                 "%d/%m/%Y %H:%M:%S", "%d/%m/%Y %H:%M", "%Y-%m-%d")
 
 
-def moment(text: str) -> int | None:
-    """Milliseconds, UTC. Epoch seconds or ms, ISO, or common date-time forms (taken as UTC)."""
+def moment(text: str, offset_min: int = 0) -> int | None:
+    """Milliseconds, UTC. Epoch seconds or ms, ISO, or common date-time forms. A time without a
+    zone is local time `offset_min` minutes east of UTC (0 = already UTC); a time that carries
+    its own zone keeps it."""
     text = text.translate(DIGITS).strip()
     if not text:
         return None
@@ -230,7 +232,7 @@ def moment(text: str) -> int | None:
     if when is None:
         return None
     if when.tzinfo is None:
-        when = when.replace(tzinfo=UTC)
+        return int(when.replace(tzinfo=UTC).timestamp() * 1000) - offset_min * 60_000
     return int(when.timestamp() * 1000)
 
 
@@ -290,10 +292,13 @@ ALIASES = {
 
 def _columns(header: list[str]) -> dict[str, int]:
     clean = [re.sub(r"\s+", " ", h.replace("﻿", "")).strip().lower() for h in header]
+    bare = [re.sub(r"\s*\([^)]*\)", "", h).strip() for h in clean]  # "Opened (UTC)" -> "opened"
     found: dict[str, int] = {}
     for key, names in ALIASES.items():
-        for index, name in enumerate(clean):
-            if name in names and index not in found.values():
+        for names_of in (clean, bare):
+            index = next((i for i, n in enumerate(names_of)
+                          if n in names and i not in found.values()), None)
+            if index is not None:
                 found[key] = index
                 break
     return found
@@ -304,20 +309,26 @@ def _cell(row: list[str], cols: dict[str, int], key: str) -> str:
     return row[index] if index is not None and index < len(row) else ""
 
 
-def parse_csv(text: str) -> dict[str, Any]:
+def parse_csv(text: str, tz_offset_min: int = 0) -> dict[str, Any]:
     """{'trades': [...], 'errors': [[row, code]], 'skipped': open positions, 'format': ...}.
-    Missing values stay missing (None); nothing is guessed."""
-    rows = list(csv.reader(io.StringIO(text.strip())))
+    Missing values stay missing (None); nothing is guessed. Times without a zone are taken as
+    local time tz_offset_min east of UTC, unless the file's time column says UTC (Binance)."""
+    rows = list(csv.reader(io.StringIO(text.lstrip("\ufeff").strip())))
     if len(rows) < 2:
         return {"trades": [], "drafts": [], "errors": [[1, "empty"]], "skipped": 0,
                 "format": None, "rows": []}
     cols = _columns(rows[0])
+    time_headers = [rows[0][cols[k]].lower() for k in ("opened_at", "closed_at", "time")
+                    if k in cols and cols[k] < len(rows[0])]
+    offset = 0 if any("utc" in h for h in time_headers) else tz_offset_min
     position_keys = {"symbol", "side", "entry_price", "exit_price", "opened_at", "closed_at"}
     fill_keys = {"symbol", "side", "price", "qty", "time"}
     if {"symbol", "side", "entry_price", "exit_price"} <= cols.keys():
-        return {**_positions(rows[1:], cols), "format": "positions"}
+        return {**_positions(rows[1:], cols, offset), "format": "positions",
+                "utc_offset": offset}
     if fill_keys <= cols.keys():
-        return {**pair_fills(_fill_rows(rows[1:], cols), "pnl" in cols), "format": "fills"}
+        return {**pair_fills(_fill_rows(rows[1:], cols, offset), "pnl" in cols),
+                "format": "fills", "utc_offset": offset}
     missing = sorted(position_keys - cols.keys())
     return {"trades": [], "drafts": [], "errors": [[1, "unknown_columns:" + ",".join(missing)]],
             "skipped": 0, "format": None, "rows": []}
@@ -327,7 +338,7 @@ NEEDED_TO_LEARN = ("opened_at", "closed_at")  # without these a trade cannot be 
 OPTIONAL = ("leverage", "qty", "pnl", "fee")
 
 
-def _positions(rows: list[list[str]], cols: dict[str, int]) -> dict[str, Any]:
+def _positions(rows: list[list[str]], cols: dict[str, int], offset: int = 0) -> dict[str, Any]:
     """Each row ends as: a trade (complete), a draft (prices known, times missing: kept, but
     never used for learning or paper trading), still open (skipped) or an error. Every row
     reports the fields it lacks; nothing is filled in by guessing."""
@@ -343,8 +354,8 @@ def _positions(rows: list[list[str]], cols: dict[str, int]) -> dict[str, Any]:
         side = side_of(_cell(row, cols, "side"))
         entry = number(_cell(row, cols, "entry_price"))
         exit_ = number(_cell(row, cols, "exit_price"))
-        opened = moment(_cell(row, cols, "opened_at"))
-        closed = moment(_cell(row, cols, "closed_at"))
+        opened = moment(_cell(row, cols, "opened_at"), offset)
+        closed = moment(_cell(row, cols, "closed_at"), offset)
         if exit_ is None and closed is None and symbol and side and entry and opened:
             skipped += 1  # still open: nothing to learn from yet
             report.append({"line": line, "status": "open", "missing": ["exit_price", "closed_at"]})
@@ -381,7 +392,7 @@ def _positions(rows: list[list[str]], cols: dict[str, int]) -> dict[str, Any]:
             "rows": report}
 
 
-def _fill_rows(rows: list[list[str]], cols: dict[str, int]) -> dict[str, Any]:
+def _fill_rows(rows: list[list[str]], cols: dict[str, int], offset: int = 0) -> dict[str, Any]:
     fills, errors = [], []
     for line, row in enumerate(rows, start=2):
         if not any(cell.strip() for cell in row):
@@ -390,7 +401,7 @@ def _fill_rows(rows: list[list[str]], cols: dict[str, int]) -> dict[str, Any]:
         side = side_of(_cell(row, cols, "side"))
         price = number(_cell(row, cols, "price"))
         qty = number(_cell(row, cols, "qty"))
-        at = moment(_cell(row, cols, "time"))
+        at = moment(_cell(row, cols, "time"), offset)
         if not symbol or not side or not price or not qty or at is None:
             errors.append([line, "fill"])
             continue
@@ -443,6 +454,89 @@ def pair_fills(parsed: dict[str, Any], has_pnl: bool) -> dict[str, Any]:
                 del books[symbol]
     return {"trades": trades, "drafts": [], "errors": parsed["errors"], "skipped": len(books),
             "rows": []}
+
+
+# ---------- screenshots of Binance's position history (text read by OCR on the server)
+
+TIME_RE = re.compile(r"(\d{4}[-/.]\d{1,2}[-/.]\d{1,2})[ T]+(\d{1,2}:\d{2}(?::\d{2})?)")
+NUM = r"([-+]?\d[\d,]*\.?\d*)"
+LABELS = {
+    "entry_price": r"(?:entry(?:\s*price)?|open(?:ing)?\s*price|"
+                   r"سعر\s*(?:ال)?دخول|سعر\s*(?:ال)?فتح)",
+    "exit_price": r"(?:(?:avg\.?\s*)?clos(?:e|ing)\s*price|exit\s*price|"
+                  r"سعر\s*(?:ال)?إغلاق|سعر\s*(?:ال)?اغلاق|سعر\s*(?:ال)?خروج)",
+    "pnl": r"(?:clos(?:e|ing)\s*pnl|realized\s*pnl|pnl|الربح(?:\s*و\s*الخسارة)?)",
+    "qty": r"(?:max\s*open\s*interest|closed\s*vol(?:ume)?\.?|size|qty|quantity|الكمية|الحجم)",
+    "fee": r"(?:fee|commission|الرسوم|العمولة)",
+}
+
+
+def parse_screenshot(text: str, tz_offset_min: int = 0) -> dict[str, Any]:
+    """Positions from the text of a screenshot. A block starts at each coin name (…USDT).
+    Inside it: side and leverage (Long 20x), the first time = opened, the second = closed,
+    prices and profit next to their labels. A field that is not clearly there stays missing:
+    no prices -> error; prices without both times -> draft. Times on screen are the phone's
+    local time unless the screen says UTC."""
+    text = text.translate(DIGITS)
+    offset = 0 if re.search(r"\bUTC\b", text) else tz_offset_min
+    starts = [m.start() for m in re.finditer(r"\b[A-Z0-9]{2,15}USDT\b", text)]
+    trades: list[dict[str, Any]] = []
+    drafts: list[dict[str, Any]] = []
+    errors: list[list[Any]] = []
+    report: list[dict[str, Any]] = []
+    for n, start in enumerate(starts):
+        block = text[start: starts[n + 1] if n + 1 < len(starts) else len(text)]
+        symbol = symbol_of(re.match(r"[A-Z0-9]{2,15}USDT", block).group(0))
+        side = side_of(block[:200])
+        lev = re.search(r"(\d{1,3})\s*[xX×]", block)
+        values: dict[str, float | None] = {}
+        for key, label in LABELS.items():
+            found = re.search(label + r"[^\d\-+]{0,25}" + NUM, block, re.IGNORECASE)
+            values[key] = number(found.group(1)) if found else None
+        times = [moment(f"{d.replace('/', '-').replace('.', '-')} {t}", offset)
+                 for d, t in TIME_RE.findall(block)]
+        opened = times[0] if times else None
+        closed = times[1] if len(times) > 1 else None
+        line = n + 1
+        item = {"symbol": symbol, "side": side,
+                "leverage": float(lev.group(1)) if lev else None,
+                "qty": abs(values["qty"]) if values["qty"] else None,
+                "entry_price": values["entry_price"], "exit_price": values["exit_price"],
+                "opened_ms": opened, "closed_ms": closed, "pnl": values["pnl"],
+                "fee": abs(values["fee"]) if values["fee"] is not None else None}
+        problem = ("symbol" if symbol is None else "side" if side is None
+                   else "entry_price" if not item["entry_price"]
+                   else "exit_price" if not item["exit_price"]
+                   else "closed_at" if opened and closed and closed < opened else "")
+        if problem:
+            errors.append([line, problem])
+            report.append({"line": line, "status": "error", "missing": [problem]})
+            continue
+        lacking = [k for k, v in (("opened_at", opened), ("closed_at", closed)) if v is None]
+        optional = [k for k in OPTIONAL if item[k] is None]
+        if lacking:
+            drafts.append({**item, "line": line, "missing": lacking + optional})
+            report.append({"line": line, "status": "draft", "missing": lacking + optional})
+        else:
+            trades.append(item)
+            report.append({"line": line, "status": "saved", "missing": optional})
+    return {"trades": trades, "drafts": drafts, "errors": errors, "skipped": 0, "rows": report,
+            "format": "screenshot", "utc_offset": offset}
+
+
+def same_trade(a: dict[str, Any], b: dict[str, Any]) -> bool:
+    """Two records of one closed position (from different sources): same coin and side, entry
+    and exit within 0.05%, size equal within 1% when both are known."""
+    def near(x: float | None, y: float | None, tol: float) -> bool:
+        return x is not None and y is not None and abs(x - y) <= tol * max(abs(x), abs(y))
+    if a["symbol"] != b["symbol"] or a["side"] != b["side"]:
+        return False
+    if not (near(a["entry_price"], b["entry_price"], 0.0005)
+            and near(a["exit_price"], b["exit_price"], 0.0005)):
+        return False
+    if a.get("qty") and b.get("qty"):
+        return near(a["qty"], b["qty"], 0.01)
+    return True
 
 
 # ---------- indicators on 4h bars
@@ -1025,10 +1119,24 @@ class Lab:
 
     # data
     def import_trades(self, trader_id: str, trades: list[dict[str, Any]], source: str) -> int:
+        """Complete trades. One already saved from another source (same position within a
+        minute) is not saved twice; a matching draft is completed by it: fields missing on one
+        side are taken from the other, both being real records, never guessed."""
         if self.listed(trader_id) is None:
             raise KeyError("unknown_trader")
         now, added = self.now_ms(), 0
         for t in trades:
+            known = [dict(r) for r in self.db.execute(
+                "SELECT * FROM trader_trades WHERE trader_id = ? AND symbol = ? AND side = ? AND "
+                "ABS(opened_ms - ?) <= 60000", (trader_id, t["symbol"], t["side"], t["opened_ms"]))]
+            if any(same_trade(t, k) for k in known):
+                continue
+            for draft in self.drafts(trader_id):
+                if same_trade(t, draft):
+                    t = {**t, **{k: draft[k] for k in ("leverage", "qty", "pnl", "fee")
+                                 if t.get(k) is None and draft.get(k) is not None}}
+                    self.db.execute("DELETE FROM trader_drafts WHERE id = ?", (draft["id"],))
+                    break
             cur = self.db.execute(
                 "INSERT OR IGNORE INTO trader_trades (trader_id, symbol, side, leverage, qty, "
                 "entry_price, exit_price, opened_ms, closed_ms, pnl, fee, source, imported_ms) "
@@ -1047,14 +1155,8 @@ class Lab:
             raise KeyError("unknown_trader")
         added = 0
         for d in drafts:
-            same = self.db.execute(
-                "SELECT 1 FROM trader_drafts WHERE trader_id = ? AND symbol = ? AND side = ? AND "
-                "entry_price = ? AND exit_price = ? AND COALESCE(qty, -1) = COALESCE(?, -1)",
-                (trader_id, d["symbol"], d["side"], d["entry_price"], d["exit_price"],
-                 d.get("qty")),
-            ).fetchone()
-            if same:
-                continue
+            if any(same_trade(d, x) for x in self.drafts(trader_id) + self.trades(trader_id)):
+                continue  # already a draft, or already complete
             self.db.execute(
                 "INSERT INTO trader_drafts (trader_id, symbol, side, leverage, qty, entry_price, "
                 "exit_price, opened_ms, closed_ms, pnl, fee, missing, imported_ms) "
@@ -1091,15 +1193,23 @@ class Lab:
         return {"added": added}
 
     def drop_completed_drafts(self, trader_id: str, trades: list[dict[str, Any]]) -> int:
-        """A full import of the same trades replaces their drafts."""
+        """Drafts that a full record of the same position now covers (any source)."""
         removed = 0
-        for t in trades:
-            removed += self.db.execute(
-                "DELETE FROM trader_drafts WHERE trader_id = ? AND symbol = ? AND side = ? AND "
-                "entry_price = ? AND exit_price = ?",
-                (trader_id, t["symbol"], t["side"], t["entry_price"], t["exit_price"])).rowcount
+        for draft in self.drafts(trader_id):
+            if any(same_trade(t, draft) for t in trades + self.trades(trader_id)):
+                self.db.execute("DELETE FROM trader_drafts WHERE id = ?", (draft["id"],))
+                removed += 1
         self.db.commit()
         return removed
+
+    def needs_study(self, trader_id: str) -> bool:
+        """At least MIN_TRADES complete trades, and more of them than the last study saw."""
+        count = len(self.trades(trader_id))
+        if count < MIN_TRADES:
+            return False
+        latest = self.latest_model(trader_id)
+        seen = (latest or {}).get("report", {}).get("data", {}).get("trades", 0) if latest else 0
+        return count > seen
 
     def move_trades(self, from_id: str, to_id: str, start_ms: int, end_ms: int) -> int:
         """The owner says which trader some synced trades came from (never guessed)."""
