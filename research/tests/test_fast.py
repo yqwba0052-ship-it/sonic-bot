@@ -280,3 +280,55 @@ def test_no_size_increase_after_loss() -> None:
         assert abs(t.planned_risk - 0.005 * equity) < 1e-9
         equity += t.pnl
     assert trades[2].qty < trades[0].qty  # smaller after two losses, not doubled
+
+
+# ---------- Task 5: metrics and the owner's separate report
+
+def day_ms(d: int, hour: int = 10) -> int:
+    return int(np.datetime64("2025-01-01").astype("datetime64[ms]").astype(np.int64)) \
+        + d * 86_400_000 + hour * 3_600_000
+
+
+def trade(d: int, pnl: float, planned: float = 0.15, hour: int = 10) -> fast.Trade:
+    return fast.Trade("SOLUSDT", day_ms(d, hour), day_ms(d, hour + 1), 100.0, 101.0, 1.0,
+                      pnl, planned, "target" if pnl > 0 else "stop")
+
+
+def test_metrics_on_known_trades() -> None:
+    import datetime as dt
+
+    first = dt.date(2025, 1, 1)
+    trades = [trade(0, 0.30), trade(0, -0.15, hour=14), trade(2, 0.30), trade(9, 0.15)]
+    suitable = {first, dt.date(2025, 1, 2), dt.date(2025, 1, 3), dt.date(2025, 1, 10)}
+    m = fast.metrics(trades, suitable, first, dt.date(2025, 1, 10), 30.0, cost=0.0)
+    assert m["trades"] == 4 and m["suitable_days"] == 4
+    assert m["per_suitable_day"] == 1.0  # 4 trades on 4 suitable days
+    assert m["days_2plus"] == 1 and m["days_without_trade"] == 7
+    assert m["win_rate"] == 0.75 and m["profit_factor"] == 5.0
+    assert abs(m["net_pnl"] - 0.60) < 1e-9
+    assert abs(m["max_drawdown"] - 0.15 / 30.30) < 1e-6
+    assert m["recovery_days_max"] == 2  # peak on day 0, back above it on day 2
+    assert m["longest_pause_days"] == 7  # between day 2 and day 9
+    assert m["months_positive"] == 1.0 and m["worst_month"][0] == "2025-01"
+
+
+def test_fee_share_and_loss_beyond_plan() -> None:
+    import datetime as dt
+
+    gapped = trade(1, -0.30, planned=0.15)  # lost twice what was planned (a gap)
+    m = fast.metrics([trade(0, 0.30), gapped], set(), dt.date(2025, 1, 1),
+                     dt.date(2025, 1, 2), 30.0, cost=0.0014)
+    assert m["worst_loss_vs_planned"] == 2.0
+    fee_each = 0.0007 * 1.0 * (100.0 + 101.0)
+    gross_wins = 0.30 + fee_each  # the winner before its fees
+    assert abs(m["fee_share"] - round(2 * fee_each / gross_wins, 6)) < 1e-9  # fees / gross wins
+
+
+def test_suitable_days_from_regime() -> None:
+    import datetime as dt
+
+    t = np.array([day_ms(0), day_ms(0, 12), day_ms(1), day_ms(3)], dtype=np.int64)
+    regs = {"SOLUSDT": {"ok": np.array([False, True, False, False])},
+            "XRPUSDT": {"ok": np.array([False, False, False, True])}}
+    days = fast.suitable_days(regs, {"SOLUSDT": t, "XRPUSDT": t})
+    assert days == {dt.date(2025, 1, 1), dt.date(2025, 1, 4)}

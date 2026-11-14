@@ -257,3 +257,76 @@ def run(cands: list[Candidate], bars: dict[str, Bars], hold: int, cost: float,
         open_.append((trade.closed_ms, trade))
     close_until(2**62)
     return sorted(done, key=lambda t: t.opened_ms)
+
+
+# ---------- metrics and the owner's separate report (Task 5)
+
+def _day(ms: int):
+    import datetime as dt
+
+    return dt.datetime.fromtimestamp(ms / 1000, dt.UTC).date()
+
+
+def suitable_days(regimes: dict[str, dict], fast_t: dict[str, np.ndarray]) -> set:
+    """UTC days on which the 4h regime allowed entries for at least one coin."""
+    days: set = set()
+    for symbol, reg in regimes.items():
+        t = fast_t[symbol]
+        days |= {_day(int(ms)) for ms in t[reg["ok"]]}
+    return days
+
+
+def metrics(trades: list[Trade], suitable: set, first, last, capital: float,
+            cost: float = BASE_COST) -> dict:
+    by_close = sorted(trades, key=lambda t: t.closed_ms)
+    entries: dict = {}
+    for t in trades:
+        d = _day(t.opened_ms)
+        entries[d] = entries.get(d, 0) + 1
+    span = (last - first).days + 1
+    wins = [t.pnl for t in trades if t.pnl > 0]
+    losses = [-t.pnl for t in trades if t.pnl < 0]
+    fees = [cost / 2 * t.qty * (t.entry + t.exit) for t in trades]
+    gross_wins = sum(max(0.0, t.pnl + f) for t, f in zip(trades, fees, strict=True))
+    equity = peak = capital
+    peak_day, dd_from, worst_dd, recoveries = first, None, 0.0, []
+    months: dict[str, float] = {}
+    for t in by_close:
+        equity += t.pnl
+        d = _day(t.closed_ms)
+        months[d.strftime("%Y-%m")] = months.get(d.strftime("%Y-%m"), 0.0) + t.pnl
+        if equity >= peak:
+            if dd_from is not None:
+                recoveries.append((d - dd_from).days)
+                dd_from = None
+            peak, peak_day = equity, d
+        else:
+            dd_from = dd_from or peak_day
+            worst_dd = max(worst_dd, 1 - equity / peak)
+    days = sorted(entries)
+    gaps = [(b - a).days for a, b in zip(days, days[1:], strict=False)]
+    worst = min(months.items(), key=lambda kv: kv[1]) if months else None
+    on_suitable = sum(n for d, n in entries.items() if d in suitable)
+    return {
+        "trades": len(trades),
+        "suitable_days": len(suitable),
+        "per_suitable_day": round(on_suitable / len(suitable), 3) if suitable else 0.0,
+        "per_calendar_day": round(len(trades) / span, 3),
+        "days_without_trade": span - len(entries),
+        "days_2plus": sum(1 for n in entries.values() if n >= 2),
+        "win_rate": round(len(wins) / len(trades), 4) if trades else None,
+        "profit_factor": round(sum(wins) / sum(losses), 3) if losses else (None if not wins
+                                                                            else float("inf")),
+        "net_pnl": round(sum(t.pnl for t in trades), 6),
+        "fee_share": round(sum(fees) / gross_wins, 6) if gross_wins else None,
+        "max_drawdown": round(worst_dd, 6),
+        "worst_month": (worst[0], round(worst[1], 4)) if worst else None,
+        "months_positive": round(sum(1 for v in months.values() if v > 0) / len(months), 3)
+        if months else None,
+        "longest_pause_days": max(gaps) if gaps else None,
+        "recovery_days_median": float(np.median(recoveries)) if recoveries else None,
+        "recovery_days_max": max(recoveries) if recoveries else None,
+        "unrecovered_at_end": dd_from is not None,
+        "worst_loss_vs_planned": round(max((-t.pnl / t.planned_risk for t in trades
+                                            if t.pnl < 0 and t.planned_risk > 0), default=0.0), 4),
+    }
