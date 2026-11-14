@@ -144,3 +144,40 @@ def candidates(symbol: str, fast: Bars, fast_ms: int, reg: dict, p: Params,
         out.append(Candidate(symbol, i, int(fast.t[i + 1]), entry, entry - p.ks * a[i],
                              entry + p.kt * a[i], float(a[i])))
     return out
+
+
+# ---------- exits, costs, sizing (Task 3)
+
+BASE_COST = 0.0014  # round trip: fee 0.05% x 2 + slippage 0.02% x 2
+RISK = 0.005
+LEVERAGE = 3
+
+
+def exit_of(c: Candidate, fast: Bars, hold: int) -> tuple[int, float, str]:
+    """From the fill bar on: stop first (a gap under it fills at the open), then target, then
+    the time exit after `hold` bars; still open when the data ends -> last close, "end"."""
+    last = len(fast) - 1
+    for j in range(c.i + 1, min(c.i + hold, last) + 1):
+        if fast.low[j] <= c.stop:
+            return j, float(min(c.stop, fast.o[j])), "stop"
+        if fast.h[j] >= c.target:
+            return j, float(c.target), "target"
+    if c.i + hold <= last:
+        j = c.i + hold
+        return j, float(fast.c[j]), "time"
+    return last, float(fast.c[last]), "end"
+
+
+def sized(c: Candidate, equity: float, cost: float = BASE_COST, leverage: int = LEVERAGE,
+          risk: float = RISK) -> tuple[float, float]:
+    """Quantity whose loss at the stop, with half the round-trip cost at entry and half at the
+    stop, is `risk` of equity; capped so the position never exceeds equity x leverage."""
+    per_unit = (c.entry - c.stop) + cost / 2 * (c.entry + c.stop)
+    if per_unit <= 0 or equity <= 0:
+        return 0.0, 0.0
+    qty = min(equity * risk / per_unit, equity * leverage / c.entry)
+    return qty, qty * per_unit
+
+
+def pnl(c: Candidate, qty: float, exit_price: float, cost: float) -> float:
+    return qty * (exit_price - c.entry) - cost / 2 * qty * (c.entry + exit_price)

@@ -148,3 +148,65 @@ def test_fee_coverage_blocks_small_targets() -> None:
 def test_zero_atr_gives_no_candidate() -> None:
     b = bars("SOLUSDT", [100.0] * 400, M15)
     assert not fast.candidates("SOLUSDT", b, M15, open_regime(len(b)), P)
+
+
+# ---------- Task 3: exits, costs, sizing
+
+def flat_after(entry_bar_closes: list[float], highs: list[float], lows: list[float]) -> Bars:
+    """Bars 0..k-1 as given (bar 0 is the signal bar, bar 1 the fill bar)."""
+    c = np.array(entry_bar_closes, dtype=float)
+    t = np.array([T0 + i * M15 for i in range(len(c))], dtype=np.int64)
+    o = np.concatenate([[c[0]], c[:-1]])
+    return Bars("SOLUSDT", t, o, np.array(highs, float), np.array(lows, float), c)
+
+
+CAND = fast.Candidate("SOLUSDT", 0, T0 + M15, 100.0, 98.0, 104.0, 1.0)
+
+
+def test_stop_first_when_both_touched() -> None:
+    b = flat_after([100, 100, 100], [100, 105, 100], [100, 97, 100])
+    assert fast.exit_of(CAND, b, hold=10) == (1, 98.0, "stop")
+
+
+def test_target_and_time_exits() -> None:
+    hit = flat_after([100, 101, 103], [100, 101, 104.5], [100, 99.5, 102])
+    assert fast.exit_of(CAND, hit, hold=10) == (2, 104.0, "target")
+    quiet = flat_after([100, 100.5, 101, 101.2, 101.1], [101] * 5, [99.5] * 5)
+    assert fast.exit_of(CAND, quiet, hold=3) == (3, 101.2, "time")
+
+
+def test_gap_below_stop_fills_at_the_open() -> None:
+    b = flat_after([100, 96, 96], [100, 96.5, 96.5], [100, 95.5, 95.5])
+    b.o[1] = 96.5  # the fill bar already opens under the stop
+    idx, price, why = fast.exit_of(CAND, b, hold=10)
+    assert (idx, why) == (1, "stop") and price == 96.5  # worse than planned, as in reality
+
+
+def test_open_at_end_is_closed_at_last_close_and_marked_end() -> None:
+    b = flat_after([100, 100.5, 100.7], [101] * 3, [99.5] * 3)
+    assert fast.exit_of(CAND, b, hold=50) == (2, 100.7, "end")
+
+
+def test_planned_risk_is_half_percent_with_costs() -> None:
+    c = fast.Candidate("SOLUSDT", 0, 0, 100.0, 99.0, 102.0, 0.5)  # stop 1% away
+    qty, planned = fast.sized(c, equity=30.0, cost=0.0014)
+    assert abs(planned - 0.15) < 1e-9
+    per_unit = 1.0 + 0.0007 * (100.0 + 99.0)  # price distance + half the cost at each end
+    assert abs(qty - 0.15 / per_unit) < 1e-9
+    notional = qty * 100.0
+    assert 13.0 < notional < 13.5  # the position (~13.2$) is not the risk (0.15$)
+    assert notional / 3 < 30.0  # margin at leverage 3
+
+
+def test_size_is_capped_by_leverage() -> None:
+    tight = fast.Candidate("SOLUSDT", 0, 0, 100.0, 99.99, 100.5, 0.01)  # 0.01% stop
+    qty, planned = fast.sized(tight, equity=30.0, cost=0.0014)
+    assert qty * 100.0 <= 30.0 * 3 + 1e-9 and planned < 0.15
+
+
+def test_cost_only_changes_pnl() -> None:
+    c = fast.Candidate("SOLUSDT", 0, 0, 100.0, 99.0, 102.0, 0.5)
+    qty, _ = fast.sized(c, equity=30.0, cost=0.0014)  # sized at the base cost, always
+    results = [fast.pnl(c, qty, 102.0, cost) for cost in (0.0014, 0.0020, 0.0030)]
+    assert results[0] > results[1] > results[2]
+    assert abs(results[0] - (qty * 2.0 - qty * 0.0007 * 202.0)) < 1e-12
