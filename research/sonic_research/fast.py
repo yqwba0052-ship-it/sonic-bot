@@ -115,35 +115,39 @@ class Candidate:
     atr: float
 
 
+def indicators(fast: Bars) -> dict[str, np.ndarray]:
+    """RSI14, ATR14, EMA50 and EMA100 of a fast series, computed once and reused per grid."""
+    return {"rsi": rsi(fast.c), "atr": atr(fast.h, fast.low, fast.c),
+            "e50": ema(fast.c, 50), "e100": ema(fast.c, 100)}
+
+
 def candidates(symbol: str, fast: Bars, fast_ms: int, reg: dict, p: Params,
-               slip: float = 0.0002) -> list[Candidate]:
+               slip: float = 0.0002, ind: dict | None = None) -> list[Candidate]:
     """Pullback-and-bounce entries inside the 4h regime, after the reversal guards and the fee
     margin. Only data up to the signal bar is used; the fill is the next bar's open."""
     n = len(fast)
     if n < 120:
         return []
-    c, h = fast.c, fast.h
-    r = rsi(c)
-    a = atr(fast.h, fast.low, c)
-    e50, e100 = ema(c, 50), ema(c, 100)
-    out: list[Candidate] = []
-    for i in range(max(110, p.k), n - 1):
-        if not reg["ok"][i] or not reg["coin_above_ema20_4h"][i] or a[i] <= 0:
-            continue
-        drop = reg["btc_drop_4h"][i]
-        limit = BTC_FIXED_DROP if p.guard == "fixed" else BTC_VOL_MULT * reg["btc_atr_pct_4h"][i]
-        if drop > limit:
-            continue
-        if c[i] < e100[i] or e50[i] - e50[i - 10] < 0:
-            continue
-        if not (r[i - p.k:i].min() < p.L <= r[i] and c[i] > h[i - 1]):
-            continue
-        entry = fast.o[i + 1] * (1 + slip)
-        if p.kt * a[i] / entry < FEE_MARGIN:
-            continue
-        out.append(Candidate(symbol, i, int(fast.t[i + 1]), entry, entry - p.ks * a[i],
-                             entry + p.kt * a[i], float(a[i])))
-    return out
+    ind = ind or indicators(fast)
+    r, a, e50, e100 = ind["rsi"], ind["atr"], ind["e50"], ind["e100"]
+    c, h, o = fast.c, fast.h, fast.o
+    idx = np.arange(n)
+    valid = (idx >= max(110, p.k)) & (idx <= n - 2)
+    limit = (BTC_FIXED_DROP if p.guard == "fixed"
+             else BTC_VOL_MULT * reg["btc_atr_pct_4h"])
+    slope = e50 - np.concatenate([np.full(10, np.inf), e50[:-10]])
+    prev_high = np.concatenate([[np.inf], h[:-1]])
+    dip = np.full(n, np.inf)  # lowest RSI over the k bars before i
+    dip[p.k:] = np.lib.stride_tricks.sliding_window_view(r, p.k)[:n - p.k].min(axis=1)
+    entry = np.concatenate([o[1:], [np.nan]]) * (1 + slip)
+    with np.errstate(invalid="ignore", divide="ignore"):
+        mask = (valid & reg["ok"] & reg["coin_above_ema20_4h"] & (a > 0)
+                & (reg["btc_drop_4h"] <= limit) & (c >= e100) & (slope >= 0)
+                & (dip < p.L) & (r >= p.L) & (c > prev_high)
+                & (p.kt * a / entry >= FEE_MARGIN))
+    return [Candidate(symbol, int(i), int(fast.t[i + 1]), float(entry[i]),
+                      float(entry[i] - p.ks * a[i]), float(entry[i] + p.kt * a[i]), float(a[i]))
+            for i in np.nonzero(mask)[0]]
 
 
 # ---------- exits, costs, sizing (Task 3)

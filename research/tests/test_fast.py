@@ -332,3 +332,55 @@ def test_suitable_days_from_regime() -> None:
             "XRPUSDT": {"ok": np.array([False, False, False, True])}}
     days = fast.suitable_days(regs, {"SOLUSDT": t, "XRPUSDT": t})
     assert days == {dt.date(2025, 1, 1), dt.date(2025, 1, 4)}
+
+
+# ---------- Task 6: selection, freezing, hold-out, verdict
+
+def test_select_respects_constraints_and_picks_max_net() -> None:
+    from sonic_research import fast_run
+
+    rows = [
+        {"params": "a", "metrics": {"net_pnl": 9.0, "profit_factor": 1.1, "max_drawdown": 0.05,
+                                    "per_suitable_day": 2.0}},  # PF too low
+        {"params": "b", "metrics": {"net_pnl": 8.0, "profit_factor": 1.5, "max_drawdown": 0.12,
+                                    "per_suitable_day": 2.0}},  # drawdown too deep
+        {"params": "c", "metrics": {"net_pnl": 7.0, "profit_factor": 1.5, "max_drawdown": 0.05,
+                                    "per_suitable_day": 1.2}},  # too few trades
+        {"params": "d", "metrics": {"net_pnl": 3.0, "profit_factor": 1.3, "max_drawdown": 0.08,
+                                    "per_suitable_day": 1.6}},
+        {"params": "e", "metrics": {"net_pnl": 5.0, "profit_factor": 1.25, "max_drawdown": 0.09,
+                                    "per_suitable_day": 1.5}},
+    ]
+    assert fast_run.select(rows)["params"] == "e"
+    assert fast_run.select(rows[:3]) is None  # nothing passes: nothing is chosen
+
+
+def test_holdout_refuses_without_frozen_file(tmp_path) -> None:
+    import pytest
+
+    from sonic_research import fast_run
+
+    with pytest.raises(SystemExit, match="frozen"):
+        fast_run.holdout(frozen=tmp_path / "none.json", out=tmp_path / "out.json")
+
+
+def test_freeze_writes_a_hash(tmp_path) -> None:
+    import hashlib
+
+    from sonic_research import fast_run
+
+    path = tmp_path / "frozen.json"
+    digest = fast_run.freeze({"15m": None}, path)
+    assert digest == hashlib.sha256(path.read_bytes()).hexdigest()
+
+
+def test_verdict_rejects_each_failed_criterion() -> None:
+    from sonic_research import fast_run
+
+    good = {"net_pnl": 4.0, "profit_factor": 1.3, "max_drawdown": 0.08, "per_suitable_day": 1.6}
+    ok, why = fast_run.verdict(good, combined_worst_pct=-5.0, sonic_worst_pct=-4.0)
+    assert ok and not why
+    for key, bad in (("net_pnl", -0.1), ("profit_factor", 1.1), ("max_drawdown", 0.11),
+                     ("per_suitable_day", 1.4)):
+        assert fast_run.verdict({**good, key: bad}, -5.0, -4.0)[0] is False
+    assert fast_run.verdict(good, combined_worst_pct=-6.5, sonic_worst_pct=-4.0)[0] is False
