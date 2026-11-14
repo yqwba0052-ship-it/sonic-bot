@@ -6,6 +6,8 @@ Every value seen at a fast bar comes from bars that had closed by that bar's clo
 
 from __future__ import annotations
 
+from dataclasses import dataclass
+
 import numpy as np
 
 from .data import Bars
@@ -84,3 +86,61 @@ def regime(fast_t: np.ndarray, fast_ms: int, coin4: Bars, btc4: Bars) -> dict[st
     above20 = (ci >= 20) & (coin4.c[c] >= c20[c])
     return {"ok": ok, "btc_drop_4h": btc_drop, "btc_atr_pct_4h": btc_atr_pct,
             "coin_above_ema20_4h": above20}
+
+
+# ---------- candidate entries (Task 2)
+
+FEE_MARGIN = 0.0042  # target distance must be >= 3 x the 0.14% round-trip cost
+BTC_FIXED_DROP = 0.02
+BTC_VOL_MULT = 1.5
+
+
+@dataclass(frozen=True)
+class Params:
+    L: int  # RSI level the pullback dips under
+    k: int  # bars the dip may be back
+    ks: float  # stop distance in ATR
+    kt: float  # target distance in ATR
+    guard: str  # BTC crash guard: "fixed" (2%) or "vol" (1.5 x BTC 4h ATR)
+
+
+@dataclass(frozen=True)
+class Candidate:
+    symbol: str
+    i: int  # signal bar (closed); the fill is at the open of bar i + 1
+    t_ms: int  # fill time
+    entry: float
+    stop: float
+    target: float
+    atr: float
+
+
+def candidates(symbol: str, fast: Bars, fast_ms: int, reg: dict, p: Params,
+               slip: float = 0.0002) -> list[Candidate]:
+    """Pullback-and-bounce entries inside the 4h regime, after the reversal guards and the fee
+    margin. Only data up to the signal bar is used; the fill is the next bar's open."""
+    n = len(fast)
+    if n < 120:
+        return []
+    c, h = fast.c, fast.h
+    r = rsi(c)
+    a = atr(fast.h, fast.low, c)
+    e50, e100 = ema(c, 50), ema(c, 100)
+    out: list[Candidate] = []
+    for i in range(max(110, p.k), n - 1):
+        if not reg["ok"][i] or not reg["coin_above_ema20_4h"][i] or a[i] <= 0:
+            continue
+        drop = reg["btc_drop_4h"][i]
+        limit = BTC_FIXED_DROP if p.guard == "fixed" else BTC_VOL_MULT * reg["btc_atr_pct_4h"][i]
+        if drop > limit:
+            continue
+        if c[i] < e100[i] or e50[i] - e50[i - 10] < 0:
+            continue
+        if not (r[i - p.k:i].min() < p.L <= r[i] and c[i] > h[i - 1]):
+            continue
+        entry = fast.o[i + 1] * (1 + slip)
+        if p.kt * a[i] / entry < FEE_MARGIN:
+            continue
+        out.append(Candidate(symbol, i, int(fast.t[i + 1]), entry, entry - p.ks * a[i],
+                             entry + p.kt * a[i], float(a[i])))
+    return out
