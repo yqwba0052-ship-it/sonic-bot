@@ -113,6 +113,14 @@ profit, trend turned, 40 days, or owner/limits).
   70% profitable months) at a cost of 41% of the profit ($39.7 -> $23.3). The worst month's
   losses came from trades opened on different days, which such a filter cannot stop.
   Rejected by the owner (2026-11-14).
+- "Sonic Fast" (second strategy: buying pullbacks inside Sonic's 4h uptrend on 15m/30m/1h,
+  aiming at 2+ trades per suitable day; design docs/superpowers/specs/2026-11-14-sonic-fast-design.md,
+  code research/sonic_research/fast.py). Grid of 144 settings per timeframe on 2021-2023 only,
+  costs 0.14%, limits fixed in advance (PF >= 1.2, drawdown <= 10%, >= 1.5 trades per suitable
+  day). No setting passed on any timeframe, so nothing was frozen and the 2024-2026 hold-out was
+  never run. The busiest settings lost money (15m: 1.14 trades/suitable day, -$13.7, 46% drawdown;
+  1h: 0.36/day, -$4.7); the profitable ones traded rarely (15m 0.03/day; 1h 0.28/day, +$2.4 over
+  three years). Fees took 21-33% of gross profit on the busy settings. Rejected (2026-11-14).
 
 ## Watching the bot: the candle simulator
 
