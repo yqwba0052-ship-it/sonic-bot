@@ -103,6 +103,16 @@ profit, trend turned, 40 days, or owner/limits).
   it was not weak (1 winning trade), so that data gives no reason to drop it; in 2024-2026
   dropping it raised wins from 77.6% to 79.9% but lowered the result from $62.55 to $57.70.
   Kept (2026-11-10).
+- Correlation filter (skip a new trade when its coin's 30-day 4h-return correlation with any
+  coin already in a trade is at or above a threshold; rules and sizing unchanged), tested
+  2026-11-14 on the real engine, threshold chosen on 2021-2023 and judged on 2024-2026. In
+  2021-2023 it looked strong (0.7: recovery 251 -> 67 days, drawdown 5.1% -> 2.8%). In 2024-2026
+  every threshold had fewer winning trades (112 -> 99/87/75) and fewer days with 2+ trades
+  (28 -> 22/17/10); 0.8 and 0.7 gave the same profit (+$39.7 / +$39.0), the same 64-day
+  recovery and the same worst month (2025-06); only 0.6 steadied the curve (drawdown 4.4%,
+  70% profitable months) at a cost of 41% of the profit ($39.7 -> $23.3). The worst month's
+  losses came from trades opened on different days, which such a filter cannot stop.
+  Rejected by the owner (2026-11-14).
 
 ## Watching the bot: the candle simulator
 
