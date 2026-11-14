@@ -210,3 +210,73 @@ def test_cost_only_changes_pnl() -> None:
     results = [fast.pnl(c, qty, 102.0, cost) for cost in (0.0014, 0.0020, 0.0030)]
     assert results[0] > results[1] > results[2]
     assert abs(results[0] - (qty * 2.0 - qty * 0.0007 * 202.0)) < 1e-12
+
+
+# ---------- Task 4: portfolio limits and Sonic overlap
+
+DAY_BARS = 96  # 15m bars per day
+
+
+def track(symbol: str, n: int, dips: tuple[int, ...] = ()) -> Bars:
+    """Flat at 100; at each index in `dips` the low falls to 90 (any stop at 98 is hit)."""
+    c = np.full(n, 100.0)
+    low = np.full(n, 99.5)
+    low[list(dips)] = 90.0
+    t = np.array([T0 + i * M15 for i in range(n)], dtype=np.int64)
+    return Bars(symbol, t, c.copy(), np.full(n, 100.5), low, c)
+
+
+def cand(symbol: str, i: int) -> fast.Candidate:
+    return fast.Candidate(symbol, i, T0 + (i + 1) * M15, 100.0, 98.0, 104.0, 1.0)
+
+
+END = T0 + 400 * M15
+
+
+def test_max_two_open() -> None:
+    b = {s: track(s, 400) for s in ("SOLUSDT", "XRPUSDT", "ADAUSDT")}
+    cands = [cand("SOLUSDT", 5), cand("XRPUSDT", 5), cand("ADAUSDT", 5)]
+    trades = fast.run(cands, b, hold=96, cost=0.0014, sonic=[], start_ms=T0, end_ms=END)
+    assert sorted(t.symbol for t in trades) == ["SOLUSDT", "XRPUSDT"]
+
+
+def test_one_trade_per_coin_and_skip_coin_with_open_sonic_trade() -> None:
+    b = {s: track(s, 400) for s in ("SOLUSDT", "XRPUSDT")}
+    sonic = [{"symbol": "XRPUSDT", "opened_ms": T0, "closed_ms": END, "risk_usdt": 0.3, "pnl": 0}]
+    cands = [cand("SOLUSDT", 5), cand("SOLUSDT", 6), cand("XRPUSDT", 5)]
+    trades = fast.run(cands, b, hold=96, cost=0.0014, sonic=sonic, start_ms=T0, end_ms=END)
+    assert [t.symbol for t in trades] == ["SOLUSDT"]
+
+
+def test_daily_limit_counts_realized_open_and_new_risk_with_fees() -> None:
+    b = {"SOLUSDT": track("SOLUSDT", 400, dips=(2, 5, 8)),
+         "XRPUSDT": track("XRPUSDT", 400), "ADAUSDT": track("ADAUSDT", 400)}
+    cands = [cand("SOLUSDT", 0), cand("SOLUSDT", 3), cand("SOLUSDT", 6),  # three losses today
+             cand("XRPUSDT", 10),  # stays open: 0.5% planned
+             cand("ADAUSDT", 12),  # 1.5% lost + 0.5% open + 0.5% new > 2% -> refused
+             cand("ADAUSDT", DAY_BARS + 20)]  # next UTC day -> allowed
+    trades = fast.run(cands, b, hold=1000, cost=0.0014, sonic=[], start_ms=T0, end_ms=END)
+    opened = [(t.symbol, t.opened_ms) for t in trades]
+    assert ("ADAUSDT", cands[4].t_ms) not in opened
+    assert ("ADAUSDT", cands[5].t_ms) in opened
+    assert sum(1 for t in trades if t.why == "stop") == 3
+
+
+def test_combined_limit_with_sonic_open_risk() -> None:
+    b = {s: track(s, 400) for s in ("SOLUSDT", "XRPUSDT")}
+    sonic = [{"symbol": "BNBUSDT", "opened_ms": T0, "closed_ms": END, "risk_usdt": 2.2, "pnl": 0}]
+    cands = [cand("SOLUSDT", 5), cand("XRPUSDT", 6)]
+    trades = fast.run(cands, b, hold=96, cost=0.0014, sonic=sonic, start_ms=T0, end_ms=END)
+    # 2.2 + 0.15 <= 4% of 60 = 2.4 is allowed; 2.2 + 0.15 + 0.15 = 2.5 is not
+    assert [t.symbol for t in trades] == ["SOLUSDT"]
+
+
+def test_no_size_increase_after_loss() -> None:
+    b = {"SOLUSDT": track("SOLUSDT", 400, dips=(2, 5))}
+    cands = [cand("SOLUSDT", 0), cand("SOLUSDT", 3), cand("SOLUSDT", 6)]
+    trades = fast.run(cands, b, hold=96, cost=0.0014, sonic=[], start_ms=T0, end_ms=END)
+    equity = 30.0
+    for t in trades:  # every trade risks 0.5% of the equity it had, never more
+        assert abs(t.planned_risk - 0.005 * equity) < 1e-9
+        equity += t.pnl
+    assert trades[2].qty < trades[0].qty  # smaller after two losses, not doubled

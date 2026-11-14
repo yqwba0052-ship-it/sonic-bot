@@ -181,3 +181,79 @@ def sized(c: Candidate, equity: float, cost: float = BASE_COST, leverage: int = 
 
 def pnl(c: Candidate, qty: float, exit_price: float, cost: float) -> float:
     return qty * (exit_price - c.entry) - cost / 2 * qty * (c.entry + exit_price)
+
+
+# ---------- portfolio pass (Task 4)
+
+MAX_OPEN = 2
+DAILY_LIMIT = 0.02  # of Sonic Fast equity at the start of the UTC day
+COMBINED_LIMIT = 0.04  # of Sonic + Sonic Fast equity: PLANNED risk at the stops, not a cap on loss
+DAY_MS = 86_400_000
+
+
+@dataclass
+class Trade:
+    symbol: str
+    opened_ms: int
+    closed_ms: int
+    entry: float
+    exit: float
+    qty: float
+    pnl: float
+    planned_risk: float
+    why: str
+
+
+def run(cands: list[Candidate], bars: dict[str, Bars], hold: int, cost: float,
+        sonic: list[dict], start_ms: int, end_ms: int, equity0: float = 30.0,
+        sonic_capital: float = 30.0) -> list[Trade]:
+    """One chronological pass: at most MAX_OPEN trades, one per coin, never a coin Sonic holds,
+    and only when the daily and combined planned-risk limits still hold with the new trade.
+    Sizing uses the base cost; `cost` only sets the PnL (cost-sensitivity runs)."""
+    equity = equity0
+    open_: list[tuple[int, Trade]] = []  # (exit time, trade)
+    done: list[Trade] = []
+    day_key, day_equity, day_losses = None, equity0, 0.0
+
+    def close_until(t_ms: int) -> None:
+        nonlocal equity, day_losses
+        for exit_ms, trade in sorted(open_, key=lambda x: x[0]):
+            if exit_ms <= t_ms:
+                equity += trade.pnl
+                if trade.pnl < 0 and exit_ms // DAY_MS == t_ms // DAY_MS:
+                    day_losses += -trade.pnl
+                done.append(trade)
+                open_.remove((exit_ms, trade))
+
+    for c in sorted((c for c in cands if start_ms <= c.t_ms < end_ms), key=lambda c: c.t_ms):
+        close_until(c.t_ms)
+        if c.t_ms // DAY_MS != day_key:
+            day_key, day_equity, day_losses = c.t_ms // DAY_MS, equity, 0.0
+            day_losses = sum(-t.pnl for t in done
+                             if t.pnl < 0 and t.closed_ms // DAY_MS == day_key)
+        if len(open_) >= MAX_OPEN or any(t.symbol == c.symbol for _, t in open_):
+            continue
+        sonic_open = [s for s in sonic
+                      if s["opened_ms"] <= c.t_ms < (s.get("closed_ms") or end_ms)]
+        if any(s["symbol"] == c.symbol for s in sonic_open):
+            continue
+        qty, planned = sized(c, equity, BASE_COST)
+        if qty <= 0:
+            continue
+        open_planned = sum(t.planned_risk for _, t in open_)
+        if day_losses + open_planned + planned > DAILY_LIMIT * day_equity + 1e-12:
+            continue
+        sonic_equity = sonic_capital + sum(s.get("pnl") or 0 for s in sonic
+                                           if (s.get("closed_ms") or end_ms) <= c.t_ms)
+        sonic_planned = sum(s.get("risk_usdt") or 0 for s in sonic_open)
+        combined_cap = COMBINED_LIMIT * (equity + sonic_equity)
+        if sonic_planned + open_planned + planned > combined_cap + 1e-12:
+            continue
+        b = bars[c.symbol]
+        bar_ms = int(b.t[1] - b.t[0]) if len(b) > 1 else 0
+        j, price, why = exit_of(c, b, hold)
+        trade = Trade(c.symbol, c.t_ms, int(b.t[j]) + bar_ms, c.entry, price, qty,
+                      pnl(c, qty, price, cost), planned, why)
+        open_.append((trade.closed_ms, trade))
+    close_until(2**62)
+    return sorted(done, key=lambda t: t.opened_ms)
