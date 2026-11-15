@@ -1,0 +1,28 @@
+{
+ "frozen_sha256": "3a9fdced5872b63e2529232899b8dadd19be0dbd1eee9e855ba47252157f83ba",
+ "period": [
+  "2024-01-01",
+  "2026-10-31"
+ ],
+ "sonic_alone_worst_month_pct": -4.46,
+ "timeframes": {
+  "15m": {
+   "accepted": false,
+   "why": [
+    "no setting passed the training limits"
+   ]
+  },
+  "30m": {
+   "accepted": false,
+   "why": [
+    "no setting passed the training limits"
+   ]
+  },
+  "1h": {
+   "accepted": false,
+   "why": [
+    "no setting passed the training limits"
+   ]
+  }
+ }
+}

@@ -1,0 +1,510 @@
+{
+ "made": "2026-11-14T01:33:45.022537+00:00",
+ "period": [
+  "2021-01-01",
+  "2023-12-31"
+ ],
+ "cost": 0.0014,
+ "limits": {
+  "profit_factor": 1.2,
+  "max_drawdown": 0.1,
+  "per_suitable_day": 1.5
+ },
+ "timeframes": {
+  "15m": {
+   "choice": null,
+   "top5_by_net": [
+    {
+     "params": {
+      "L": 30,
+      "k": 6,
+      "ks": 1.5,
+      "kt": 3.0,
+      "guard": "fixed"
+     },
+     "metrics": {
+      "trades": 12,
+      "suitable_days": 580,
+      "per_suitable_day": 0.021,
+      "per_calendar_day": 0.011,
+      "days_without_trade": 1083,
+      "days_2plus": 0,
+      "win_rate": 0.5833,
+      "profit_factor": 2.488,
+      "net_pnl": 1.158213,
+      "fee_share": 0.057528,
+      "max_drawdown": 0.014925,
+      "worst_month": [
+       "2023-11",
+       -0.3125
+      ],
+      "months_positive": 0.667,
+      "longest_pause_days": 384,
+      "recovery_days_median": 320.5,
+      "recovery_days_max": 551,
+      "unrecovered_at_end": true,
+      "worst_loss_vs_planned": 1.0
+     }
+    },
+    {
+     "params": {
+      "L": 30,
+      "k": 6,
+      "ks": 1.5,
+      "kt": 3.0,
+      "guard": "vol"
+     },
+     "metrics": {
+      "trades": 12,
+      "suitable_days": 580,
+      "per_suitable_day": 0.021,
+      "per_calendar_day": 0.011,
+      "days_without_trade": 1083,
+      "days_2plus": 0,
+      "win_rate": 0.5833,
+      "profit_factor": 2.488,
+      "net_pnl": 1.158213,
+      "fee_share": 0.057528,
+      "max_drawdown": 0.014925,
+      "worst_month": [
+       "2023-11",
+       -0.3125
+      ],
+      "months_positive": 0.667,
+      "longest_pause_days": 384,
+      "recovery_days_median": 320.5,
+      "recovery_days_max": 551,
+      "unrecovered_at_end": true,
+      "worst_loss_vs_planned": 1.0
+     }
+    },
+    {
+     "params": {
+      "L": 30,
+      "k": 6,
+      "ks": 2.0,
+      "kt": 3.0,
+      "guard": "fixed"
+     },
+     "metrics": {
+      "trades": 12,
+      "suitable_days": 580,
+      "per_suitable_day": 0.021,
+      "per_calendar_day": 0.011,
+      "days_without_trade": 1083,
+      "days_2plus": 0,
+      "win_rate": 0.6667,
+      "profit_factor": 3.041,
+      "net_pnl": 1.134512,
+      "fee_share": 0.050382,
+      "max_drawdown": 0.007963,
+      "worst_month": [
+       "2022-03",
+       -0.1546
+      ],
+      "months_positive": 0.778,
+      "longest_pause_days": 384,
+      "recovery_days_median": 320.5,
+      "recovery_days_max": 551,
+      "unrecovered_at_end": true,
+      "worst_loss_vs_planned": 1.0
+     }
+    },
+    {
+     "params": {
+      "L": 30,
+      "k": 6,
+      "ks": 2.0,
+      "kt": 3.0,
+      "guard": "vol"
+     },
+     "metrics": {
+      "trades": 12,
+      "suitable_days": 580,
+      "per_suitable_day": 0.021,
+      "per_calendar_day": 0.011,
+      "days_without_trade": 1083,
+      "days_2plus": 0,
+      "win_rate": 0.6667,
+      "profit_factor": 3.041,
+      "net_pnl": 1.134512,
+      "fee_share": 0.050382,
+      "max_drawdown": 0.007963,
+      "worst_month": [
+       "2022-03",
+       -0.1546
+      ],
+      "months_positive": 0.778,
+      "longest_pause_days": 384,
+      "recovery_days_median": 320.5,
+      "recovery_days_max": 551,
+      "unrecovered_at_end": true,
+      "worst_loss_vs_planned": 1.0
+     }
+    },
+    {
+     "params": {
+      "L": 30,
+      "k": 6,
+      "ks": 2.0,
+      "kt": 2.0,
+      "guard": "fixed"
+     },
+     "metrics": {
+      "trades": 14,
+      "suitable_days": 580,
+      "per_suitable_day": 0.024,
+      "per_calendar_day": 0.013,
+      "days_without_trade": 1083,
+      "days_2plus": 2,
+      "win_rate": 0.7857,
+      "profit_factor": 3.817,
+      "net_pnl": 1.122879,
+      "fee_share": 0.071121,
+      "max_drawdown": 0.005,
+      "worst_month": [
+       "2021-04",
+       -0.1521
+      ],
+      "months_positive": 0.778,
+      "longest_pause_days": 384,
+      "recovery_days_median": 217.0,
+      "recovery_days_max": 251,
+      "unrecovered_at_end": false,
+      "worst_loss_vs_planned": 1.0
+     }
+    }
+   ]
+  },
+  "30m": {
+   "choice": null,
+   "top5_by_net": [
+    {
+     "params": {
+      "L": 30,
+      "k": 6,
+      "ks": 1.0,
+      "kt": 2.0,
+      "guard": "fixed"
+     },
+     "metrics": {
+      "trades": 4,
+      "suitable_days": 580,
+      "per_suitable_day": 0.007,
+      "per_calendar_day": 0.004,
+      "days_without_trade": 1093,
+      "days_2plus": 2,
+      "win_rate": 0.75,
+      "profit_factor": 4.891,
+      "net_pnl": 0.588713,
+      "fee_share": 0.085502,
+      "max_drawdown": 0.005,
+      "worst_month": [
+       "2022-02",
+       0.1093
+      ],
+      "months_positive": 1.0,
+      "longest_pause_days": 629,
+      "recovery_days_median": 629.0,
+      "recovery_days_max": 629,
+      "unrecovered_at_end": false,
+      "worst_loss_vs_planned": 1.0
+     }
+    },
+    {
+     "params": {
+      "L": 30,
+      "k": 6,
+      "ks": 1.0,
+      "kt": 2.0,
+      "guard": "vol"
+     },
+     "metrics": {
+      "trades": 4,
+      "suitable_days": 580,
+      "per_suitable_day": 0.007,
+      "per_calendar_day": 0.004,
+      "days_without_trade": 1093,
+      "days_2plus": 2,
+      "win_rate": 0.75,
+      "profit_factor": 4.891,
+      "net_pnl": 0.588713,
+      "fee_share": 0.085502,
+      "max_drawdown": 0.005,
+      "worst_month": [
+       "2022-02",
+       0.1093
+      ],
+      "months_positive": 1.0,
+      "longest_pause_days": 629,
+      "recovery_days_median": 629.0,
+      "recovery_days_max": 629,
+      "unrecovered_at_end": false,
+      "worst_loss_vs_planned": 1.0
+     }
+    },
+    {
+     "params": {
+      "L": 30,
+      "k": 3,
+      "ks": 1.0,
+      "kt": 2.0,
+      "guard": "fixed"
+     },
+     "metrics": {
+      "trades": 2,
+      "suitable_days": 580,
+      "per_suitable_day": 0.003,
+      "per_calendar_day": 0.002,
+      "days_without_trade": 1093,
+      "days_2plus": 0,
+      "win_rate": 1.0,
+      "profit_factor": Infinity,
+      "net_pnl": 0.497239,
+      "fee_share": 0.066629,
+      "max_drawdown": 0.0,
+      "worst_month": [
+       "2023-11",
+       0.2366
+      ],
+      "months_positive": 1.0,
+      "longest_pause_days": 629,
+      "recovery_days_median": null,
+      "recovery_days_max": null,
+      "unrecovered_at_end": false,
+      "worst_loss_vs_planned": 0.0
+     }
+    },
+    {
+     "params": {
+      "L": 30,
+      "k": 3,
+      "ks": 1.0,
+      "kt": 2.0,
+      "guard": "vol"
+     },
+     "metrics": {
+      "trades": 2,
+      "suitable_days": 580,
+      "per_suitable_day": 0.003,
+      "per_calendar_day": 0.002,
+      "days_without_trade": 1093,
+      "days_2plus": 0,
+      "win_rate": 1.0,
+      "profit_factor": Infinity,
+      "net_pnl": 0.497239,
+      "fee_share": 0.066629,
+      "max_drawdown": 0.0,
+      "worst_month": [
+       "2023-11",
+       0.2366
+      ],
+      "months_positive": 1.0,
+      "longest_pause_days": 629,
+      "recovery_days_median": null,
+      "recovery_days_max": null,
+      "unrecovered_at_end": false,
+      "worst_loss_vs_planned": 0.0
+     }
+    },
+    {
+     "params": {
+      "L": 30,
+      "k": 6,
+      "ks": 1.0,
+      "kt": 1.5,
+      "guard": "fixed"
+     },
+     "metrics": {
+      "trades": 4,
+      "suitable_days": 580,
+      "per_suitable_day": 0.007,
+      "per_calendar_day": 0.004,
+      "days_without_trade": 1093,
+      "days_2plus": 2,
+      "win_rate": 0.75,
+      "profit_factor": 3.578,
+      "net_pnl": 0.389174,
+      "fee_share": 0.11374,
+      "max_drawdown": 0.005,
+      "worst_month": [
+       "2022-02",
+       0.0412
+      ],
+      "months_positive": 1.0,
+      "longest_pause_days": 629,
+      "recovery_days_median": 629.0,
+      "recovery_days_max": 629,
+      "unrecovered_at_end": false,
+      "worst_loss_vs_planned": 1.0
+     }
+    }
+   ]
+  },
+  "1h": {
+   "choice": null,
+   "top5_by_net": [
+    {
+     "params": {
+      "L": 40,
+      "k": 6,
+      "ks": 1.5,
+      "kt": 3.0,
+      "guard": "fixed"
+     },
+     "metrics": {
+      "trades": 163,
+      "suitable_days": 580,
+      "per_suitable_day": 0.281,
+      "per_calendar_day": 0.149,
+      "days_without_trade": 974,
+      "days_2plus": 31,
+      "win_rate": 0.4356,
+      "profit_factor": 1.177,
+      "net_pnl": 2.508274,
+      "fee_share": 0.094829,
+      "max_drawdown": 0.055293,
+      "worst_month": [
+       "2023-07",
+       -0.9136
+      ],
+      "months_positive": 0.444,
+      "longest_pause_days": 117,
+      "recovery_days_median": 14.0,
+      "recovery_days_max": 634,
+      "unrecovered_at_end": true,
+      "worst_loss_vs_planned": 1.0
+     }
+    },
+    {
+     "params": {
+      "L": 40,
+      "k": 6,
+      "ks": 2.0,
+      "kt": 3.0,
+      "guard": "fixed"
+     },
+     "metrics": {
+      "trades": 161,
+      "suitable_days": 580,
+      "per_suitable_day": 0.278,
+      "per_calendar_day": 0.147,
+      "days_without_trade": 974,
+      "days_2plus": 31,
+      "win_rate": 0.4907,
+      "profit_factor": 1.226,
+      "net_pnl": 2.407322,
+      "fee_share": 0.088309,
+      "max_drawdown": 0.04601,
+      "worst_month": [
+       "2021-10",
+       -0.4711
+      ],
+      "months_positive": 0.481,
+      "longest_pause_days": 117,
+      "recovery_days_median": 14.0,
+      "recovery_days_max": 695,
+      "unrecovered_at_end": true,
+      "worst_loss_vs_planned": 1.0
+     }
+    },
+    {
+     "params": {
+      "L": 40,
+      "k": 6,
+      "ks": 1.5,
+      "kt": 3.0,
+      "guard": "vol"
+     },
+     "metrics": {
+      "trades": 169,
+      "suitable_days": 580,
+      "per_suitable_day": 0.291,
+      "per_calendar_day": 0.154,
+      "days_without_trade": 972,
+      "days_2plus": 35,
+      "win_rate": 0.432,
+      "profit_factor": 1.151,
+      "net_pnl": 2.18591,
+      "fee_share": 0.095263,
+      "max_drawdown": 0.055293,
+      "worst_month": [
+       "2023-07",
+       -0.9045
+      ],
+      "months_positive": 0.444,
+      "longest_pause_days": 117,
+      "recovery_days_median": 15.0,
+      "recovery_days_max": 634,
+      "unrecovered_at_end": true,
+      "worst_loss_vs_planned": 1.0
+     }
+    },
+    {
+     "params": {
+      "L": 40,
+      "k": 6,
+      "ks": 2.0,
+      "kt": 3.0,
+      "guard": "vol"
+     },
+     "metrics": {
+      "trades": 167,
+      "suitable_days": 580,
+      "per_suitable_day": 0.288,
+      "per_calendar_day": 0.153,
+      "days_without_trade": 972,
+      "days_2plus": 35,
+      "win_rate": 0.485,
+      "profit_factor": 1.185,
+      "net_pnl": 2.04485,
+      "fee_share": 0.088807,
+      "max_drawdown": 0.045343,
+      "worst_month": [
+       "2021-10",
+       -0.4658
+      ],
+      "months_positive": 0.481,
+      "longest_pause_days": 117,
+      "recovery_days_median": 15.0,
+      "recovery_days_max": 695,
+      "unrecovered_at_end": true,
+      "worst_loss_vs_planned": 1.0
+     }
+    },
+    {
+     "params": {
+      "L": 35,
+      "k": 6,
+      "ks": 1.5,
+      "kt": 1.5,
+      "guard": "vol"
+     },
+     "metrics": {
+      "trades": 22,
+      "suitable_days": 580,
+      "per_suitable_day": 0.038,
+      "per_calendar_day": 0.02,
+      "days_without_trade": 1076,
+      "days_2plus": 3,
+      "win_rate": 0.7273,
+      "profit_factor": 2.393,
+      "net_pnl": 1.287083,
+      "fee_share": 0.066085,
+      "max_drawdown": 0.005977,
+      "worst_month": [
+       "2023-11",
+       -0.1573
+      ],
+      "months_positive": 0.643,
+      "longest_pause_days": 220,
+      "recovery_days_median": 197.0,
+      "recovery_days_max": 343,
+      "unrecovered_at_end": true,
+      "worst_loss_vs_planned": 1.0
+     }
+    }
+   ]
+  }
+ }
+}
