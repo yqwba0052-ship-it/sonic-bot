@@ -196,3 +196,73 @@ def test_compare_reports_missing_bar_and_price_mismatch():
     assert report["missing_bars"] == [int(hours[0][2])]
     assert report["mismatches"][0][:2] == (int(hours[0][0]), "h")
     assert report["max_rel_diff"] == pytest.approx(0.01)
+
+
+# ---- Task 4: coins and window fixed before Jesse runs
+
+from sonic_research.jesse_audit.choose import pick_window  # noqa: E402
+
+
+def _ms(month: str, day: int = 10) -> int:
+    from datetime import UTC, datetime
+    return int(datetime.strptime(f"{month}-{day:02d}", "%Y-%m-%d").replace(tzinfo=UTC)
+               .timestamp() * 1000)
+
+
+def _trade(symbol, opened, closed):
+    return {"symbol": symbol, "opened_ms": _ms(opened), "closed_ms": _ms(closed, 20)}
+
+
+MONTHS = [f"2021-{m:02d}" for m in range(6, 13)] + [f"{y}-{m:02d}" for y in (2022, 2023)
+                                                   for m in range(1, 13)]
+
+
+def test_pick_most_trades():
+    trades = [_trade("SOLUSDT", "2022-03", "2022-03")] * 2 + [
+        _trade("XRPUSDT", "2022-04", "2022-04")] * 3 + [_trade("DOGEUSDT", "2022-04", "2022-04")]
+    got = pick_window(trades, [], ["DOGEUSDT", "SOLUSDT", "XRPUSDT"], MONTHS)
+    assert got["coins"] == ["SOLUSDT", "XRPUSDT"]
+    assert got["trades"] == 5
+    assert got["start"] <= "2022-03" and got["end"] >= "2022-04"
+
+
+def test_window_with_halt_excluded():
+    trades = [_trade("SOLUSDT", "2022-03", "2022-03")] * 4 + [
+        _trade("SOLUSDT", "2023-03", "2023-03"), _trade("XRPUSDT", "2023-03", "2023-03")]
+    halts = [("daily_loss_limit", _ms("2022-03", 15))]
+    got = pick_window(trades, halts, ["SOLUSDT", "XRPUSDT"], MONTHS)
+    assert got["start"] > "2022-03" or got["end"] < "2022-03"
+    assert got["trades"] == 2
+
+
+def test_tie_breaks_earliest_then_alphabetical():
+    trades = [_trade("XRPUSDT", "2022-01", "2022-01"), _trade("SOLUSDT", "2022-01", "2022-01")]
+    got = pick_window(trades, [], ["XRPUSDT", "SOLUSDT", "DOGEUSDT"], MONTHS)
+    assert got["start"] == "2021-12"
+    assert got["coins"] == ["SOLUSDT", "XRPUSDT"]
+
+
+def test_never_beyond_2023_12():
+    trades = [_trade("SOLUSDT", "2023-12", "2023-12"), _trade("XRPUSDT", "2023-12", "2023-12")]
+    got = pick_window(trades, [], ["SOLUSDT", "XRPUSDT"], MONTHS)
+    assert got["end"] == "2023-12"
+    assert got["start"] == "2023-07"
+
+
+def test_trade_crossing_window_end_not_counted():
+    trades = [{"symbol": "SOLUSDT", "opened_ms": _ms("2022-05"), "closed_ms": _ms("2022-07")},
+              _trade("XRPUSDT", "2023-01", "2023-01")]
+    got = pick_window(trades, [], ["SOLUSDT", "XRPUSDT"], MONTHS)
+    assert got["trades"] == 1
+
+
+def test_replay_reports_halts():
+    from sonic_research.data import DATA_DIR
+    if not any((DATA_DIR / "klines").glob("*-1h-2023-*.zip")):
+        pytest.skip("history not downloaded")
+    import asyncio
+
+    from sonic_research.engine_replay import Limits, replay
+    report = asyncio.run(replay("2023-09", "2023-10", Limits()))
+    assert isinstance(report["halts"], list)
+    assert all(isinstance(code, str) and isinstance(at, int) for code, at in report["halts"])

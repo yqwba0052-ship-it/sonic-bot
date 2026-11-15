@@ -126,6 +126,8 @@ async def replay(start: str, end: str, limits: Limits, save_trades: bool = False
     skipped = Counter(e["detail"].split()[-1] for e in store.events(1_000_000)
                       if e["code"] == "trade_skipped")
     errors = [e["detail"] for e in store.events(1_000_000) if e["code"] == "tick_failed"]
+    halts = sorted((e["code"], int(e["at_ms"])) for e in store.events(1_000_000)
+                   if e["level"] == "critical")
     curve = np.array(budget_curve)
     peak = np.maximum.accumulate(curve)
     r = np.array([t["r"] for t in trades if t["r"] is not None])
@@ -145,6 +147,7 @@ async def replay(start: str, end: str, limits: Limits, save_trades: bool = False
         "events": dict(events),
         "skipped": dict(skipped),
         "errors": errors[:20],
+        "halts": [list(h) for h in halts],
         "by_coin": {s: [round(float(np.mean([t["r"] > 0 for t in trades if t["symbol"] == s])), 2),
                         sum(t["symbol"] == s for t in trades)]
                     for s in limits.symbols if any(t["symbol"] == s for t in trades)},

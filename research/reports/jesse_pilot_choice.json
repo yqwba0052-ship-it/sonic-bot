@@ -1,0 +1,25 @@
+{
+ "choice": {
+  "coins": [
+   "SOLUSDT",
+   "TRXUSDT"
+  ],
+  "end": "2023-06",
+  "start": "2023-01",
+  "trades": 12
+ },
+ "halts": [],
+ "replay_trades": 86,
+ "rule": "Rule (design 7.3): among all coin pairs and 6-month windows inside 2021-12..2023-12, the most trades opened and closed inside the window, skipping any window with a safety halt; ties go to the earliest window, then alphabetical order. ",
+ "sha256": "8f8fdd44ed18b97c57a172067e9a947f823d15853ea3a52de0182ee8ddc12a45",
+ "symbols": [
+  "SOLUSDT",
+  "XRPUSDT",
+  "DOGEUSDT",
+  "ADAUSDT",
+  "SUIUSDT",
+  "TRXUSDT",
+  "BNBUSDT",
+  "AVAXUSDT"
+ ]
+}
