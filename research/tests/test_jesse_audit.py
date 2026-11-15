@@ -492,15 +492,18 @@ def test_normalize_engine_rebuilds_raw_legs():
     from sonic_research.data import Bars as B
     entry_raw, target, stop = 100.0, 101.0, 97.0
     trade = {"symbol": "SOLUSDT", "qty": 1.0, "entry_price": entry_raw * 1.0002,
-             "stop_price": stop, "target_price": target, "opened_ms": HOUR0,
-             "closed_ms": HOUR0 + 3 * H_MS, "exit_price": 100.0 * 0.9998 * 1.0002,
-             "pnl": 0.0, "scaled": 1, "reason": "breakeven"}
+             "stop_price": entry_raw * 1.0002,  # the engine moves the stop to entry on scaling
+             "risk_usdt": entry_raw * 1.0002 - stop, "target_price": target,
+             "opened_ms": HOUR0, "closed_ms": HOUR0 + 3 * H_MS,
+             "exit_price": 100.0 * 0.9998 * 1.0002, "pnl": 0.0, "scaled": 1,
+             "exit_reason": "breakeven"}
     hours = B("SOLUSDT", np.array([HOUR0 + k * H_MS for k in range(4)], dtype=np.int64),
               np.array([100.0, 100.5, 101.5, 100.5]), np.array([100.6, 101.2, 101.8, 100.6]),
               np.array([99.9, 100.4, 101.1, 99.9]), np.array([100.5, 101.0, 101.0, 100.1]))
     got = normalize_engine(trade, [("SOLUSDT", HOUR0 + 2 * H_MS)], hours, step="0.01",
                            tick="0.01")
     assert [leg["kind"] for leg in got["legs"]] == ["entry", "half", "exit"]
+    assert got["stop"] == stop and got["reason"] == "breakeven"
     assert got["legs"][0]["raw"] == pytest.approx(entry_raw)
     assert got["legs"][1] == {"kind": "half", "hour": HOUR0 + H_MS, "raw": 101.0, "qty": 0.5}
     assert got["legs"][2]["hour"] == HOUR0 + 2 * H_MS

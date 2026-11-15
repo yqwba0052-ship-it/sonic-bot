@@ -46,9 +46,14 @@ def normalize_engine(
                      "raw": max(float(hours.o[index]), target), "qty": sold})
     legs.append({"kind": "exit", "hour": int(trade["closed_ms"]) - H_MS,
                  "raw": float(trade["exit_price"]) / (1 - SLIPPAGE), "qty": qty - sold})
+    # The engine overwrites stop_price with the entry when it scales; risk_usdt keeps the
+    # original distance (qty * |entry - stop|), and the original stop sat on the tick grid.
+    unit = float(tick)
+    stop = round(round((float(trade["entry_price"]) - float(trade["risk_usdt"]) / qty) / unit)
+                 * unit, 12)
     return {"symbol": trade["symbol"], "opened_ms": int(trade["opened_ms"]),
-            "closed_ms": int(trade["closed_ms"]), "stop": float(trade["stop_price"]),
-            "target": target, "reason": trade["reason"], "pnl": float(trade["pnl"]),
+            "closed_ms": int(trade["closed_ms"]), "stop": stop,
+            "target": target, "reason": trade["exit_reason"], "pnl": float(trade["pnl"]),
             "legs": legs, "step": float(step), "tick": float(tick)}
 
 
