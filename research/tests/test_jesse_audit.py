@@ -392,3 +392,128 @@ def test_bridge_moves_stop_to_entry_after_half():
     assert [leg["kind"] for leg in trade["legs"]] == ["entry", "half", "exit"]
     assert trade["reason"] == "breakeven"
     assert trade["legs"][2]["raw"] == pytest.approx(trade["legs"][0]["raw"] * 1.0002)
+
+
+# ---- Task 6: trade-by-trade comparison with fixed causes
+
+from sonic_research.jesse_audit.compare import (  # noqa: E402
+    match,
+    normalize_engine,
+    summary,
+)
+
+HOUR0 = JAN_2022 + 10 * FOUR_H
+
+
+def _norm(opened=HOUR0, entry=100.0, qty=1.0, half=(HOUR0 + H_MS, 101.0, 0.5),
+          exit_=(HOUR0 + 5 * H_MS, 102.0, "trade_exit_signal"), stop=97.0, target=101.0,
+          pnl=None, symbol="SOLUSDT"):
+    legs = [{"kind": "entry", "hour": opened, "raw": entry, "qty": qty}]
+    sold = 0.0
+    if half:
+        legs.append({"kind": "half", "hour": half[0], "raw": half[1], "qty": half[2]})
+        sold = half[2]
+    legs.append({"kind": "exit", "hour": exit_[0], "raw": exit_[1], "qty": qty - sold})
+    trade = {"symbol": symbol, "opened_ms": opened, "closed_ms": exit_[0], "stop": stop,
+             "target": target, "reason": exit_[2], "legs": legs, "step": 0.01, "tick": 0.01}
+    trade["pnl"] = costs(legs)["pnl"] if pnl is None else pnl
+    return trade
+
+
+def test_identical():
+    rows, *_ = match([_norm()], [_norm()], end_ms=HOUR0 + 100 * H_MS)
+    assert rows[0].category == "identical"
+    assert rows[0].execution_diff == 0 and rows[0].cost_diff == 0
+
+
+def test_cost_diff_separated_from_execution():
+    left = _norm()
+    right = _norm(pnl=left["pnl"] + 0.01)
+    rows, *_ = match([left], [right], end_ms=HOUR0 + 100 * H_MS)
+    assert rows[0].category == "slippage"
+    assert rows[0].execution_diff == 0
+    assert rows[0].cost_diff == pytest.approx(0.01)
+
+
+def test_breakeven_same_hour():
+    eff = 100 * 1.0002
+    left = _norm(exit_=(HOUR0 + H_MS, 99.9, "breakeven"))
+    right = _norm(exit_=(HOUR0 + H_MS, eff, "breakeven"))
+    rows, *_ = match([left], [right], end_ms=HOUR0 + 100 * H_MS)
+    assert rows[0].category == "breakeven_same_hour"
+
+
+def test_gap_fill():
+    left = _norm(half=None, exit_=(HOUR0 + 2 * H_MS, 96.0, "stop_loss"))
+    right = _norm(half=None, exit_=(HOUR0 + 2 * H_MS, 97.0, "stop_loss"))
+    rows, *_ = match([left], [right], end_ms=HOUR0 + 100 * H_MS)
+    assert rows[0].category == "gap_fill"
+
+
+def test_intrahour_order():
+    left = _norm(half=None, exit_=(HOUR0 + 2 * H_MS, 97.0, "stop_loss"))
+    right = _norm(half=(HOUR0 + 2 * H_MS, 101.0, 0.5), exit_=(HOUR0 + 2 * H_MS, 100.02,
+                                                            "breakeven"))
+    rows, *_ = match([left], [right], end_ms=HOUR0 + 100 * H_MS)
+    assert rows[0].category == "intrahour_order"
+
+
+def test_unexplained_when_qty_differs_beyond_step():
+    rows, *_ = match([_norm()], [_norm(qty=1.05)], end_ms=HOUR0 + 100 * H_MS)
+    assert rows[0].category == "unexplained"
+
+
+def test_rounding_when_qty_differs_by_one_step():
+    rows, *_ = match([_norm()], [_norm(qty=1.01)], end_ms=HOUR0 + 100 * H_MS)
+    assert rows[0].category == "rounding"
+
+
+def test_missing_and_open_at_end_excluded():
+    late = _norm(opened=HOUR0 + 50 * H_MS, exit_=(HOUR0 + 200 * H_MS, 102.0, "trade_exit_time"))
+    only_left = _norm(opened=HOUR0 + 20 * H_MS, exit_=(HOUR0 + 30 * H_MS, 102.0, "stop_loss"))
+    rows, left_only, right_only, still_open = match(
+        [_norm(), late, only_left], [_norm(), late], end_ms=HOUR0 + 100 * H_MS)
+    assert [r.category for r in rows] == ["identical"]
+    assert left_only == [only_left] and right_only == []
+    assert len(still_open) == 2
+
+
+def test_summary_counts_and_pnl_by_category():
+    rows, *_ = match([_norm(), _norm(opened=HOUR0 + 20 * H_MS)],
+                     [_norm(), _norm(opened=HOUR0 + 20 * H_MS, qty=1.05)],
+                     end_ms=HOUR0 + 100 * H_MS)
+    s = summary(rows)
+    assert s["counts"] == {"identical": 1, "unexplained": 1}
+    assert s["unexplained"] == 1
+    assert s["execution_pnl_diff"]["unexplained"] != 0
+
+
+def test_normalize_engine_rebuilds_raw_legs():
+    from sonic_research.data import Bars as B
+    entry_raw, target, stop = 100.0, 101.0, 97.0
+    trade = {"symbol": "SOLUSDT", "qty": 1.0, "entry_price": entry_raw * 1.0002,
+             "stop_price": stop, "target_price": target, "opened_ms": HOUR0,
+             "closed_ms": HOUR0 + 3 * H_MS, "exit_price": 100.0 * 0.9998 * 1.0002,
+             "pnl": 0.0, "scaled": 1, "reason": "breakeven"}
+    hours = B("SOLUSDT", np.array([HOUR0 + k * H_MS for k in range(4)], dtype=np.int64),
+              np.array([100.0, 100.5, 101.5, 100.5]), np.array([100.6, 101.2, 101.8, 100.6]),
+              np.array([99.9, 100.4, 101.1, 99.9]), np.array([100.5, 101.0, 101.0, 100.1]))
+    got = normalize_engine(trade, [("SOLUSDT", HOUR0 + 2 * H_MS)], hours, step="0.01",
+                           tick="0.01")
+    assert [leg["kind"] for leg in got["legs"]] == ["entry", "half", "exit"]
+    assert got["legs"][0]["raw"] == pytest.approx(entry_raw)
+    assert got["legs"][1] == {"kind": "half", "hour": HOUR0 + H_MS, "raw": 101.0, "qty": 0.5}
+    assert got["legs"][2]["hour"] == HOUR0 + 2 * H_MS
+    assert got["legs"][2]["raw"] == pytest.approx(100.0 * 1.0002)
+
+
+def test_replay_reports_scale_events():
+    from sonic_research.data import DATA_DIR
+    if not any((DATA_DIR / "klines").glob("*-1h-2023-*.zip")):
+        pytest.skip("history not downloaded")
+    import asyncio
+
+    from sonic_research.engine_replay import Limits, replay
+    report = asyncio.run(replay("2023-09", "2023-10", Limits()))
+    assert isinstance(report["scale_events"], list)
+    assert len(report["scale_events"]) == report["scaled"]

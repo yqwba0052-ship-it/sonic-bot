@@ -148,6 +148,8 @@ async def replay(start: str, end: str, limits: Limits, save_trades: bool = False
         "skipped": dict(skipped),
         "errors": errors[:20],
         "halts": [list(h) for h in halts],
+        "scale_events": sorted((e["detail"], int(e["at_ms"])) for e in store.events(1_000_000)
+                               if e["code"] == "trade_scaled"),
         "by_coin": {s: [round(float(np.mean([t["r"] > 0 for t in trades if t["symbol"] == s])), 2),
                         sum(t["symbol"] == s for t in trades)]
                     for s in limits.symbols if any(t["symbol"] == s for t in trades)},
