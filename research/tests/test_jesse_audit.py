@@ -266,3 +266,129 @@ def test_replay_reports_halts():
     report = asyncio.run(replay("2023-09", "2023-10", Limits()))
     assert isinstance(report["halts"], list)
     assert all(isinstance(code, str) and isinstance(at, int) for code, at in report["halts"])
+
+
+# ---- Task 5: shared cost formula and the Jesse bridge
+
+from sonic_research.jesse_audit.costs import costs  # noqa: E402
+
+
+def test_costs_match_paper_exchange_formula():
+    legs = [{"kind": "entry", "ms": 0, "raw": 100.0, "qty": 1.0},
+            {"kind": "exit", "ms": 1, "raw": 110.0, "qty": 1.0}]
+    got = costs(legs)
+    entry, exit_ = 100 * 1.0002, 110 * 0.9998
+    assert got["gross"] == pytest.approx(exit_ - entry)
+    assert got["fees"] == pytest.approx((entry + exit_) * 0.0005)
+    assert got["slippage"] == pytest.approx(100 * 0.0002 + 110 * 0.0002)
+    assert got["pnl"] == pytest.approx(got["gross"] - got["fees"])
+
+
+def test_costs_with_half_leg():
+    legs = [{"kind": "entry", "ms": 0, "raw": 100.0, "qty": 2.0},
+            {"kind": "half", "ms": 1, "raw": 101.0, "qty": 1.0},
+            {"kind": "exit", "ms": 2, "raw": 100.0, "qty": 1.0}]
+    entry = 100 * 1.0002
+    want = (101 * 0.9998 - entry) + (100 * 0.9998 - entry)
+    fees = (2 * entry + 101 * 0.9998 + 100 * 0.9998) * 0.0005
+    assert costs(legs)["pnl"] == pytest.approx(want - fees)
+
+
+FOUR_H = 4 * H_MS
+
+
+def _closes(kind: str) -> list[float]:
+    c = [100.0]
+    for _ in range(1049):
+        c.append(c[-1] * 1.001)
+    for _ in range(40):
+        c.append(c[-1] * 0.998)
+    if kind == "time":
+        for _ in range(330):
+            c.append(c[-1] * 1.003)
+    else:  # breakeven: rise until the half target fills, then fall back through the entry
+        for _ in range(19):
+            c.append(c[-1] * 1.003)
+        for _ in range(3):
+            c.append(c[-1] * 1.01)
+        for _ in range(40):
+            c.append(c[-1] * 0.995)
+    return c
+
+
+def _minutes_for(closes: list[float]) -> np.ndarray:
+    """4h closes -> hourly bars (geometric steps, +-0.1% range) -> synthetic minutes."""
+    hourly = [closes[0]]
+    for a, b in zip(closes, closes[1:], strict=False):
+        step = (b / a) ** 0.25
+        hourly += [a * step ** k for k in range(1, 5)]
+    c = np.array(hourly[1:] + [hourly[-1]] * 3)
+    o = np.r_[closes[0], c[:-1]]
+    t = JAN_2022 - 1050 * FOUR_H + H_MS * np.arange(len(c), dtype=np.int64)
+    return minutes_from_hours(t, o, np.maximum(o, c) * 1.001, np.minimum(o, c) * 0.999, c)
+
+
+def _expected_entry(minutes: np.ndarray):
+    import sys
+    sys.path.insert(0, str(Path(__file__).resolve().parents[2] / "server"))
+    from sonic import strategy as s
+    four = aggregate(minutes, 240)
+    bars = [s.Bar(int(r[0]), r[1], r[3], r[4], r[2]) for r in four]
+    for i in range(1000, len(bars)):
+        w = bars[i - 999:i + 1]
+        if s.entry_signal(w, s.btc_uptrend(w)) == "BUY":
+            return i, bars, s.stop_distance(w)
+    raise AssertionError("series gives no entry")
+
+
+FILTERS = None
+
+
+def _filters():
+    import sys
+    sys.path.insert(0, str(Path(__file__).resolve().parents[2] / "server"))
+    from sonic.risk import Filters
+    return Filters(step_size="0.01", tick_size="0.01", min_qty=0.01, min_notional=5.0)
+
+
+def _run(kind: str):
+    pytest.importorskip("jesse")
+    from sonic_research.jesse_audit.bridge import run_bridge
+    minutes = _minutes_for(_closes(kind))
+    ledger = run_bridge({"SOLUSDT": minutes, "BTCUSDT": minutes}, ["SOLUSDT"],
+                        {"SOLUSDT": _filters(), "BTCUSDT": _filters()}, warmup_bars=1000)
+    return minutes, ledger
+
+
+from pathlib import Path  # noqa: E402
+
+
+def test_bridge_time_exit_after_240_bars():
+    minutes, ledger = _run("time")
+    import sys
+    sys.path.insert(0, str(Path(__file__).resolve().parents[2] / "server"))
+    from sonic.risk import Limits, floor_to, size_position, stop_price
+    i, bars, dist = _expected_entry(minutes)
+    trade = ledger.trades[0]
+    assert trade["opened_ms"] == bars[i].t + FOUR_H
+    assert trade["legs"][0]["raw"] == bars[i].c
+    qty = size_position(Limits(), bars[i].c, dist, 0.0, _filters(), 30.0).qty
+    assert trade["legs"][0]["qty"] == qty
+    eff = bars[i].c * 1.0002
+    assert trade["stop"] == stop_price("BUY", eff, dist, "0.01")
+    assert trade["target"] == floor_to(eff + 0.2 * dist, "0.01")
+    assert [leg["kind"] for leg in trade["legs"]] == ["entry", "half", "exit"]
+    assert trade["legs"][1]["qty"] == floor_to(qty / 2, "0.01")
+    assert trade["legs"][1]["raw"] == trade["target"]
+    assert trade["reason"] == "trade_exit_time"
+    assert trade["closed_ms"] == bars[i + 240].t + FOUR_H
+    assert trade["legs"][2]["raw"] == bars[i + 240].c
+    assert trade["pnl"] == pytest.approx(costs(trade["legs"])["pnl"])
+
+
+def test_bridge_moves_stop_to_entry_after_half():
+    _, ledger = _run("breakeven")
+    trade = ledger.trades[0]
+    assert [leg["kind"] for leg in trade["legs"]] == ["entry", "half", "exit"]
+    assert trade["reason"] == "breakeven"
+    assert trade["legs"][2]["raw"] == pytest.approx(trade["legs"][0]["raw"] * 1.0002)
