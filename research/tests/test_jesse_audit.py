@@ -517,3 +517,31 @@ def test_replay_reports_scale_events():
     report = asyncio.run(replay("2023-09", "2023-10", Limits()))
     assert isinstance(report["scale_events"], list)
     assert len(report["scale_events"]) == report["scaled"]
+
+
+# ---- Task 7: end of run and Monte Carlo guard
+
+
+def test_open_trade_at_end_is_not_a_closed_trade():
+    pytest.importorskip("jesse")
+    from sonic_research.jesse_audit.bridge import run_bridge
+    minutes = _minutes_for(_closes("time")[:1200])
+    ledger = run_bridge({"SOLUSDT": minutes, "BTCUSDT": minutes}, ["SOLUSDT"],
+                        {"SOLUSDT": _filters(), "BTCUSDT": _filters()}, warmup_bars=1000)
+    assert ledger.trades == []
+    assert len(ledger.open_at_end) == 1
+    assert ledger.open_at_end[0]["symbol"] == "SOLUSDT"
+
+
+def test_block_network_can_allow_loopback_only():
+    import threading
+    server = socket.socket()
+    server.bind(("127.0.0.1", 0))
+    server.listen(1)
+    port = server.getsockname()[1]
+    threading.Thread(target=lambda: server.accept()[0].close(), daemon=True).start()
+    with block_network(allow_loopback=True):
+        socket.create_connection(("127.0.0.1", port), timeout=2).close()
+        with pytest.raises(NetworkBlocked):
+            socket.create_connection(("93.184.216.34", 80), timeout=1)
+    server.close()

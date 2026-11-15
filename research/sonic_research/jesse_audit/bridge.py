@@ -40,6 +40,7 @@ class Ledger:
     margin: dict[str, float] = field(default_factory=dict)
     trades: list[dict] = field(default_factory=list)
     skipped: list[dict] = field(default_factory=list)
+    open_at_end: list[dict] = field(default_factory=list)
 
 
 LEDGER = Ledger()
@@ -120,7 +121,15 @@ class SonicBridge(Strategy):
             trade["market_exit_ms"] = self._close_ms()
             self.liquidate()
 
+    def before_terminate(self) -> None:
+        """Jesse closes what is still open at the end; that close is not a Sonic exit."""
+        self.vars["ending"] = True
+        if self.position.is_open and self.vars.get("trade"):
+            LEDGER.open_at_end.append(self.vars.pop("trade"))
+
     def on_close_position(self, order, closed_trade) -> None:
+        if self.vars.get("ending"):
+            return
         trade = self.vars["trade"]
         market = bool(trade["reason"])
         ms = trade.pop("market_exit_ms") if market else int(order.executed_at)
@@ -146,9 +155,9 @@ def run_bridge(
 ) -> Ledger:
     """Backtest Sonic in Jesse on 1-minute candles; the first warmup_bars 4h bars only warm up."""
     reset_ledger(limits or Limits(), filters)
-    split = warmup_bars * 240
     data, warm = {}, {}
     for symbol, m in minutes.items():
+        split = int(np.searchsorted(m[:, 0], m[0, 0] + warmup_bars * 240 * 60_000))
         key = jh.key(EXCHANGE, jesse_symbol(symbol))
         base = {"exchange": EXCHANGE, "symbol": jesse_symbol(symbol)}
         warm[key] = {**base, "candles": m[:split]}
