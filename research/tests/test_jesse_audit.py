@@ -108,3 +108,91 @@ def test_synth_holdout_refused():
     t, o, h, low, c = _hours(2, start=1_704_067_200_000 - H_MS)
     with pytest.raises(ValueError, match="holdout_locked"):
         minutes_from_hours(t, o, h, low, c)
+
+
+# ---- Task 3: real 1-minute Binance data, training months only
+
+import io  # noqa: E402
+import zipfile  # noqa: E402
+
+from sonic_research.data import Bars  # noqa: E402
+from sonic_research.jesse_audit.data_1m import (  # noqa: E402
+    MissingMonth,
+    compare_to_bars,
+    load_minutes,
+)
+
+JAN_2022 = 1_640_995_200_000
+
+
+def _zip(rows: list[list]) -> bytes:
+    text = "open_time,open,high,low,close,volume,close_time\n" + "".join(
+        ",".join(str(x) for x in r) + "\n" for r in rows)
+    buf = io.BytesIO()
+    with zipfile.ZipFile(buf, "w") as z:
+        z.writestr("x.csv", text)
+    return buf.getvalue()
+
+
+def test_parses_binance_zip_to_jesse_columns(tmp_path):
+    rows = [[JAN_2022 + 60_000, 2, 4, 1, 3, 10, 0], [JAN_2022, 1, 2, 0.5, 1.5, 5, 0]]
+    seen = []
+
+    def fetch(url):
+        seen.append(url)
+        return _zip(rows)
+
+    m = load_minutes("SOLUSDT", ["2022-01"], fetch=fetch, cache_dir=tmp_path)
+    assert seen == ["https://data.binance.vision/data/futures/um/monthly/klines/SOLUSDT/1m/"
+                    "SOLUSDT-1m-2022-01.zip"]
+    assert m.tolist() == [[JAN_2022, 1, 1.5, 2, 0.5, 5], [JAN_2022 + 60_000, 2, 3, 4, 1, 10]]
+    assert (tmp_path / "SOLUSDT-1m-2022-01.npy").exists()
+    assert not list(tmp_path.glob("*.zip"))
+    again = load_minutes("SOLUSDT", ["2022-01"], fetch=lambda url: None, cache_dir=tmp_path)
+    assert np.array_equal(again, m)
+
+
+def test_missing_month_raises(tmp_path):
+    with pytest.raises(MissingMonth, match="SOLUSDT 2022-02"):
+        load_minutes("SOLUSDT", ["2022-02"], fetch=lambda url: None, cache_dir=tmp_path)
+
+
+def test_holdout_month_refused(tmp_path):
+    def fetch(url):
+        raise AssertionError("must not download")
+
+    with pytest.raises(ValueError, match="holdout_locked"):
+        load_minutes("SOLUSDT", ["2023-12", "2024-01"], fetch=fetch, cache_dir=tmp_path)
+
+
+def _bars_from(hours):
+    t, o, h, low, c = hours
+    return Bars("X", t, o, h, low, c)
+
+
+def test_compare_identical_bars():
+    hours = _hours(8, start=JAN_2022)
+    report = compare_to_bars(minutes_from_hours(*hours), _bars_from(hours), 60)
+    assert report["bars"] == 8
+    assert report["missing_bars"] == []
+    assert report["missing_minutes"] == 0
+    assert report["mismatches"] == []
+    assert report["max_rel_diff"] == 0.0
+
+
+def test_compare_reports_missing_minute():
+    hours = _hours(8, start=JAN_2022)
+    m = minutes_from_hours(*hours)
+    report = compare_to_bars(np.delete(m, 5, axis=0), _bars_from(hours), 60)
+    assert report["missing_minutes"] == 1
+
+
+def test_compare_reports_missing_bar_and_price_mismatch():
+    hours = _hours(8, start=JAN_2022)
+    m = minutes_from_hours(*hours)
+    m = np.delete(m, slice(120, 180), axis=0)  # hour 2 gone
+    m[0, 3] = hours[2][0] * 1.01  # minute high above the hour's high
+    report = compare_to_bars(m, _bars_from(hours), 60)
+    assert report["missing_bars"] == [int(hours[0][2])]
+    assert report["mismatches"][0][:2] == (int(hours[0][0]), "h")
+    assert report["max_rel_diff"] == pytest.approx(0.01)
