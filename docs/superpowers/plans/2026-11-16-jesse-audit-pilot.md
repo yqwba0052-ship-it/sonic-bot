@@ -149,3 +149,18 @@
 - [ ] **الخطوة 7: التحقق قبل الإعلان:** كل اختبارات البحث (البيئتان)، ruff، `git diff --name-only main` لا يظهر فيه `server/` ولا `app/` ولا `deploy/` ولا `.github/`، ولا تاريخ ≥ 2024 في أي ملف بيانات محمَّل.
 - [ ] **الخطوة 8: Commit و push للفرع فقط** `research: Jesse pilot results [skip ci]` ثم `git push -u origin research/jesse`. لا PR.
 - [ ] **الخطوة 9:** اعرض على المالك: النتيجة، الاختلافات وأسبابها، أثر بيانات الدقيقة، المساحة المستعملة، وما تحتاجه التجربة الكاملة — وانتظر موافقته.
+
+---
+
+## تعديلات المالك على الخطة (2026-11-16)
+
+- **المهمة 3 تضيف:** `compare_to_bars(minutes: np.ndarray, bars: Bars, minutes_per_bar: int) -> dict` بمفاتيح
+  `bars, missing_bars, missing_minutes, mismatches` (قائمة `(t_ms, field, ours, binance_1m)`)، `max_rel_diff`.
+  اختبارات: `test_compare_identical_bars`، `test_compare_reports_missing_minute`، `test_compare_reports_price_mismatch`.
+- **المهمة 5 تضيف:** الجسر يحسب `entry_eff = raw * (1 + SLIPPAGE)` ثم الإيقاف والهدف منه (كمحرّكنا)، ويسجّل لكل جزء
+  السعر الخام والكمية والوقت (`legs`).
+- **المهمة 6 تضيف:** `costs(legs: list[dict]) -> dict` (انزلاق + رسوم بطريقة محرّكنا) تُطبَّق على الطرفين؛
+  `Row` يحمل `execution_diff` و `cost_diff` منفصلين. محرّكنا: السعر الخام = سعر التنفيذ ÷ (1 ± 0.0002).
+  اختبار: `test_cost_diff_separated_from_execution`.
+- **المهمة 7 تضيف قبل خطوة R1↔R2:** `compare_to_bars` لكل رمز على 1h و 4h، والنتيجة في التقرير.
+  R1 يوصف في التقرير بأنه "اختبار توافق المحرّكين فقط".
