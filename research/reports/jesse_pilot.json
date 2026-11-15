@@ -1,0 +1,3551 @@
+{
+ "choice": {
+  "coins": [
+   "SOLUSDT",
+   "TRXUSDT"
+  ],
+  "end": "2023-06",
+  "start": "2023-01",
+  "trades": 12
+ },
+ "warmup_months": [
+  "2022-07",
+  "2022-08",
+  "2022-09",
+  "2022-10",
+  "2022-11",
+  "2022-12"
+ ],
+ "warmup_bars": 1104,
+ "R0": {
+  "trades": 12,
+  "open_at_end": 0,
+  "halts": [],
+  "errors": []
+ },
+ "R1": {
+  "trades": 12,
+  "open_at_end": 0,
+  "skipped": [],
+  "note": "minutes made from our hourly bars: engine parity only, not real movement inside the hour"
+ },
+ "R2": {
+  "trades": 12,
+  "open_at_end": 0,
+  "skipped": []
+ },
+ "comparisons": {
+  "R0_vs_R1": {
+   "summary": {
+    "counts": {
+     "identical": 12
+    },
+    "unexplained": 0,
+    "execution_pnl_diff": {
+     "identical": 0.0
+    },
+    "cost_diff_total": 0.0,
+    "left_execution_pnl": 0.5463760003268304,
+    "right_execution_pnl": 0.5463760003268304
+   },
+   "rows": [
+    {
+     "symbol": "TRXUSDT",
+     "opened_ms": 1673395200000,
+     "left": {
+      "symbol": "TRXUSDT",
+      "opened_ms": 1673395200000,
+      "closed_ms": 1673427600000,
+      "stop": 0.05251,
+      "target": 0.05529,
+      "reason": "breakeven",
+      "pnl": 0.020870616217265707,
+      "legs": [
+       {
+        "kind": "entry",
+        "hour": 1673395200000,
+        "raw": 0.05482,
+        "qty": 129.0
+       },
+       {
+        "kind": "half",
+        "hour": 1673413200000,
+        "raw": 0.05529,
+        "qty": 64.0
+       },
+       {
+        "kind": "exit",
+        "hour": 1673424000000,
+        "raw": 0.054830964,
+        "qty": 65.0
+       }
+      ],
+      "step": 1.0,
+      "tick": 1e-05
+     },
+     "right": {
+      "symbol": "TRXUSDT",
+      "opened_ms": 1673395200000,
+      "closed_ms": 1673425080000,
+      "stop": 0.05251,
+      "target": 0.05529,
+      "reason": "breakeven",
+      "pnl": 0.020870616217265707,
+      "legs": [
+       {
+        "kind": "entry",
+        "hour": 1673395200000,
+        "raw": 0.05482,
+        "qty": 129.0
+       },
+       {
+        "kind": "half",
+        "hour": 1673413200000,
+        "raw": 0.05529,
+        "qty": 64.0
+       },
+       {
+        "kind": "exit",
+        "hour": 1673424000000,
+        "raw": 0.054830964,
+        "qty": 65.0
+       }
+      ],
+      "step": 1.0,
+      "tick": 1e-05
+     },
+     "fields": {
+      "stop": [
+       0.05251,
+       0.05251
+      ],
+      "target": [
+       0.05529,
+       0.05529
+      ],
+      "reason": [
+       "breakeven",
+       "breakeven"
+      ],
+      "closed_ms": [
+       1673427600000,
+       1673425080000
+      ],
+      "leg0.kind": [
+       "entry",
+       "entry"
+      ],
+      "leg0.hour": [
+       1673395200000,
+       1673395200000
+      ],
+      "leg0.raw": [
+       0.05482,
+       0.05482
+      ],
+      "leg0.qty": [
+       129.0,
+       129.0
+      ],
+      "leg1.kind": [
+       "half",
+       "half"
+      ],
+      "leg1.hour": [
+       1673413200000,
+       1673413200000
+      ],
+      "leg1.raw": [
+       0.05529,
+       0.05529
+      ],
+      "leg1.qty": [
+       64.0,
+       64.0
+      ],
+      "leg2.kind": [
+       "exit",
+       "exit"
+      ],
+      "leg2.hour": [
+       1673424000000,
+       1673424000000
+      ],
+      "leg2.raw": [
+       0.054830964,
+       0.054830964
+      ],
+      "leg2.qty": [
+       65.0,
+       65.0
+      ],
+      "execution_pnl": [
+       0.020870616217265707,
+       0.020870616217265707
+      ],
+      "reported_pnl": [
+       0.020870616217265707,
+       0.020870616217265707
+      ]
+     },
+     "category": "identical",
+     "note": "",
+     "execution_diff": 0.0,
+     "cost_diff": 0.0
+    },
+    {
+     "symbol": "SOLUSDT",
+     "opened_ms": 1676563200000,
+     "left": {
+      "symbol": "SOLUSDT",
+      "opened_ms": 1676563200000,
+      "closed_ms": 1676592000000,
+      "stop": 22.23,
+      "target": 24.19,
+      "reason": "stop_loss",
+      "pnl": -0.3490752642299992,
+      "legs": [
+       {
+        "kind": "entry",
+        "hour": 1676563200000,
+        "raw": 23.86,
+        "qty": 0.21
+       },
+       {
+        "kind": "exit",
+        "hour": 1676588400000,
+        "raw": 22.23,
+        "qty": 0.21
+       }
+      ],
+      "step": 0.01,
+      "tick": 0.01
+     },
+     "right": {
+      "symbol": "SOLUSDT",
+      "opened_ms": 1676563200000,
+      "closed_ms": 1676589480000,
+      "stop": 22.23,
+      "target": 24.19,
+      "reason": "stop_loss",
+      "pnl": -0.3490752642299992,
+      "legs": [
+       {
+        "kind": "entry",
+        "hour": 1676563200000,
+        "raw": 23.86,
+        "qty": 0.21
+       },
+       {
+        "kind": "exit",
+        "hour": 1676588400000,
+        "raw": 22.23,
+        "qty": 0.21
+       }
+      ],
+      "step": 0.01,
+      "tick": 0.01
+     },
+     "fields": {
+      "stop": [
+       22.23,
+       22.23
+      ],
+      "target": [
+       24.19,
+       24.19
+      ],
+      "reason": [
+       "stop_loss",
+       "stop_loss"
+      ],
+      "closed_ms": [
+       1676592000000,
+       1676589480000
+      ],
+      "leg0.kind": [
+       "entry",
+       "entry"
+      ],
+      "leg0.hour": [
+       1676563200000,
+       1676563200000
+      ],
+      "leg0.raw": [
+       23.86,
+       23.86
+      ],
+      "leg0.qty": [
+       0.21,
+       0.21
+      ],
+      "leg1.kind": [
+       "exit",
+       "exit"
+      ],
+      "leg1.hour": [
+       1676588400000,
+       1676588400000
+      ],
+      "leg1.raw": [
+       22.23,
+       22.23
+      ],
+      "leg1.qty": [
+       0.21,
+       0.21
+      ],
+      "execution_pnl": [
+       -0.3490752642299992,
+       -0.3490752642299992
+      ],
+      "reported_pnl": [
+       -0.3490752642299992,
+       -0.3490752642299992
+      ]
+     },
+     "category": "identical",
+     "note": "",
+     "execution_diff": 0.0,
+     "cost_diff": 0.0
+    },
+    {
+     "symbol": "TRXUSDT",
+     "opened_ms": 1678867200000,
+     "left": {
+      "symbol": "TRXUSDT",
+      "opened_ms": 1678867200000,
+      "closed_ms": 1679108400000,
+      "stop": 0.06257,
+      "target": 0.06803,
+      "reason": "breakeven",
+      "pnl": 0.027479304429803564,
+      "legs": [
+       {
+        "kind": "entry",
+        "hour": 1678867200000,
+        "raw": 0.06711,
+        "qty": 75.0
+       },
+       {
+        "kind": "half",
+        "hour": 1679101200000,
+        "raw": 0.06803,
+        "qty": 37.0
+       },
+       {
+        "kind": "exit",
+        "hour": 1679104800000,
+        "raw": 0.067123422,
+        "qty": 38.0
+       }
+      ],
+      "step": 1.0,
+      "tick": 1e-05
+     },
+     "right": {
+      "symbol": "TRXUSDT",
+      "opened_ms": 1678867200000,
+      "closed_ms": 1679105880000,
+      "stop": 0.06257,
+      "target": 0.06803,
+      "reason": "breakeven",
+      "pnl": 0.027479304429803564,
+      "legs": [
+       {
+        "kind": "entry",
+        "hour": 1678867200000,
+        "raw": 0.06711,
+        "qty": 75.0
+       },
+       {
+        "kind": "half",
+        "hour": 1679101200000,
+        "raw": 0.06803,
+        "qty": 37.0
+       },
+       {
+        "kind": "exit",
+        "hour": 1679104800000,
+        "raw": 0.067123422,
+        "qty": 38.0
+       }
+      ],
+      "step": 1.0,
+      "tick": 1e-05
+     },
+     "fields": {
+      "stop": [
+       0.06257,
+       0.06257
+      ],
+      "target": [
+       0.06803,
+       0.06803
+      ],
+      "reason": [
+       "breakeven",
+       "breakeven"
+      ],
+      "closed_ms": [
+       1679108400000,
+       1679105880000
+      ],
+      "leg0.kind": [
+       "entry",
+       "entry"
+      ],
+      "leg0.hour": [
+       1678867200000,
+       1678867200000
+      ],
+      "leg0.raw": [
+       0.06711,
+       0.06711
+      ],
+      "leg0.qty": [
+       75.0,
+       75.0
+      ],
+      "leg1.kind": [
+       "half",
+       "half"
+      ],
+      "leg1.hour": [
+       1679101200000,
+       1679101200000
+      ],
+      "leg1.raw": [
+       0.06803,
+       0.06803
+      ],
+      "leg1.qty": [
+       37.0,
+       37.0
+      ],
+      "leg2.kind": [
+       "exit",
+       "exit"
+      ],
+      "leg2.hour": [
+       1679104800000,
+       1679104800000
+      ],
+      "leg2.raw": [
+       0.067123422,
+       0.067123422
+      ],
+      "leg2.qty": [
+       38.0,
+       38.0
+      ],
+      "execution_pnl": [
+       0.027479304429803564,
+       0.027479304429803564
+      ],
+      "reported_pnl": [
+       0.027479304429803564,
+       0.027479304429803564
+      ]
+     },
+     "category": "identical",
+     "note": "",
+     "execution_diff": 0.0,
+     "cost_diff": 0.0
+    },
+    {
+     "symbol": "SOLUSDT",
+     "opened_ms": 1679112000000,
+     "left": {
+      "symbol": "SOLUSDT",
+      "opened_ms": 1679112000000,
+      "closed_ms": 1679335200000,
+      "stop": 20.41,
+      "target": 23.11,
+      "reason": "breakeven",
+      "pnl": 0.04227141020519325,
+      "legs": [
+       {
+        "kind": "entry",
+        "hour": 1679112000000,
+        "raw": 22.664,
+        "qty": 0.23
+       },
+       {
+        "kind": "half",
+        "hour": 1679295600000,
+        "raw": 23.11,
+        "qty": 0.11
+       },
+       {
+        "kind": "exit",
+        "hour": 1679331600000,
+        "raw": 22.6685328,
+        "qty": 0.12000000000000001
+       }
+      ],
+      "step": 0.01,
+      "tick": 0.01
+     },
+     "right": {
+      "symbol": "SOLUSDT",
+      "opened_ms": 1679112000000,
+      "closed_ms": 1679332260000,
+      "stop": 20.41,
+      "target": 23.11,
+      "reason": "breakeven",
+      "pnl": 0.04227141020519325,
+      "legs": [
+       {
+        "kind": "entry",
+        "hour": 1679112000000,
+        "raw": 22.664,
+        "qty": 0.23
+       },
+       {
+        "kind": "half",
+        "hour": 1679295600000,
+        "raw": 23.11,
+        "qty": 0.11
+       },
+       {
+        "kind": "exit",
+        "hour": 1679331600000,
+        "raw": 22.6685328,
+        "qty": 0.12000000000000001
+       }
+      ],
+      "step": 0.01,
+      "tick": 0.01
+     },
+     "fields": {
+      "stop": [
+       20.41,
+       20.41
+      ],
+      "target": [
+       23.11,
+       23.11
+      ],
+      "reason": [
+       "breakeven",
+       "breakeven"
+      ],
+      "closed_ms": [
+       1679335200000,
+       1679332260000
+      ],
+      "leg0.kind": [
+       "entry",
+       "entry"
+      ],
+      "leg0.hour": [
+       1679112000000,
+       1679112000000
+      ],
+      "leg0.raw": [
+       22.664,
+       22.664
+      ],
+      "leg0.qty": [
+       0.23,
+       0.23
+      ],
+      "leg1.kind": [
+       "half",
+       "half"
+      ],
+      "leg1.hour": [
+       1679295600000,
+       1679295600000
+      ],
+      "leg1.raw": [
+       23.11,
+       23.11
+      ],
+      "leg1.qty": [
+       0.11,
+       0.11
+      ],
+      "leg2.kind": [
+       "exit",
+       "exit"
+      ],
+      "leg2.hour": [
+       1679331600000,
+       1679331600000
+      ],
+      "leg2.raw": [
+       22.6685328,
+       22.6685328
+      ],
+      "leg2.qty": [
+       0.12000000000000001,
+       0.12000000000000001
+      ],
+      "execution_pnl": [
+       0.04227141020519325,
+       0.04227141020519325
+      ],
+      "reported_pnl": [
+       0.04227141020519325,
+       0.04227141020519325
+      ]
+     },
+     "category": "identical",
+     "note": "",
+     "execution_diff": 0.0,
+     "cost_diff": 0.0
+    },
+    {
+     "symbol": "TRXUSDT",
+     "opened_ms": 1680278400000,
+     "left": {
+      "symbol": "TRXUSDT",
+      "opened_ms": 1680278400000,
+      "closed_ms": 1680364800000,
+      "stop": 0.06381,
+      "target": 0.06659,
+      "reason": "breakeven",
+      "pnl": 0.019055986657434333,
+      "legs": [
+       {
+        "kind": "entry",
+        "hour": 1680278400000,
+        "raw": 0.06612,
+        "qty": 128.0
+       },
+       {
+        "kind": "half",
+        "hour": 1680343200000,
+        "raw": 0.06659,
+        "qty": 64.0
+       },
+       {
+        "kind": "exit",
+        "hour": 1680361200000,
+        "raw": 0.06613322399999999,
+        "qty": 64.0
+       }
+      ],
+      "step": 1.0,
+      "tick": 1e-05
+     },
+     "right": {
+      "symbol": "TRXUSDT",
+      "opened_ms": 1680278400000,
+      "closed_ms": 1680362340000,
+      "stop": 0.06381,
+      "target": 0.06659,
+      "reason": "breakeven",
+      "pnl": 0.019055986657434333,
+      "legs": [
+       {
+        "kind": "entry",
+        "hour": 1680278400000,
+        "raw": 0.06612,
+        "qty": 128.0
+       },
+       {
+        "kind": "half",
+        "hour": 1680343200000,
+        "raw": 0.06659,
+        "qty": 64.0
+       },
+       {
+        "kind": "exit",
+        "hour": 1680361200000,
+        "raw": 0.06613322399999999,
+        "qty": 64.0
+       }
+      ],
+      "step": 1.0,
+      "tick": 1e-05
+     },
+     "fields": {
+      "stop": [
+       0.06381,
+       0.06381
+      ],
+      "target": [
+       0.06659,
+       0.06659
+      ],
+      "reason": [
+       "breakeven",
+       "breakeven"
+      ],
+      "closed_ms": [
+       1680364800000,
+       1680362340000
+      ],
+      "leg0.kind": [
+       "entry",
+       "entry"
+      ],
+      "leg0.hour": [
+       1680278400000,
+       1680278400000
+      ],
+      "leg0.raw": [
+       0.06612,
+       0.06612
+      ],
+      "leg0.qty": [
+       128.0,
+       128.0
+      ],
+      "leg1.kind": [
+       "half",
+       "half"
+      ],
+      "leg1.hour": [
+       1680343200000,
+       1680343200000
+      ],
+      "leg1.raw": [
+       0.06659,
+       0.06659
+      ],
+      "leg1.qty": [
+       64.0,
+       64.0
+      ],
+      "leg2.kind": [
+       "exit",
+       "exit"
+      ],
+      "leg2.hour": [
+       1680361200000,
+       1680361200000
+      ],
+      "leg2.raw": [
+       0.06613322399999999,
+       0.06613322399999999
+      ],
+      "leg2.qty": [
+       64.0,
+       64.0
+      ],
+      "execution_pnl": [
+       0.019055986657434333,
+       0.019055986657434333
+      ],
+      "reported_pnl": [
+       0.019055986657434333,
+       0.019055986657434333
+      ]
+     },
+     "category": "identical",
+     "note": "",
+     "execution_diff": 0.0,
+     "cost_diff": 0.0
+    },
+    {
+     "symbol": "SOLUSDT",
+     "opened_ms": 1681214400000,
+     "left": {
+      "symbol": "SOLUSDT",
+      "opened_ms": 1681214400000,
+      "closed_ms": 1681894800000,
+      "stop": 21.21,
+      "target": 22.44,
+      "reason": "breakeven",
+      "pnl": 0.020599642071699557,
+      "legs": [
+       {
+        "kind": "entry",
+        "hour": 1681214400000,
+        "raw": 22.233,
+        "qty": 0.29
+       },
+       {
+        "kind": "half",
+        "hour": 1681218000000,
+        "raw": 22.44,
+        "qty": 0.14
+       },
+       {
+        "kind": "exit",
+        "hour": 1681891200000,
+        "raw": 22.2374466,
+        "qty": 0.14999999999999997
+       }
+      ],
+      "step": 0.01,
+      "tick": 0.01
+     },
+     "right": {
+      "symbol": "SOLUSDT",
+      "opened_ms": 1681214400000,
+      "closed_ms": 1681892100000,
+      "stop": 21.21,
+      "target": 22.44,
+      "reason": "breakeven",
+      "pnl": 0.020599642071699557,
+      "legs": [
+       {
+        "kind": "entry",
+        "hour": 1681214400000,
+        "raw": 22.233,
+        "qty": 0.29
+       },
+       {
+        "kind": "half",
+        "hour": 1681218000000,
+        "raw": 22.44,
+        "qty": 0.14
+       },
+       {
+        "kind": "exit",
+        "hour": 1681891200000,
+        "raw": 22.2374466,
+        "qty": 0.14999999999999997
+       }
+      ],
+      "step": 0.01,
+      "tick": 0.01
+     },
+     "fields": {
+      "stop": [
+       21.21,
+       21.21
+      ],
+      "target": [
+       22.44,
+       22.44
+      ],
+      "reason": [
+       "breakeven",
+       "breakeven"
+      ],
+      "closed_ms": [
+       1681894800000,
+       1681892100000
+      ],
+      "leg0.kind": [
+       "entry",
+       "entry"
+      ],
+      "leg0.hour": [
+       1681214400000,
+       1681214400000
+      ],
+      "leg0.raw": [
+       22.233,
+       22.233
+      ],
+      "leg0.qty": [
+       0.29,
+       0.29
+      ],
+      "leg1.kind": [
+       "half",
+       "half"
+      ],
+      "leg1.hour": [
+       1681218000000,
+       1681218000000
+      ],
+      "leg1.raw": [
+       22.44,
+       22.44
+      ],
+      "leg1.qty": [
+       0.14,
+       0.14
+      ],
+      "leg2.kind": [
+       "exit",
+       "exit"
+      ],
+      "leg2.hour": [
+       1681891200000,
+       1681891200000
+      ],
+      "leg2.raw": [
+       22.2374466,
+       22.2374466
+      ],
+      "leg2.qty": [
+       0.14999999999999997,
+       0.14999999999999997
+      ],
+      "execution_pnl": [
+       0.020599642071699557,
+       0.020599642071699557
+      ],
+      "reported_pnl": [
+       0.020599642071699557,
+       0.020599642071699557
+      ]
+     },
+     "category": "identical",
+     "note": "",
+     "execution_diff": 0.0,
+     "cost_diff": 0.0
+    },
+    {
+     "symbol": "TRXUSDT",
+     "opened_ms": 1681473600000,
+     "left": {
+      "symbol": "TRXUSDT",
+      "opened_ms": 1681473600000,
+      "closed_ms": 1682010000000,
+      "stop": 0.06453,
+      "target": 0.06729,
+      "reason": "stop_loss",
+      "pnl": -0.3072709345409994,
+      "legs": [
+       {
+        "kind": "entry",
+        "hour": 1681473600000,
+        "raw": 0.06682,
+        "qty": 129.0
+       },
+       {
+        "kind": "exit",
+        "hour": 1682006400000,
+        "raw": 0.06453,
+        "qty": 129.0
+       }
+      ],
+      "step": 1.0,
+      "tick": 1e-05
+     },
+     "right": {
+      "symbol": "TRXUSDT",
+      "opened_ms": 1681473600000,
+      "closed_ms": 1682007600000,
+      "stop": 0.06453,
+      "target": 0.06729,
+      "reason": "stop_loss",
+      "pnl": -0.3072709345409994,
+      "legs": [
+       {
+        "kind": "entry",
+        "hour": 1681473600000,
+        "raw": 0.06682,
+        "qty": 129.0
+       },
+       {
+        "kind": "exit",
+        "hour": 1682006400000,
+        "raw": 0.06453,
+        "qty": 129.0
+       }
+      ],
+      "step": 1.0,
+      "tick": 1e-05
+     },
+     "fields": {
+      "stop": [
+       0.06453,
+       0.06453
+      ],
+      "target": [
+       0.06729,
+       0.06729
+      ],
+      "reason": [
+       "stop_loss",
+       "stop_loss"
+      ],
+      "closed_ms": [
+       1682010000000,
+       1682007600000
+      ],
+      "leg0.kind": [
+       "entry",
+       "entry"
+      ],
+      "leg0.hour": [
+       1681473600000,
+       1681473600000
+      ],
+      "leg0.raw": [
+       0.06682,
+       0.06682
+      ],
+      "leg0.qty": [
+       129.0,
+       129.0
+      ],
+      "leg1.kind": [
+       "exit",
+       "exit"
+      ],
+      "leg1.hour": [
+       1682006400000,
+       1682006400000
+      ],
+      "leg1.raw": [
+       0.06453,
+       0.06453
+      ],
+      "leg1.qty": [
+       129.0,
+       129.0
+      ],
+      "execution_pnl": [
+       -0.3072709345409994,
+       -0.3072709345409994
+      ],
+      "reported_pnl": [
+       -0.3072709345409994,
+       -0.3072709345409994
+      ]
+     },
+     "category": "identical",
+     "note": "",
+     "execution_diff": 0.0,
+     "cost_diff": 0.0
+    },
+    {
+     "symbol": "TRXUSDT",
+     "opened_ms": 1682265600000,
+     "left": {
+      "symbol": "TRXUSDT",
+      "opened_ms": 1682265600000,
+      "closed_ms": 1682272800000,
+      "stop": 0.06455,
+      "target": 0.06677,
+      "reason": "breakeven",
+      "pnl": 0.0162820715402238,
+      "legs": [
+       {
+        "kind": "entry",
+        "hour": 1682265600000,
+        "raw": 0.06639,
+        "qty": 159.0
+       },
+       {
+        "kind": "half",
+        "hour": 1682265600000,
+        "raw": 0.06677,
+        "qty": 79.0
+       },
+       {
+        "kind": "exit",
+        "hour": 1682269200000,
+        "raw": 0.06640327800000001,
+        "qty": 80.0
+       }
+      ],
+      "step": 1.0,
+      "tick": 1e-05
+     },
+     "right": {
+      "symbol": "TRXUSDT",
+      "opened_ms": 1682265600000,
+      "closed_ms": 1682270340000,
+      "stop": 0.06455,
+      "target": 0.06677,
+      "reason": "breakeven",
+      "pnl": 0.0162820715402238,
+      "legs": [
+       {
+        "kind": "entry",
+        "hour": 1682265600000,
+        "raw": 0.06639,
+        "qty": 159.0
+       },
+       {
+        "kind": "half",
+        "hour": 1682265600000,
+        "raw": 0.06677,
+        "qty": 79.0
+       },
+       {
+        "kind": "exit",
+        "hour": 1682269200000,
+        "raw": 0.06640327800000001,
+        "qty": 80.0
+       }
+      ],
+      "step": 1.0,
+      "tick": 1e-05
+     },
+     "fields": {
+      "stop": [
+       0.06455,
+       0.06455
+      ],
+      "target": [
+       0.06677,
+       0.06677
+      ],
+      "reason": [
+       "breakeven",
+       "breakeven"
+      ],
+      "closed_ms": [
+       1682272800000,
+       1682270340000
+      ],
+      "leg0.kind": [
+       "entry",
+       "entry"
+      ],
+      "leg0.hour": [
+       1682265600000,
+       1682265600000
+      ],
+      "leg0.raw": [
+       0.06639,
+       0.06639
+      ],
+      "leg0.qty": [
+       159.0,
+       159.0
+      ],
+      "leg1.kind": [
+       "half",
+       "half"
+      ],
+      "leg1.hour": [
+       1682265600000,
+       1682265600000
+      ],
+      "leg1.raw": [
+       0.06677,
+       0.06677
+      ],
+      "leg1.qty": [
+       79.0,
+       79.0
+      ],
+      "leg2.kind": [
+       "exit",
+       "exit"
+      ],
+      "leg2.hour": [
+       1682269200000,
+       1682269200000
+      ],
+      "leg2.raw": [
+       0.06640327800000001,
+       0.06640327800000001
+      ],
+      "leg2.qty": [
+       80.0,
+       80.0
+      ],
+      "execution_pnl": [
+       0.0162820715402238,
+       0.0162820715402238
+      ],
+      "reported_pnl": [
+       0.0162820715402238,
+       0.0162820715402238
+      ]
+     },
+     "category": "identical",
+     "note": "",
+     "execution_diff": 0.0,
+     "cost_diff": 0.0
+    },
+    {
+     "symbol": "TRXUSDT",
+     "opened_ms": 1682712000000,
+     "left": {
+      "symbol": "TRXUSDT",
+      "opened_ms": 1682712000000,
+      "closed_ms": 1686168000000,
+      "stop": 0.06486,
+      "target": 0.06685,
+      "reason": "trade_exit_time",
+      "pnl": 0.9759705393240025,
+      "legs": [
+       {
+        "kind": "entry",
+        "hour": 1682712000000,
+        "raw": 0.06651,
+        "qty": 178.0
+       },
+       {
+        "kind": "half",
+        "hour": 1682733600000,
+        "raw": 0.06685,
+        "qty": 89.0
+       },
+       {
+        "kind": "exit",
+        "hour": 1686164400000,
+        "raw": 0.07733,
+        "qty": 89.0
+       }
+      ],
+      "step": 1.0,
+      "tick": 1e-05
+     },
+     "right": {
+      "symbol": "TRXUSDT",
+      "opened_ms": 1682712000000,
+      "closed_ms": 1686168000000,
+      "stop": 0.06486,
+      "target": 0.06685,
+      "reason": "trade_exit_time",
+      "pnl": 0.9759705393240025,
+      "legs": [
+       {
+        "kind": "entry",
+        "hour": 1682712000000,
+        "raw": 0.06651,
+        "qty": 178.0
+       },
+       {
+        "kind": "half",
+        "hour": 1682733600000,
+        "raw": 0.06685,
+        "qty": 89.0
+       },
+       {
+        "kind": "exit",
+        "hour": 1686164400000,
+        "raw": 0.07733,
+        "qty": 89.0
+       }
+      ],
+      "step": 1.0,
+      "tick": 1e-05
+     },
+     "fields": {
+      "stop": [
+       0.06486,
+       0.06486
+      ],
+      "target": [
+       0.06685,
+       0.06685
+      ],
+      "reason": [
+       "trade_exit_time",
+       "trade_exit_time"
+      ],
+      "closed_ms": [
+       1686168000000,
+       1686168000000
+      ],
+      "leg0.kind": [
+       "entry",
+       "entry"
+      ],
+      "leg0.hour": [
+       1682712000000,
+       1682712000000
+      ],
+      "leg0.raw": [
+       0.06651,
+       0.06651
+      ],
+      "leg0.qty": [
+       178.0,
+       178.0
+      ],
+      "leg1.kind": [
+       "half",
+       "half"
+      ],
+      "leg1.hour": [
+       1682733600000,
+       1682733600000
+      ],
+      "leg1.raw": [
+       0.06685,
+       0.06685
+      ],
+      "leg1.qty": [
+       89.0,
+       89.0
+      ],
+      "leg2.kind": [
+       "exit",
+       "exit"
+      ],
+      "leg2.hour": [
+       1686164400000,
+       1686164400000
+      ],
+      "leg2.raw": [
+       0.07733,
+       0.07733
+      ],
+      "leg2.qty": [
+       89.0,
+       89.0
+      ],
+      "execution_pnl": [
+       0.9759705393240025,
+       0.9759705393240025
+      ],
+      "reported_pnl": [
+       0.9759705393240025,
+       0.9759705393240025
+      ]
+     },
+     "category": "identical",
+     "note": "",
+     "execution_diff": 0.0,
+     "cost_diff": 0.0
+    },
+    {
+     "symbol": "SOLUSDT",
+     "opened_ms": 1682740800000,
+     "left": {
+      "symbol": "SOLUSDT",
+      "opened_ms": 1682740800000,
+      "closed_ms": 1682784000000,
+      "stop": 21.76,
+      "target": 23.6,
+      "reason": "breakeven",
+      "pnl": 0.02719441674244255,
+      "legs": [
+       {
+        "kind": "entry",
+        "hour": 1682740800000,
+        "raw": 23.292,
+        "qty": 0.22
+       },
+       {
+        "kind": "half",
+        "hour": 1682769600000,
+        "raw": 23.6,
+        "qty": 0.11
+       },
+       {
+        "kind": "exit",
+        "hour": 1682780400000,
+        "raw": 23.296658400000002,
+        "qty": 0.11
+       }
+      ],
+      "step": 0.01,
+      "tick": 0.01
+     },
+     "right": {
+      "symbol": "SOLUSDT",
+      "opened_ms": 1682740800000,
+      "closed_ms": 1682781420000,
+      "stop": 21.76,
+      "target": 23.6,
+      "reason": "breakeven",
+      "pnl": 0.02719441674244255,
+      "legs": [
+       {
+        "kind": "entry",
+        "hour": 1682740800000,
+        "raw": 23.292,
+        "qty": 0.22
+       },
+       {
+        "kind": "half",
+        "hour": 1682769600000,
+        "raw": 23.6,
+        "qty": 0.11
+       },
+       {
+        "kind": "exit",
+        "hour": 1682780400000,
+        "raw": 23.296658400000002,
+        "qty": 0.11
+       }
+      ],
+      "step": 0.01,
+      "tick": 0.01
+     },
+     "fields": {
+      "stop": [
+       21.76,
+       21.76
+      ],
+      "target": [
+       23.6,
+       23.6
+      ],
+      "reason": [
+       "breakeven",
+       "breakeven"
+      ],
+      "closed_ms": [
+       1682784000000,
+       1682781420000
+      ],
+      "leg0.kind": [
+       "entry",
+       "entry"
+      ],
+      "leg0.hour": [
+       1682740800000,
+       1682740800000
+      ],
+      "leg0.raw": [
+       23.292,
+       23.292
+      ],
+      "leg0.qty": [
+       0.22,
+       0.22
+      ],
+      "leg1.kind": [
+       "half",
+       "half"
+      ],
+      "leg1.hour": [
+       1682769600000,
+       1682769600000
+      ],
+      "leg1.raw": [
+       23.6,
+       23.6
+      ],
+      "leg1.qty": [
+       0.11,
+       0.11
+      ],
+      "leg2.kind": [
+       "exit",
+       "exit"
+      ],
+      "leg2.hour": [
+       1682780400000,
+       1682780400000
+      ],
+      "leg2.raw": [
+       23.296658400000002,
+       23.296658400000002
+      ],
+      "leg2.qty": [
+       0.11,
+       0.11
+      ],
+      "execution_pnl": [
+       0.02719441674244255,
+       0.02719441674244255
+      ],
+      "reported_pnl": [
+       0.02719441674244255,
+       0.02719441674244255
+      ]
+     },
+     "category": "identical",
+     "note": "",
+     "execution_diff": 0.0,
+     "cost_diff": 0.0
+    },
+    {
+     "symbol": "TRXUSDT",
+     "opened_ms": 1687665600000,
+     "left": {
+      "symbol": "TRXUSDT",
+      "opened_ms": 1687665600000,
+      "closed_ms": 1687687200000,
+      "stop": 0.07047,
+      "target": 0.07351,
+      "reason": "breakeven",
+      "pnl": 0.01979111009158882,
+      "legs": [
+       {
+        "kind": "entry",
+        "hour": 1687665600000,
+        "raw": 0.07299,
+        "qty": 120.0
+       },
+       {
+        "kind": "half",
+        "hour": 1687676400000,
+        "raw": 0.07351,
+        "qty": 60.0
+       },
+       {
+        "kind": "exit",
+        "hour": 1687683600000,
+        "raw": 0.073004598,
+        "qty": 60.0
+       }
+      ],
+      "step": 1.0,
+      "tick": 1e-05
+     },
+     "right": {
+      "symbol": "TRXUSDT",
+      "opened_ms": 1687665600000,
+      "closed_ms": 1687684560000,
+      "stop": 0.07047,
+      "target": 0.07351,
+      "reason": "breakeven",
+      "pnl": 0.01979111009158882,
+      "legs": [
+       {
+        "kind": "entry",
+        "hour": 1687665600000,
+        "raw": 0.07299,
+        "qty": 120.0
+       },
+       {
+        "kind": "half",
+        "hour": 1687676400000,
+        "raw": 0.07351,
+        "qty": 60.0
+       },
+       {
+        "kind": "exit",
+        "hour": 1687683600000,
+        "raw": 0.073004598,
+        "qty": 60.0
+       }
+      ],
+      "step": 1.0,
+      "tick": 1e-05
+     },
+     "fields": {
+      "stop": [
+       0.07047,
+       0.07047
+      ],
+      "target": [
+       0.07351,
+       0.07351
+      ],
+      "reason": [
+       "breakeven",
+       "breakeven"
+      ],
+      "closed_ms": [
+       1687687200000,
+       1687684560000
+      ],
+      "leg0.kind": [
+       "entry",
+       "entry"
+      ],
+      "leg0.hour": [
+       1687665600000,
+       1687665600000
+      ],
+      "leg0.raw": [
+       0.07299,
+       0.07299
+      ],
+      "leg0.qty": [
+       120.0,
+       120.0
+      ],
+      "leg1.kind": [
+       "half",
+       "half"
+      ],
+      "leg1.hour": [
+       1687676400000,
+       1687676400000
+      ],
+      "leg1.raw": [
+       0.07351,
+       0.07351
+      ],
+      "leg1.qty": [
+       60.0,
+       60.0
+      ],
+      "leg2.kind": [
+       "exit",
+       "exit"
+      ],
+      "leg2.hour": [
+       1687683600000,
+       1687683600000
+      ],
+      "leg2.raw": [
+       0.073004598,
+       0.073004598
+      ],
+      "leg2.qty": [
+       60.0,
+       60.0
+      ],
+      "execution_pnl": [
+       0.01979111009158882,
+       0.01979111009158882
+      ],
+      "reported_pnl": [
+       0.01979111009158882,
+       0.01979111009158882
+      ]
+     },
+     "category": "identical",
+     "note": "",
+     "execution_diff": 0.0,
+     "cost_diff": 0.0
+    },
+    {
+     "symbol": "SOLUSDT",
+     "opened_ms": 1688068800000,
+     "left": {
+      "symbol": "SOLUSDT",
+      "opened_ms": 1688068800000,
+      "closed_ms": 1688133600000,
+      "stop": 16.28,
+      "target": 18.01,
+      "reason": "breakeven",
+      "pnl": 0.033207101818174926,
+      "legs": [
+       {
+        "kind": "entry",
+        "hour": 1688068800000,
+        "raw": 17.725,
+        "qty": 0.29
+       },
+       {
+        "kind": "half",
+        "hour": 1688076000000,
+        "raw": 18.01,
+        "qty": 0.14
+       },
+       {
+        "kind": "exit",
+        "hour": 1688130000000,
+        "raw": 17.728545,
+        "qty": 0.14999999999999997
+       }
+      ],
+      "step": 0.01,
+      "tick": 0.01
+     },
+     "right": {
+      "symbol": "SOLUSDT",
+      "opened_ms": 1688068800000,
+      "closed_ms": 1688130840000,
+      "stop": 16.28,
+      "target": 18.01,
+      "reason": "breakeven",
+      "pnl": 0.033207101818174926,
+      "legs": [
+       {
+        "kind": "entry",
+        "hour": 1688068800000,
+        "raw": 17.725,
+        "qty": 0.29
+       },
+       {
+        "kind": "half",
+        "hour": 1688076000000,
+        "raw": 18.01,
+        "qty": 0.14
+       },
+       {
+        "kind": "exit",
+        "hour": 1688130000000,
+        "raw": 17.728545,
+        "qty": 0.14999999999999997
+       }
+      ],
+      "step": 0.01,
+      "tick": 0.01
+     },
+     "fields": {
+      "stop": [
+       16.28,
+       16.28
+      ],
+      "target": [
+       18.01,
+       18.01
+      ],
+      "reason": [
+       "breakeven",
+       "breakeven"
+      ],
+      "closed_ms": [
+       1688133600000,
+       1688130840000
+      ],
+      "leg0.kind": [
+       "entry",
+       "entry"
+      ],
+      "leg0.hour": [
+       1688068800000,
+       1688068800000
+      ],
+      "leg0.raw": [
+       17.725,
+       17.725
+      ],
+      "leg0.qty": [
+       0.29,
+       0.29
+      ],
+      "leg1.kind": [
+       "half",
+       "half"
+      ],
+      "leg1.hour": [
+       1688076000000,
+       1688076000000
+      ],
+      "leg1.raw": [
+       18.01,
+       18.01
+      ],
+      "leg1.qty": [
+       0.14,
+       0.14
+      ],
+      "leg2.kind": [
+       "exit",
+       "exit"
+      ],
+      "leg2.hour": [
+       1688130000000,
+       1688130000000
+      ],
+      "leg2.raw": [
+       17.728545,
+       17.728545
+      ],
+      "leg2.qty": [
+       0.14999999999999997,
+       0.14999999999999997
+      ],
+      "execution_pnl": [
+       0.033207101818174926,
+       0.033207101818174926
+      ],
+      "reported_pnl": [
+       0.033207101818174926,
+       0.033207101818174926
+      ]
+     },
+     "category": "identical",
+     "note": "",
+     "execution_diff": 0.0,
+     "cost_diff": 0.0
+    }
+   ],
+   "left_only": [],
+   "right_only": [],
+   "open_at_end": []
+  },
+  "R1_vs_R2": {
+   "summary": {
+    "counts": {
+     "identical": 12
+    },
+    "unexplained": 0,
+    "execution_pnl_diff": {
+     "identical": 0.0
+    },
+    "cost_diff_total": 0.0,
+    "left_execution_pnl": 0.5463760003268304,
+    "right_execution_pnl": 0.5463760003268304
+   },
+   "rows": [
+    {
+     "symbol": "TRXUSDT",
+     "opened_ms": 1673395200000,
+     "left": {
+      "symbol": "TRXUSDT",
+      "opened_ms": 1673395200000,
+      "closed_ms": 1673425080000,
+      "stop": 0.05251,
+      "target": 0.05529,
+      "reason": "breakeven",
+      "pnl": 0.020870616217265707,
+      "legs": [
+       {
+        "kind": "entry",
+        "hour": 1673395200000,
+        "raw": 0.05482,
+        "qty": 129.0
+       },
+       {
+        "kind": "half",
+        "hour": 1673413200000,
+        "raw": 0.05529,
+        "qty": 64.0
+       },
+       {
+        "kind": "exit",
+        "hour": 1673424000000,
+        "raw": 0.054830964,
+        "qty": 65.0
+       }
+      ],
+      "step": 1.0,
+      "tick": 1e-05
+     },
+     "right": {
+      "symbol": "TRXUSDT",
+      "opened_ms": 1673395200000,
+      "closed_ms": 1673427300000,
+      "stop": 0.05251,
+      "target": 0.05529,
+      "reason": "breakeven",
+      "pnl": 0.020870616217265707,
+      "legs": [
+       {
+        "kind": "entry",
+        "hour": 1673395200000,
+        "raw": 0.05482,
+        "qty": 129.0
+       },
+       {
+        "kind": "half",
+        "hour": 1673413200000,
+        "raw": 0.05529,
+        "qty": 64.0
+       },
+       {
+        "kind": "exit",
+        "hour": 1673424000000,
+        "raw": 0.054830964,
+        "qty": 65.0
+       }
+      ],
+      "step": 1.0,
+      "tick": 1e-05
+     },
+     "fields": {
+      "stop": [
+       0.05251,
+       0.05251
+      ],
+      "target": [
+       0.05529,
+       0.05529
+      ],
+      "reason": [
+       "breakeven",
+       "breakeven"
+      ],
+      "closed_ms": [
+       1673425080000,
+       1673427300000
+      ],
+      "leg0.kind": [
+       "entry",
+       "entry"
+      ],
+      "leg0.hour": [
+       1673395200000,
+       1673395200000
+      ],
+      "leg0.raw": [
+       0.05482,
+       0.05482
+      ],
+      "leg0.qty": [
+       129.0,
+       129.0
+      ],
+      "leg1.kind": [
+       "half",
+       "half"
+      ],
+      "leg1.hour": [
+       1673413200000,
+       1673413200000
+      ],
+      "leg1.raw": [
+       0.05529,
+       0.05529
+      ],
+      "leg1.qty": [
+       64.0,
+       64.0
+      ],
+      "leg2.kind": [
+       "exit",
+       "exit"
+      ],
+      "leg2.hour": [
+       1673424000000,
+       1673424000000
+      ],
+      "leg2.raw": [
+       0.054830964,
+       0.054830964
+      ],
+      "leg2.qty": [
+       65.0,
+       65.0
+      ],
+      "execution_pnl": [
+       0.020870616217265707,
+       0.020870616217265707
+      ],
+      "reported_pnl": [
+       0.020870616217265707,
+       0.020870616217265707
+      ]
+     },
+     "category": "identical",
+     "note": "",
+     "execution_diff": 0.0,
+     "cost_diff": 0.0
+    },
+    {
+     "symbol": "SOLUSDT",
+     "opened_ms": 1676563200000,
+     "left": {
+      "symbol": "SOLUSDT",
+      "opened_ms": 1676563200000,
+      "closed_ms": 1676589480000,
+      "stop": 22.23,
+      "target": 24.19,
+      "reason": "stop_loss",
+      "pnl": -0.3490752642299992,
+      "legs": [
+       {
+        "kind": "entry",
+        "hour": 1676563200000,
+        "raw": 23.86,
+        "qty": 0.21
+       },
+       {
+        "kind": "exit",
+        "hour": 1676588400000,
+        "raw": 22.23,
+        "qty": 0.21
+       }
+      ],
+      "step": 0.01,
+      "tick": 0.01
+     },
+     "right": {
+      "symbol": "SOLUSDT",
+      "opened_ms": 1676563200000,
+      "closed_ms": 1676590500000,
+      "stop": 22.23,
+      "target": 24.19,
+      "reason": "stop_loss",
+      "pnl": -0.3490752642299992,
+      "legs": [
+       {
+        "kind": "entry",
+        "hour": 1676563200000,
+        "raw": 23.86,
+        "qty": 0.21
+       },
+       {
+        "kind": "exit",
+        "hour": 1676588400000,
+        "raw": 22.23,
+        "qty": 0.21
+       }
+      ],
+      "step": 0.01,
+      "tick": 0.01
+     },
+     "fields": {
+      "stop": [
+       22.23,
+       22.23
+      ],
+      "target": [
+       24.19,
+       24.19
+      ],
+      "reason": [
+       "stop_loss",
+       "stop_loss"
+      ],
+      "closed_ms": [
+       1676589480000,
+       1676590500000
+      ],
+      "leg0.kind": [
+       "entry",
+       "entry"
+      ],
+      "leg0.hour": [
+       1676563200000,
+       1676563200000
+      ],
+      "leg0.raw": [
+       23.86,
+       23.86
+      ],
+      "leg0.qty": [
+       0.21,
+       0.21
+      ],
+      "leg1.kind": [
+       "exit",
+       "exit"
+      ],
+      "leg1.hour": [
+       1676588400000,
+       1676588400000
+      ],
+      "leg1.raw": [
+       22.23,
+       22.23
+      ],
+      "leg1.qty": [
+       0.21,
+       0.21
+      ],
+      "execution_pnl": [
+       -0.3490752642299992,
+       -0.3490752642299992
+      ],
+      "reported_pnl": [
+       -0.3490752642299992,
+       -0.3490752642299992
+      ]
+     },
+     "category": "identical",
+     "note": "",
+     "execution_diff": 0.0,
+     "cost_diff": 0.0
+    },
+    {
+     "symbol": "TRXUSDT",
+     "opened_ms": 1678867200000,
+     "left": {
+      "symbol": "TRXUSDT",
+      "opened_ms": 1678867200000,
+      "closed_ms": 1679105880000,
+      "stop": 0.06257,
+      "target": 0.06803,
+      "reason": "breakeven",
+      "pnl": 0.027479304429803564,
+      "legs": [
+       {
+        "kind": "entry",
+        "hour": 1678867200000,
+        "raw": 0.06711,
+        "qty": 75.0
+       },
+       {
+        "kind": "half",
+        "hour": 1679101200000,
+        "raw": 0.06803,
+        "qty": 37.0
+       },
+       {
+        "kind": "exit",
+        "hour": 1679104800000,
+        "raw": 0.067123422,
+        "qty": 38.0
+       }
+      ],
+      "step": 1.0,
+      "tick": 1e-05
+     },
+     "right": {
+      "symbol": "TRXUSDT",
+      "opened_ms": 1678867200000,
+      "closed_ms": 1679105340000,
+      "stop": 0.06257,
+      "target": 0.06803,
+      "reason": "breakeven",
+      "pnl": 0.027479304429803564,
+      "legs": [
+       {
+        "kind": "entry",
+        "hour": 1678867200000,
+        "raw": 0.06711,
+        "qty": 75.0
+       },
+       {
+        "kind": "half",
+        "hour": 1679101200000,
+        "raw": 0.06803,
+        "qty": 37.0
+       },
+       {
+        "kind": "exit",
+        "hour": 1679104800000,
+        "raw": 0.067123422,
+        "qty": 38.0
+       }
+      ],
+      "step": 1.0,
+      "tick": 1e-05
+     },
+     "fields": {
+      "stop": [
+       0.06257,
+       0.06257
+      ],
+      "target": [
+       0.06803,
+       0.06803
+      ],
+      "reason": [
+       "breakeven",
+       "breakeven"
+      ],
+      "closed_ms": [
+       1679105880000,
+       1679105340000
+      ],
+      "leg0.kind": [
+       "entry",
+       "entry"
+      ],
+      "leg0.hour": [
+       1678867200000,
+       1678867200000
+      ],
+      "leg0.raw": [
+       0.06711,
+       0.06711
+      ],
+      "leg0.qty": [
+       75.0,
+       75.0
+      ],
+      "leg1.kind": [
+       "half",
+       "half"
+      ],
+      "leg1.hour": [
+       1679101200000,
+       1679101200000
+      ],
+      "leg1.raw": [
+       0.06803,
+       0.06803
+      ],
+      "leg1.qty": [
+       37.0,
+       37.0
+      ],
+      "leg2.kind": [
+       "exit",
+       "exit"
+      ],
+      "leg2.hour": [
+       1679104800000,
+       1679104800000
+      ],
+      "leg2.raw": [
+       0.067123422,
+       0.067123422
+      ],
+      "leg2.qty": [
+       38.0,
+       38.0
+      ],
+      "execution_pnl": [
+       0.027479304429803564,
+       0.027479304429803564
+      ],
+      "reported_pnl": [
+       0.027479304429803564,
+       0.027479304429803564
+      ]
+     },
+     "category": "identical",
+     "note": "",
+     "execution_diff": 0.0,
+     "cost_diff": 0.0
+    },
+    {
+     "symbol": "SOLUSDT",
+     "opened_ms": 1679112000000,
+     "left": {
+      "symbol": "SOLUSDT",
+      "opened_ms": 1679112000000,
+      "closed_ms": 1679332260000,
+      "stop": 20.41,
+      "target": 23.11,
+      "reason": "breakeven",
+      "pnl": 0.04227141020519325,
+      "legs": [
+       {
+        "kind": "entry",
+        "hour": 1679112000000,
+        "raw": 22.664,
+        "qty": 0.23
+       },
+       {
+        "kind": "half",
+        "hour": 1679295600000,
+        "raw": 23.11,
+        "qty": 0.11
+       },
+       {
+        "kind": "exit",
+        "hour": 1679331600000,
+        "raw": 22.6685328,
+        "qty": 0.12000000000000001
+       }
+      ],
+      "step": 0.01,
+      "tick": 0.01
+     },
+     "right": {
+      "symbol": "SOLUSDT",
+      "opened_ms": 1679112000000,
+      "closed_ms": 1679334720000,
+      "stop": 20.41,
+      "target": 23.11,
+      "reason": "breakeven",
+      "pnl": 0.04227141020519325,
+      "legs": [
+       {
+        "kind": "entry",
+        "hour": 1679112000000,
+        "raw": 22.664,
+        "qty": 0.23
+       },
+       {
+        "kind": "half",
+        "hour": 1679295600000,
+        "raw": 23.11,
+        "qty": 0.11
+       },
+       {
+        "kind": "exit",
+        "hour": 1679331600000,
+        "raw": 22.6685328,
+        "qty": 0.12000000000000001
+       }
+      ],
+      "step": 0.01,
+      "tick": 0.01
+     },
+     "fields": {
+      "stop": [
+       20.41,
+       20.41
+      ],
+      "target": [
+       23.11,
+       23.11
+      ],
+      "reason": [
+       "breakeven",
+       "breakeven"
+      ],
+      "closed_ms": [
+       1679332260000,
+       1679334720000
+      ],
+      "leg0.kind": [
+       "entry",
+       "entry"
+      ],
+      "leg0.hour": [
+       1679112000000,
+       1679112000000
+      ],
+      "leg0.raw": [
+       22.664,
+       22.664
+      ],
+      "leg0.qty": [
+       0.23,
+       0.23
+      ],
+      "leg1.kind": [
+       "half",
+       "half"
+      ],
+      "leg1.hour": [
+       1679295600000,
+       1679295600000
+      ],
+      "leg1.raw": [
+       23.11,
+       23.11
+      ],
+      "leg1.qty": [
+       0.11,
+       0.11
+      ],
+      "leg2.kind": [
+       "exit",
+       "exit"
+      ],
+      "leg2.hour": [
+       1679331600000,
+       1679331600000
+      ],
+      "leg2.raw": [
+       22.6685328,
+       22.6685328
+      ],
+      "leg2.qty": [
+       0.12000000000000001,
+       0.12000000000000001
+      ],
+      "execution_pnl": [
+       0.04227141020519325,
+       0.04227141020519325
+      ],
+      "reported_pnl": [
+       0.04227141020519325,
+       0.04227141020519325
+      ]
+     },
+     "category": "identical",
+     "note": "",
+     "execution_diff": 0.0,
+     "cost_diff": 0.0
+    },
+    {
+     "symbol": "TRXUSDT",
+     "opened_ms": 1680278400000,
+     "left": {
+      "symbol": "TRXUSDT",
+      "opened_ms": 1680278400000,
+      "closed_ms": 1680362340000,
+      "stop": 0.06381,
+      "target": 0.06659,
+      "reason": "breakeven",
+      "pnl": 0.019055986657434333,
+      "legs": [
+       {
+        "kind": "entry",
+        "hour": 1680278400000,
+        "raw": 0.06612,
+        "qty": 128.0
+       },
+       {
+        "kind": "half",
+        "hour": 1680343200000,
+        "raw": 0.06659,
+        "qty": 64.0
+       },
+       {
+        "kind": "exit",
+        "hour": 1680361200000,
+        "raw": 0.06613322399999999,
+        "qty": 64.0
+       }
+      ],
+      "step": 1.0,
+      "tick": 1e-05
+     },
+     "right": {
+      "symbol": "TRXUSDT",
+      "opened_ms": 1680278400000,
+      "closed_ms": 1680363840000,
+      "stop": 0.06381,
+      "target": 0.06659,
+      "reason": "breakeven",
+      "pnl": 0.019055986657434333,
+      "legs": [
+       {
+        "kind": "entry",
+        "hour": 1680278400000,
+        "raw": 0.06612,
+        "qty": 128.0
+       },
+       {
+        "kind": "half",
+        "hour": 1680343200000,
+        "raw": 0.06659,
+        "qty": 64.0
+       },
+       {
+        "kind": "exit",
+        "hour": 1680361200000,
+        "raw": 0.06613322399999999,
+        "qty": 64.0
+       }
+      ],
+      "step": 1.0,
+      "tick": 1e-05
+     },
+     "fields": {
+      "stop": [
+       0.06381,
+       0.06381
+      ],
+      "target": [
+       0.06659,
+       0.06659
+      ],
+      "reason": [
+       "breakeven",
+       "breakeven"
+      ],
+      "closed_ms": [
+       1680362340000,
+       1680363840000
+      ],
+      "leg0.kind": [
+       "entry",
+       "entry"
+      ],
+      "leg0.hour": [
+       1680278400000,
+       1680278400000
+      ],
+      "leg0.raw": [
+       0.06612,
+       0.06612
+      ],
+      "leg0.qty": [
+       128.0,
+       128.0
+      ],
+      "leg1.kind": [
+       "half",
+       "half"
+      ],
+      "leg1.hour": [
+       1680343200000,
+       1680343200000
+      ],
+      "leg1.raw": [
+       0.06659,
+       0.06659
+      ],
+      "leg1.qty": [
+       64.0,
+       64.0
+      ],
+      "leg2.kind": [
+       "exit",
+       "exit"
+      ],
+      "leg2.hour": [
+       1680361200000,
+       1680361200000
+      ],
+      "leg2.raw": [
+       0.06613322399999999,
+       0.06613322399999999
+      ],
+      "leg2.qty": [
+       64.0,
+       64.0
+      ],
+      "execution_pnl": [
+       0.019055986657434333,
+       0.019055986657434333
+      ],
+      "reported_pnl": [
+       0.019055986657434333,
+       0.019055986657434333
+      ]
+     },
+     "category": "identical",
+     "note": "",
+     "execution_diff": 0.0,
+     "cost_diff": 0.0
+    },
+    {
+     "symbol": "SOLUSDT",
+     "opened_ms": 1681214400000,
+     "left": {
+      "symbol": "SOLUSDT",
+      "opened_ms": 1681214400000,
+      "closed_ms": 1681892100000,
+      "stop": 21.21,
+      "target": 22.44,
+      "reason": "breakeven",
+      "pnl": 0.020599642071699557,
+      "legs": [
+       {
+        "kind": "entry",
+        "hour": 1681214400000,
+        "raw": 22.233,
+        "qty": 0.29
+       },
+       {
+        "kind": "half",
+        "hour": 1681218000000,
+        "raw": 22.44,
+        "qty": 0.14
+       },
+       {
+        "kind": "exit",
+        "hour": 1681891200000,
+        "raw": 22.2374466,
+        "qty": 0.14999999999999997
+       }
+      ],
+      "step": 0.01,
+      "tick": 0.01
+     },
+     "right": {
+      "symbol": "SOLUSDT",
+      "opened_ms": 1681214400000,
+      "closed_ms": 1681892580000,
+      "stop": 21.21,
+      "target": 22.44,
+      "reason": "breakeven",
+      "pnl": 0.020599642071699557,
+      "legs": [
+       {
+        "kind": "entry",
+        "hour": 1681214400000,
+        "raw": 22.233,
+        "qty": 0.29
+       },
+       {
+        "kind": "half",
+        "hour": 1681218000000,
+        "raw": 22.44,
+        "qty": 0.14
+       },
+       {
+        "kind": "exit",
+        "hour": 1681891200000,
+        "raw": 22.2374466,
+        "qty": 0.14999999999999997
+       }
+      ],
+      "step": 0.01,
+      "tick": 0.01
+     },
+     "fields": {
+      "stop": [
+       21.21,
+       21.21
+      ],
+      "target": [
+       22.44,
+       22.44
+      ],
+      "reason": [
+       "breakeven",
+       "breakeven"
+      ],
+      "closed_ms": [
+       1681892100000,
+       1681892580000
+      ],
+      "leg0.kind": [
+       "entry",
+       "entry"
+      ],
+      "leg0.hour": [
+       1681214400000,
+       1681214400000
+      ],
+      "leg0.raw": [
+       22.233,
+       22.233
+      ],
+      "leg0.qty": [
+       0.29,
+       0.29
+      ],
+      "leg1.kind": [
+       "half",
+       "half"
+      ],
+      "leg1.hour": [
+       1681218000000,
+       1681218000000
+      ],
+      "leg1.raw": [
+       22.44,
+       22.44
+      ],
+      "leg1.qty": [
+       0.14,
+       0.14
+      ],
+      "leg2.kind": [
+       "exit",
+       "exit"
+      ],
+      "leg2.hour": [
+       1681891200000,
+       1681891200000
+      ],
+      "leg2.raw": [
+       22.2374466,
+       22.2374466
+      ],
+      "leg2.qty": [
+       0.14999999999999997,
+       0.14999999999999997
+      ],
+      "execution_pnl": [
+       0.020599642071699557,
+       0.020599642071699557
+      ],
+      "reported_pnl": [
+       0.020599642071699557,
+       0.020599642071699557
+      ]
+     },
+     "category": "identical",
+     "note": "",
+     "execution_diff": 0.0,
+     "cost_diff": 0.0
+    },
+    {
+     "symbol": "TRXUSDT",
+     "opened_ms": 1681473600000,
+     "left": {
+      "symbol": "TRXUSDT",
+      "opened_ms": 1681473600000,
+      "closed_ms": 1682007600000,
+      "stop": 0.06453,
+      "target": 0.06729,
+      "reason": "stop_loss",
+      "pnl": -0.3072709345409994,
+      "legs": [
+       {
+        "kind": "entry",
+        "hour": 1681473600000,
+        "raw": 0.06682,
+        "qty": 129.0
+       },
+       {
+        "kind": "exit",
+        "hour": 1682006400000,
+        "raw": 0.06453,
+        "qty": 129.0
+       }
+      ],
+      "step": 1.0,
+      "tick": 1e-05
+     },
+     "right": {
+      "symbol": "TRXUSDT",
+      "opened_ms": 1681473600000,
+      "closed_ms": 1682006640000,
+      "stop": 0.06453,
+      "target": 0.06729,
+      "reason": "stop_loss",
+      "pnl": -0.3072709345409994,
+      "legs": [
+       {
+        "kind": "entry",
+        "hour": 1681473600000,
+        "raw": 0.06682,
+        "qty": 129.0
+       },
+       {
+        "kind": "exit",
+        "hour": 1682006400000,
+        "raw": 0.06453,
+        "qty": 129.0
+       }
+      ],
+      "step": 1.0,
+      "tick": 1e-05
+     },
+     "fields": {
+      "stop": [
+       0.06453,
+       0.06453
+      ],
+      "target": [
+       0.06729,
+       0.06729
+      ],
+      "reason": [
+       "stop_loss",
+       "stop_loss"
+      ],
+      "closed_ms": [
+       1682007600000,
+       1682006640000
+      ],
+      "leg0.kind": [
+       "entry",
+       "entry"
+      ],
+      "leg0.hour": [
+       1681473600000,
+       1681473600000
+      ],
+      "leg0.raw": [
+       0.06682,
+       0.06682
+      ],
+      "leg0.qty": [
+       129.0,
+       129.0
+      ],
+      "leg1.kind": [
+       "exit",
+       "exit"
+      ],
+      "leg1.hour": [
+       1682006400000,
+       1682006400000
+      ],
+      "leg1.raw": [
+       0.06453,
+       0.06453
+      ],
+      "leg1.qty": [
+       129.0,
+       129.0
+      ],
+      "execution_pnl": [
+       -0.3072709345409994,
+       -0.3072709345409994
+      ],
+      "reported_pnl": [
+       -0.3072709345409994,
+       -0.3072709345409994
+      ]
+     },
+     "category": "identical",
+     "note": "",
+     "execution_diff": 0.0,
+     "cost_diff": 0.0
+    },
+    {
+     "symbol": "TRXUSDT",
+     "opened_ms": 1682265600000,
+     "left": {
+      "symbol": "TRXUSDT",
+      "opened_ms": 1682265600000,
+      "closed_ms": 1682270340000,
+      "stop": 0.06455,
+      "target": 0.06677,
+      "reason": "breakeven",
+      "pnl": 0.0162820715402238,
+      "legs": [
+       {
+        "kind": "entry",
+        "hour": 1682265600000,
+        "raw": 0.06639,
+        "qty": 159.0
+       },
+       {
+        "kind": "half",
+        "hour": 1682265600000,
+        "raw": 0.06677,
+        "qty": 79.0
+       },
+       {
+        "kind": "exit",
+        "hour": 1682269200000,
+        "raw": 0.06640327800000001,
+        "qty": 80.0
+       }
+      ],
+      "step": 1.0,
+      "tick": 1e-05
+     },
+     "right": {
+      "symbol": "TRXUSDT",
+      "opened_ms": 1682265600000,
+      "closed_ms": 1682272440000,
+      "stop": 0.06455,
+      "target": 0.06677,
+      "reason": "breakeven",
+      "pnl": 0.0162820715402238,
+      "legs": [
+       {
+        "kind": "entry",
+        "hour": 1682265600000,
+        "raw": 0.06639,
+        "qty": 159.0
+       },
+       {
+        "kind": "half",
+        "hour": 1682265600000,
+        "raw": 0.06677,
+        "qty": 79.0
+       },
+       {
+        "kind": "exit",
+        "hour": 1682269200000,
+        "raw": 0.06640327800000001,
+        "qty": 80.0
+       }
+      ],
+      "step": 1.0,
+      "tick": 1e-05
+     },
+     "fields": {
+      "stop": [
+       0.06455,
+       0.06455
+      ],
+      "target": [
+       0.06677,
+       0.06677
+      ],
+      "reason": [
+       "breakeven",
+       "breakeven"
+      ],
+      "closed_ms": [
+       1682270340000,
+       1682272440000
+      ],
+      "leg0.kind": [
+       "entry",
+       "entry"
+      ],
+      "leg0.hour": [
+       1682265600000,
+       1682265600000
+      ],
+      "leg0.raw": [
+       0.06639,
+       0.06639
+      ],
+      "leg0.qty": [
+       159.0,
+       159.0
+      ],
+      "leg1.kind": [
+       "half",
+       "half"
+      ],
+      "leg1.hour": [
+       1682265600000,
+       1682265600000
+      ],
+      "leg1.raw": [
+       0.06677,
+       0.06677
+      ],
+      "leg1.qty": [
+       79.0,
+       79.0
+      ],
+      "leg2.kind": [
+       "exit",
+       "exit"
+      ],
+      "leg2.hour": [
+       1682269200000,
+       1682269200000
+      ],
+      "leg2.raw": [
+       0.06640327800000001,
+       0.06640327800000001
+      ],
+      "leg2.qty": [
+       80.0,
+       80.0
+      ],
+      "execution_pnl": [
+       0.0162820715402238,
+       0.0162820715402238
+      ],
+      "reported_pnl": [
+       0.0162820715402238,
+       0.0162820715402238
+      ]
+     },
+     "category": "identical",
+     "note": "",
+     "execution_diff": 0.0,
+     "cost_diff": 0.0
+    },
+    {
+     "symbol": "TRXUSDT",
+     "opened_ms": 1682712000000,
+     "left": {
+      "symbol": "TRXUSDT",
+      "opened_ms": 1682712000000,
+      "closed_ms": 1686168000000,
+      "stop": 0.06486,
+      "target": 0.06685,
+      "reason": "trade_exit_time",
+      "pnl": 0.9759705393240025,
+      "legs": [
+       {
+        "kind": "entry",
+        "hour": 1682712000000,
+        "raw": 0.06651,
+        "qty": 178.0
+       },
+       {
+        "kind": "half",
+        "hour": 1682733600000,
+        "raw": 0.06685,
+        "qty": 89.0
+       },
+       {
+        "kind": "exit",
+        "hour": 1686164400000,
+        "raw": 0.07733,
+        "qty": 89.0
+       }
+      ],
+      "step": 1.0,
+      "tick": 1e-05
+     },
+     "right": {
+      "symbol": "TRXUSDT",
+      "opened_ms": 1682712000000,
+      "closed_ms": 1686168000000,
+      "stop": 0.06486,
+      "target": 0.06685,
+      "reason": "trade_exit_time",
+      "pnl": 0.9759705393240025,
+      "legs": [
+       {
+        "kind": "entry",
+        "hour": 1682712000000,
+        "raw": 0.06651,
+        "qty": 178.0
+       },
+       {
+        "kind": "half",
+        "hour": 1682733600000,
+        "raw": 0.06685,
+        "qty": 89.0
+       },
+       {
+        "kind": "exit",
+        "hour": 1686164400000,
+        "raw": 0.07733,
+        "qty": 89.0
+       }
+      ],
+      "step": 1.0,
+      "tick": 1e-05
+     },
+     "fields": {
+      "stop": [
+       0.06486,
+       0.06486
+      ],
+      "target": [
+       0.06685,
+       0.06685
+      ],
+      "reason": [
+       "trade_exit_time",
+       "trade_exit_time"
+      ],
+      "closed_ms": [
+       1686168000000,
+       1686168000000
+      ],
+      "leg0.kind": [
+       "entry",
+       "entry"
+      ],
+      "leg0.hour": [
+       1682712000000,
+       1682712000000
+      ],
+      "leg0.raw": [
+       0.06651,
+       0.06651
+      ],
+      "leg0.qty": [
+       178.0,
+       178.0
+      ],
+      "leg1.kind": [
+       "half",
+       "half"
+      ],
+      "leg1.hour": [
+       1682733600000,
+       1682733600000
+      ],
+      "leg1.raw": [
+       0.06685,
+       0.06685
+      ],
+      "leg1.qty": [
+       89.0,
+       89.0
+      ],
+      "leg2.kind": [
+       "exit",
+       "exit"
+      ],
+      "leg2.hour": [
+       1686164400000,
+       1686164400000
+      ],
+      "leg2.raw": [
+       0.07733,
+       0.07733
+      ],
+      "leg2.qty": [
+       89.0,
+       89.0
+      ],
+      "execution_pnl": [
+       0.9759705393240025,
+       0.9759705393240025
+      ],
+      "reported_pnl": [
+       0.9759705393240025,
+       0.9759705393240025
+      ]
+     },
+     "category": "identical",
+     "note": "",
+     "execution_diff": 0.0,
+     "cost_diff": 0.0
+    },
+    {
+     "symbol": "SOLUSDT",
+     "opened_ms": 1682740800000,
+     "left": {
+      "symbol": "SOLUSDT",
+      "opened_ms": 1682740800000,
+      "closed_ms": 1682781420000,
+      "stop": 21.76,
+      "target": 23.6,
+      "reason": "breakeven",
+      "pnl": 0.02719441674244255,
+      "legs": [
+       {
+        "kind": "entry",
+        "hour": 1682740800000,
+        "raw": 23.292,
+        "qty": 0.22
+       },
+       {
+        "kind": "half",
+        "hour": 1682769600000,
+        "raw": 23.6,
+        "qty": 0.11
+       },
+       {
+        "kind": "exit",
+        "hour": 1682780400000,
+        "raw": 23.296658400000002,
+        "qty": 0.11
+       }
+      ],
+      "step": 0.01,
+      "tick": 0.01
+     },
+     "right": {
+      "symbol": "SOLUSDT",
+      "opened_ms": 1682740800000,
+      "closed_ms": 1682782500000,
+      "stop": 21.76,
+      "target": 23.6,
+      "reason": "breakeven",
+      "pnl": 0.02719441674244255,
+      "legs": [
+       {
+        "kind": "entry",
+        "hour": 1682740800000,
+        "raw": 23.292,
+        "qty": 0.22
+       },
+       {
+        "kind": "half",
+        "hour": 1682769600000,
+        "raw": 23.6,
+        "qty": 0.11
+       },
+       {
+        "kind": "exit",
+        "hour": 1682780400000,
+        "raw": 23.296658400000002,
+        "qty": 0.11
+       }
+      ],
+      "step": 0.01,
+      "tick": 0.01
+     },
+     "fields": {
+      "stop": [
+       21.76,
+       21.76
+      ],
+      "target": [
+       23.6,
+       23.6
+      ],
+      "reason": [
+       "breakeven",
+       "breakeven"
+      ],
+      "closed_ms": [
+       1682781420000,
+       1682782500000
+      ],
+      "leg0.kind": [
+       "entry",
+       "entry"
+      ],
+      "leg0.hour": [
+       1682740800000,
+       1682740800000
+      ],
+      "leg0.raw": [
+       23.292,
+       23.292
+      ],
+      "leg0.qty": [
+       0.22,
+       0.22
+      ],
+      "leg1.kind": [
+       "half",
+       "half"
+      ],
+      "leg1.hour": [
+       1682769600000,
+       1682769600000
+      ],
+      "leg1.raw": [
+       23.6,
+       23.6
+      ],
+      "leg1.qty": [
+       0.11,
+       0.11
+      ],
+      "leg2.kind": [
+       "exit",
+       "exit"
+      ],
+      "leg2.hour": [
+       1682780400000,
+       1682780400000
+      ],
+      "leg2.raw": [
+       23.296658400000002,
+       23.296658400000002
+      ],
+      "leg2.qty": [
+       0.11,
+       0.11
+      ],
+      "execution_pnl": [
+       0.02719441674244255,
+       0.02719441674244255
+      ],
+      "reported_pnl": [
+       0.02719441674244255,
+       0.02719441674244255
+      ]
+     },
+     "category": "identical",
+     "note": "",
+     "execution_diff": 0.0,
+     "cost_diff": 0.0
+    },
+    {
+     "symbol": "TRXUSDT",
+     "opened_ms": 1687665600000,
+     "left": {
+      "symbol": "TRXUSDT",
+      "opened_ms": 1687665600000,
+      "closed_ms": 1687684560000,
+      "stop": 0.07047,
+      "target": 0.07351,
+      "reason": "breakeven",
+      "pnl": 0.01979111009158882,
+      "legs": [
+       {
+        "kind": "entry",
+        "hour": 1687665600000,
+        "raw": 0.07299,
+        "qty": 120.0
+       },
+       {
+        "kind": "half",
+        "hour": 1687676400000,
+        "raw": 0.07351,
+        "qty": 60.0
+       },
+       {
+        "kind": "exit",
+        "hour": 1687683600000,
+        "raw": 0.073004598,
+        "qty": 60.0
+       }
+      ],
+      "step": 1.0,
+      "tick": 1e-05
+     },
+     "right": {
+      "symbol": "TRXUSDT",
+      "opened_ms": 1687665600000,
+      "closed_ms": 1687684980000,
+      "stop": 0.07047,
+      "target": 0.07351,
+      "reason": "breakeven",
+      "pnl": 0.01979111009158882,
+      "legs": [
+       {
+        "kind": "entry",
+        "hour": 1687665600000,
+        "raw": 0.07299,
+        "qty": 120.0
+       },
+       {
+        "kind": "half",
+        "hour": 1687676400000,
+        "raw": 0.07351,
+        "qty": 60.0
+       },
+       {
+        "kind": "exit",
+        "hour": 1687683600000,
+        "raw": 0.073004598,
+        "qty": 60.0
+       }
+      ],
+      "step": 1.0,
+      "tick": 1e-05
+     },
+     "fields": {
+      "stop": [
+       0.07047,
+       0.07047
+      ],
+      "target": [
+       0.07351,
+       0.07351
+      ],
+      "reason": [
+       "breakeven",
+       "breakeven"
+      ],
+      "closed_ms": [
+       1687684560000,
+       1687684980000
+      ],
+      "leg0.kind": [
+       "entry",
+       "entry"
+      ],
+      "leg0.hour": [
+       1687665600000,
+       1687665600000
+      ],
+      "leg0.raw": [
+       0.07299,
+       0.07299
+      ],
+      "leg0.qty": [
+       120.0,
+       120.0
+      ],
+      "leg1.kind": [
+       "half",
+       "half"
+      ],
+      "leg1.hour": [
+       1687676400000,
+       1687676400000
+      ],
+      "leg1.raw": [
+       0.07351,
+       0.07351
+      ],
+      "leg1.qty": [
+       60.0,
+       60.0
+      ],
+      "leg2.kind": [
+       "exit",
+       "exit"
+      ],
+      "leg2.hour": [
+       1687683600000,
+       1687683600000
+      ],
+      "leg2.raw": [
+       0.073004598,
+       0.073004598
+      ],
+      "leg2.qty": [
+       60.0,
+       60.0
+      ],
+      "execution_pnl": [
+       0.01979111009158882,
+       0.01979111009158882
+      ],
+      "reported_pnl": [
+       0.01979111009158882,
+       0.01979111009158882
+      ]
+     },
+     "category": "identical",
+     "note": "",
+     "execution_diff": 0.0,
+     "cost_diff": 0.0
+    },
+    {
+     "symbol": "SOLUSDT",
+     "opened_ms": 1688068800000,
+     "left": {
+      "symbol": "SOLUSDT",
+      "opened_ms": 1688068800000,
+      "closed_ms": 1688130840000,
+      "stop": 16.28,
+      "target": 18.01,
+      "reason": "breakeven",
+      "pnl": 0.033207101818174926,
+      "legs": [
+       {
+        "kind": "entry",
+        "hour": 1688068800000,
+        "raw": 17.725,
+        "qty": 0.29
+       },
+       {
+        "kind": "half",
+        "hour": 1688076000000,
+        "raw": 18.01,
+        "qty": 0.14
+       },
+       {
+        "kind": "exit",
+        "hour": 1688130000000,
+        "raw": 17.728545,
+        "qty": 0.14999999999999997
+       }
+      ],
+      "step": 0.01,
+      "tick": 0.01
+     },
+     "right": {
+      "symbol": "SOLUSDT",
+      "opened_ms": 1688068800000,
+      "closed_ms": 1688132820000,
+      "stop": 16.28,
+      "target": 18.01,
+      "reason": "breakeven",
+      "pnl": 0.033207101818174926,
+      "legs": [
+       {
+        "kind": "entry",
+        "hour": 1688068800000,
+        "raw": 17.725,
+        "qty": 0.29
+       },
+       {
+        "kind": "half",
+        "hour": 1688076000000,
+        "raw": 18.01,
+        "qty": 0.14
+       },
+       {
+        "kind": "exit",
+        "hour": 1688130000000,
+        "raw": 17.728545,
+        "qty": 0.14999999999999997
+       }
+      ],
+      "step": 0.01,
+      "tick": 0.01
+     },
+     "fields": {
+      "stop": [
+       16.28,
+       16.28
+      ],
+      "target": [
+       18.01,
+       18.01
+      ],
+      "reason": [
+       "breakeven",
+       "breakeven"
+      ],
+      "closed_ms": [
+       1688130840000,
+       1688132820000
+      ],
+      "leg0.kind": [
+       "entry",
+       "entry"
+      ],
+      "leg0.hour": [
+       1688068800000,
+       1688068800000
+      ],
+      "leg0.raw": [
+       17.725,
+       17.725
+      ],
+      "leg0.qty": [
+       0.29,
+       0.29
+      ],
+      "leg1.kind": [
+       "half",
+       "half"
+      ],
+      "leg1.hour": [
+       1688076000000,
+       1688076000000
+      ],
+      "leg1.raw": [
+       18.01,
+       18.01
+      ],
+      "leg1.qty": [
+       0.14,
+       0.14
+      ],
+      "leg2.kind": [
+       "exit",
+       "exit"
+      ],
+      "leg2.hour": [
+       1688130000000,
+       1688130000000
+      ],
+      "leg2.raw": [
+       17.728545,
+       17.728545
+      ],
+      "leg2.qty": [
+       0.14999999999999997,
+       0.14999999999999997
+      ],
+      "execution_pnl": [
+       0.033207101818174926,
+       0.033207101818174926
+      ],
+      "reported_pnl": [
+       0.033207101818174926,
+       0.033207101818174926
+      ]
+     },
+     "category": "identical",
+     "note": "",
+     "execution_diff": 0.0,
+     "cost_diff": 0.0
+    }
+   ],
+   "left_only": [],
+   "right_only": [],
+   "open_at_end": []
+  }
+ },
+ "hour_gaps_in_our_data": {
+  "SOLUSDT": [],
+  "TRXUSDT": [],
+  "BTCUSDT": []
+ },
+ "synthetic_vs_our_4h": {
+  "SOLUSDT": {
+   "bars": 2190,
+   "missing_bars": [],
+   "missing_minutes": 0,
+   "mismatches": [],
+   "max_rel_diff": 0.0
+  },
+  "TRXUSDT": {
+   "bars": 2190,
+   "missing_bars": [],
+   "missing_minutes": 0,
+   "mismatches": [],
+   "max_rel_diff": 0.0
+  },
+  "BTCUSDT": {
+   "bars": 2190,
+   "missing_bars": [],
+   "missing_minutes": 0,
+   "mismatches": [],
+   "max_rel_diff": 0.0
+  }
+ },
+ "real_minutes_vs_our_bars": {
+  "SOLUSDT": {
+   "1h": {
+    "bars": 8760,
+    "missing_bars": [],
+    "missing_minutes": 0,
+    "mismatches": [],
+    "max_rel_diff": 0.0
+   },
+   "4h": {
+    "bars": 2190,
+    "missing_bars": [],
+    "missing_minutes": 0,
+    "mismatches": [],
+    "max_rel_diff": 0.0
+   }
+  },
+  "TRXUSDT": {
+   "1h": {
+    "bars": 8760,
+    "missing_bars": [],
+    "missing_minutes": 0,
+    "mismatches": [],
+    "max_rel_diff": 0.0
+   },
+   "4h": {
+    "bars": 2190,
+    "missing_bars": [],
+    "missing_minutes": 0,
+    "mismatches": [],
+    "max_rel_diff": 0.0
+   }
+  },
+  "BTCUSDT": {
+   "1h": {
+    "bars": 8760,
+    "missing_bars": [],
+    "missing_minutes": 0,
+    "mismatches": [],
+    "max_rel_diff": 0.0
+   },
+   "4h": {
+    "bars": 2190,
+    "missing_bars": [],
+    "missing_minutes": 0,
+    "mismatches": [],
+    "max_rel_diff": 0.0
+   }
+  }
+ },
+ "monte_carlo_smoke": {
+  "scenarios": 200,
+  "seconds": 29,
+  "note": "run-check only; Jesse here has no fees, numbers are not used for anything"
+ },
+ "seconds": {
+  "R0": 6,
+  "R1": 9,
+  "R2": 9,
+  "monte_carlo": 29
+ },
+ "disk": [
+  {
+   "at": "2026-11-15T23:47:01+00:00",
+   "step": "start",
+   "free": 8670826496,
+   "venv": 779787392,
+   "data_1m": 75691008,
+   "extra": 855478400
+  },
+  {
+   "at": "2026-11-15T23:47:21+00:00",
+   "step": "after R1",
+   "free": 8670822400,
+   "venv": 779787392,
+   "data_1m": 75691008,
+   "extra": 855478400
+  },
+  {
+   "at": "2026-11-15T23:47:24+00:00",
+   "step": "after 1m download",
+   "free": 8670822400,
+   "venv": 779787392,
+   "data_1m": 75691008,
+   "extra": 855478400
+  },
+  {
+   "at": "2026-11-15T23:48:05+00:00",
+   "step": "end",
+   "free": 8670679040,
+   "venv": 779787392,
+   "data_1m": 75691008,
+   "extra": 855478400
+  }
+ ],
+ "versions": {
+  "jesse": "3.6.1",
+  "jesse-rust": "1.3.1",
+  "ray": "2.60.0",
+  "numpy": "2.5.5",
+  "python": "3.13.14"
+ }
+}
