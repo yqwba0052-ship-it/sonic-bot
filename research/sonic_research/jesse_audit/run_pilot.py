@@ -30,6 +30,7 @@ from .bridge import BTC, jesse_inputs, reset_ledger, run_bridge
 from .compare import match, normalize_engine, normalize_jesse, summary
 from .costs import costs
 from .data_1m import CACHE, compare_to_bars, load_minutes
+from .explain import explain_rows, prove_minute_path
 from .filters import load_filters, save_filters
 from .offline import block_network, disk_free_bytes
 from .synth import minutes_from_hours
@@ -196,6 +197,10 @@ def run(is_full: bool, data_dir: Path) -> None:
                                  "R1_vs_R2": (n1, n2, "R1", "R2")}.items():
         rows, left_only, right_only, still_open = match(
             a, b, cut_ms, parity=name == "R0_vs_R1", left_open=opens[la], right_open=opens[lb])
+        explain_rows(rows, a, b, fours, limits, filters, parity=name == "R0_vs_R1")
+        if name == "R1_vs_R2":
+            for row in rows:
+                prove_minute_path(row, synth, real)
         comparisons[name] = {"summary": summary(rows), "rows": [asdict(r) for r in rows],
                              "left_only": left_only, "right_only": right_only,
                              "open_at_end": still_open}

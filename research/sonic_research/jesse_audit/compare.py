@@ -99,7 +99,7 @@ def normalize_jesse(trade: dict, step: str, tick: str, minutes: np.ndarray | Non
                 if i < len(minutes) and int(minutes[i, 0]) == start:
                     anchor = {"open": float(minutes[i, 1])}
         legs.append({"kind": leg["kind"], "hour": int(hour), "raw": leg["raw"],
-                     "qty": leg["qty"], **anchor})
+                     "qty": leg["qty"], "ms": int(leg["ms"]), **anchor})
     return {"symbol": trade["symbol"], "opened_ms": trade["opened_ms"],
             "closed_ms": trade["closed_ms"], "stop": trade["stop"], "target": trade["target"],
             "reason": trade["reason"], "pnl": trade["pnl"], "legs": legs,
@@ -117,6 +117,7 @@ class Row:
     note: str = ""
     execution_diff: float = 0.0
     cost_diff: float = 0.0
+    proof: dict = field(default_factory=dict)
 
 
 def _same(a: float | None, b: float | None, tick: float = 0.0) -> bool:

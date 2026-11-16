@@ -900,3 +900,114 @@ def test_engine_half_in_a_missing_hour_does_not_crash():
 def test_duplicate_trade_keys_are_refused():
     with pytest.raises(ValueError, match="duplicate"):
         match([_norm(), _norm()], [_norm()], end_ms=HOUR0 + 100 * H_MS)
+
+
+# ---- Final correction: differences explained by recomputation, not by labels
+
+from sonic_research.jesse_audit import explain  # noqa: E402
+
+FOUR_MS = 4 * H_MS
+
+
+def _fours(n=1100, start=HOUR0 - 1100 * 4 * H_MS):
+    rng = np.random.default_rng(11)
+    c = 100 * np.cumprod(1 + rng.normal(0, 0.01, n))
+    o = np.r_[100.0, c[:-1]]
+    t = start + FOUR_MS * np.arange(n, dtype=np.int64)
+    return Bars("SOLUSDT", t, o, np.maximum(o, c) * 1.004, np.minimum(o, c) * 0.996, c)
+
+
+def _sized_trade(budget, opened, entry, fours, pnl=0.0, exit_=None, half=None):
+    risk = _server_risk()
+    dist = explain.stop_distance_at(fours, opened)
+    qty = risk.size_position(risk.Limits(), entry, dist, 0.0, _filters(), budget).qty
+    t = _norm(opened=opened, entry=entry, qty=qty, half=half, pnl=None,
+              exit_=exit_ or (opened + 5 * H_MS, entry * 1.01, "trade_exit_signal"))
+    t["pnl"] = pnl if pnl else t["pnl"]
+    return t
+
+
+def test_budget_carry_needs_both_quantities_recomputed():
+    fours = _fours()
+    first_l = _norm(opened=HOUR0 - 40 * H_MS, exit_=(HOUR0 - 30 * H_MS, 100.0, "stop_loss"),
+                    half=None, pnl=0.0)
+    first_r = dict(first_l, pnl=270.0)
+    left = _sized_trade(30.0, HOUR0, 100.0, fours)
+    right = _sized_trade(300.0, HOUR0, 100.0, fours)
+    assert left["legs"][0]["qty"] != right["legs"][0]["qty"]
+    rows, *_ = match([first_l, left], [first_r, right], end_ms=HOUR0 + 100 * H_MS)
+    explain.explain_rows(rows, [first_l, left], [first_r, right], {"SOLUSDT": fours},
+                         _server_risk().Limits(), {"SOLUSDT": _filters()})
+    row = rows[1]
+    assert row.category == "budget_carry"
+    assert row.proof["budget"] == [30.0, 300.0]
+    assert row.proof["qty_recomputed"] == [left["legs"][0]["qty"], right["legs"][0]["qty"]]
+
+
+def test_budget_carry_refused_when_recomputation_disagrees():
+    fours = _fours()
+    left = _sized_trade(30.0, HOUR0, 100.0, fours)
+    right = _sized_trade(300.0, HOUR0, 100.0, fours)  # but no earlier pnl difference: budgets equal
+    rows, *_ = match([left], [right], end_ms=HOUR0 + 100 * H_MS)
+    before = rows[0].category
+    explain.explain_rows(rows, [left], [right], {"SOLUSDT": fours}, _server_risk().Limits(),
+                         {"SOLUSDT": _filters()})
+    assert rows[0].category == before
+    assert rows[0].proof.get("budget_carry") is False
+
+
+def test_budget_carry_combined_with_breakeven_same_hour():
+    fours = _fours()
+    first_l = _norm(opened=HOUR0 - 40 * H_MS, exit_=(HOUR0 - 30 * H_MS, 100.0, "stop_loss"),
+                    half=None, pnl=0.0)
+    first_r = dict(first_l, pnl=270.0)
+    eff = 100 * 1.0002
+    left = _sized_trade(30.0, HOUR0, 100.0, fours, half=(HOUR0 + H_MS, 101.0, 0.0),
+                        exit_=(HOUR0 + H_MS, 99.9, "breakeven"))
+    right = _sized_trade(300.0, HOUR0, 100.0, fours, half=(HOUR0 + H_MS, 101.0, 0.0),
+                         exit_=(HOUR0 + H_MS, eff, "breakeven"))
+    for t in (left, right):  # half = floor(qty/2) on each side, rest exits
+        q = t["legs"][0]["qty"]
+        t["legs"][1]["qty"] = round(int(q / 2 / 0.01) * 0.01, 12)
+        t["legs"][2]["qty"] = q - t["legs"][1]["qty"]
+    left["legs"][2]["open"], left["legs"][2]["close"] = 100.5, 99.9
+    rows, *_ = match([first_l, left], [first_r, right], end_ms=HOUR0 + 100 * H_MS, parity=True)
+    explain.explain_rows(rows, [first_l, left], [first_r, right], {"SOLUSDT": fours},
+                         _server_risk().Limits(), {"SOLUSDT": _filters()})
+    assert rows[1].category == "budget_carry+breakeven_same_hour"
+
+
+def _hour_minutes(path):
+    """60 one-minute candles for HOUR0+2h with the given close path (open = previous close)."""
+    start = HOUR0 + 2 * H_MS
+    closes = np.array(path, dtype=float)
+    opens = np.r_[closes[0], closes[:-1]]
+    return np.column_stack([start + 60_000 * np.arange(60), opens, closes,
+                            np.maximum(opens, closes), np.minimum(opens, closes), np.zeros(60)])
+
+
+def test_minute_path_proven_from_both_minute_series():
+    eff = 100 * 1.0002
+    up_then_hold = [100.5] * 20 + [101.2] * 20 + [100.6] * 20  # target 101, never back to entry
+    up_then_back = [100.5] * 20 + [101.2] * 20 + [99.9] * 20   # back through the entry
+    left = _norm(half=(HOUR0 + 2 * H_MS, 101.0, 0.5), exit_=(HOUR0 + 9 * H_MS, eff, "breakeven"))
+    right = _norm(half=(HOUR0 + 2 * H_MS, 101.0, 0.5), exit_=(HOUR0 + 2 * H_MS, eff, "breakeven"))
+    left["legs"][1]["ms"] = right["legs"][1]["ms"] = HOUR0 + 2 * H_MS + 21 * 60_000
+    rows, *_ = match([left], [right], end_ms=HOUR0 + 100 * H_MS)
+    assert rows[0].category == "unexplained"
+    explain.prove_minute_path(rows[0], {"SOLUSDT": _hour_minutes(up_then_hold)},
+                              {"SOLUSDT": _hour_minutes(up_then_back)})
+    assert rows[0].category == "intrahour_order"
+    assert rows[0].proof["real_low_after_half"] <= eff < rows[0].proof["synthetic_low_after_half"]
+
+
+def test_minute_path_refused_when_real_minutes_never_touch():
+    eff = 100 * 1.0002
+    hold = [100.5] * 20 + [101.2] * 20 + [100.6] * 20
+    left = _norm(half=(HOUR0 + 2 * H_MS, 101.0, 0.5), exit_=(HOUR0 + 9 * H_MS, eff, "breakeven"))
+    right = _norm(half=(HOUR0 + 2 * H_MS, 101.0, 0.5), exit_=(HOUR0 + 2 * H_MS, eff, "breakeven"))
+    left["legs"][1]["ms"] = right["legs"][1]["ms"] = HOUR0 + 2 * H_MS + 21 * 60_000
+    rows, *_ = match([left], [right], end_ms=HOUR0 + 100 * H_MS)
+    explain.prove_minute_path(rows[0], {"SOLUSDT": _hour_minutes(hold)},
+                              {"SOLUSDT": _hour_minutes(hold)})
+    assert rows[0].category == "unexplained"
