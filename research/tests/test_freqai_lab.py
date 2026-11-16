@@ -101,3 +101,74 @@ def test_target_on_data_cut_at_window_end_has_no_future():
     cut = mod.sonic_target(df.iloc[:end].copy())
     assert cut["&-fwd_ret"].iloc[end - 24:].isna().all()
     assert cut["&-fwd_ret"].iloc[: end - 24].notna().all()
+
+
+# ---- evaluation: filter (B), rank (C), metrics, pre-registered verdict
+
+
+def _ev():
+    pytest.importorskip("jesse")
+    from sonic_research.freqai_lab import evaluate
+    return evaluate
+
+
+def test_filter_keeps_positive_rejects_rest_and_keeps_missing():
+    ev = _ev()
+    preds = {("SOLUSDT", 100): 0.01, ("XRPUSDT", 100): -0.02, ("ADAUSDT", 100): 0.0}
+    cands = [("SOLUSDT", 1.0, 0.1), ("XRPUSDT", 1.0, 0.1), ("ADAUSDT", 1.0, 0.1),
+             ("DOGEUSDT", 1.0, 0.1)]
+    log = ev.Decisions()
+    kept = ev.choose("B", cands, preds, 100, log)
+    assert [c[0] for c in kept] == ["SOLUSDT", "DOGEUSDT"]
+    assert [r["symbol"] for r in log.rejected] == ["XRPUSDT", "ADAUSDT"]
+    assert [m["symbol"] for m in log.missing] == ["DOGEUSDT"]
+
+
+def test_rank_orders_by_prediction_missing_last():
+    ev = _ev()
+    preds = {("SOLUSDT", 100): -0.01, ("XRPUSDT", 100): 0.03, ("ADAUSDT", 100): 0.01}
+    cands = [("SOLUSDT", 1.0, 0.1), ("DOGEUSDT", 1.0, 0.1), ("XRPUSDT", 1.0, 0.1),
+             ("ADAUSDT", 1.0, 0.1)]
+    log = ev.Decisions()
+    assert [c[0] for c in ev.choose("C", cands, preds, 100, log)] == [
+        "XRPUSDT", "ADAUSDT", "SOLUSDT", "DOGEUSDT"]
+    assert log.reordered == 1
+    assert ev.choose("A", cands, preds, 100, log) == cands
+
+
+def _t(symbol, opened_day, pnl):
+    day = 86_400_000
+    return {"symbol": symbol, "opened_ms": 1_640_995_200_000 + opened_day * day,
+            "closed_ms": 1_640_995_200_000 + (opened_day + 1) * day, "pnl": pnl,
+            "legs": [{"kind": "entry", "raw": 1.0, "qty": 1.0}, {"kind": "exit", "raw": 1.0 + pnl,
+                                                                 "qty": 1.0}]}
+
+
+def test_metrics_profit_factor_drawdown_and_days():
+    ev = _ev()
+    m = ev.metrics([_t("SOLUSDT", 0, 3.0), _t("XRPUSDT", 0, -1.5), _t("SOLUSDT", 40, 1.0)])
+    assert m["trades"] == 3 and m["trading_days"] == 2
+    assert m["net"] == pytest.approx(costs_net([3.0, -1.5, 1.0]))
+    assert m["profit_factor"] > 1 and m["max_dd_pct"] > 0
+    assert set(m["by_year"]) == {"2022"}
+
+
+def costs_net(moves):
+    from sonic_research.jesse_audit.costs import costs
+    legs = [[{"raw": 1.0, "qty": 1.0}, {"raw": 1.0 + x, "qty": 1.0}] for x in moves]
+    return sum(costs(pair)["pnl"] for pair in legs)
+
+
+def test_verdict_follows_the_preregistered_rules():
+    ev = _ev()
+    base = {"net": 10.0, "max_dd_pct": 10.0}
+    good = {"net": 12.0, "max_dd_pct": 10.0}
+    stable = {"years_better": 2, "after_drop_best_trade": 1.0, "after_drop_each_coin_min": 0.5,
+              "reproducible": True, "leak_tests": True}
+    assert ev.verdict(base, good, stable)["promising"] is True
+    assert ev.verdict(base, good, dict(stable, years_better=1))["promising"] is False
+    assert ev.verdict(base, good, dict(stable, after_drop_each_coin_min=-0.1))["promising"] is False
+    safer = {"net": 9.2, "max_dd_pct": 7.9}  # -8% profit, -21% drawdown
+    assert ev.verdict(base, safer, stable)["promising"] is True
+    worse = {"net": 8.5, "max_dd_pct": 7.0}  # -15% profit
+    assert ev.verdict(base, worse, stable)["promising"] is False
