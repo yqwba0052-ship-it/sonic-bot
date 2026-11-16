@@ -407,15 +407,17 @@ HOUR0 = JAN_2022 + 10 * FOUR_H
 
 def _norm(opened=HOUR0, entry=100.0, qty=1.0, half=(HOUR0 + H_MS, 101.0, 0.5),
           exit_=(HOUR0 + 5 * H_MS, 102.0, "trade_exit_signal"), stop=97.0, target=101.0,
-          pnl=None, symbol="SOLUSDT"):
+          pnl=None, symbol="SOLUSDT", hour_ohlc=None, tick=0.01):
     legs = [{"kind": "entry", "hour": opened, "raw": entry, "qty": qty}]
     sold = 0.0
     if half:
         legs.append({"kind": "half", "hour": half[0], "raw": half[1], "qty": half[2]})
         sold = half[2]
     legs.append({"kind": "exit", "hour": exit_[0], "raw": exit_[1], "qty": qty - sold})
+    if hour_ohlc:
+        legs[-1]["open"], legs[-1]["close"] = hour_ohlc
     trade = {"symbol": symbol, "opened_ms": opened, "closed_ms": exit_[0], "stop": stop,
-             "target": target, "reason": exit_[2], "legs": legs, "step": 0.01, "tick": 0.01}
+             "target": target, "reason": exit_[2], "legs": legs, "step": 0.01, "tick": tick}
     trade["pnl"] = costs(legs)["pnl"] if pnl is None else pnl
     return trade
 
@@ -437,14 +439,14 @@ def test_cost_diff_separated_from_execution():
 
 def test_breakeven_same_hour():
     eff = 100 * 1.0002
-    left = _norm(exit_=(HOUR0 + H_MS, 99.9, "breakeven"))
+    left = _norm(exit_=(HOUR0 + H_MS, 99.9, "breakeven"), hour_ohlc=(100.5, 99.9))
     right = _norm(exit_=(HOUR0 + H_MS, eff, "breakeven"))
     rows, *_ = match([left], [right], end_ms=HOUR0 + 100 * H_MS)
     assert rows[0].category == "breakeven_same_hour"
 
 
 def test_gap_fill():
-    left = _norm(half=None, exit_=(HOUR0 + 2 * H_MS, 96.0, "stop_loss"))
+    left = _norm(half=None, exit_=(HOUR0 + 2 * H_MS, 96.0, "stop_loss"), hour_ohlc=(96.0, 95.0))
     right = _norm(half=None, exit_=(HOUR0 + 2 * H_MS, 97.0, "stop_loss"))
     rows, *_ = match([left], [right], end_ms=HOUR0 + 100 * H_MS)
     assert rows[0].category == "gap_fill"
@@ -685,3 +687,50 @@ def test_bridge_two_coins_respects_max_open():
                         limits=risk.Limits(symbols=["SOLUSDT", "XRPUSDT"], max_open=1))
     assert [t["symbol"] for t in ledger.trades] == ["SOLUSDT"]
     assert ledger.plan_mismatch == []
+
+
+# ---- Phase 2, Task 9: comparison precision
+
+
+def test_one_tick_difference_is_caught_on_high_priced_coin():
+    left = _norm(entry=300.0, tick=0.01)
+    right = _norm(entry=300.01, tick=0.01)
+    rows, *_ = match([left], [right], end_ms=HOUR0 + 100 * H_MS)
+    assert rows[0].category == "unexplained"
+
+
+def test_breakeven_same_hour_needs_the_engine_exit_at_the_hour_close():
+    eff = 100 * 1.0002
+    left = _norm(exit_=(HOUR0 + H_MS, 99.9, "breakeven"), hour_ohlc=(100.5, 99.7))
+    right = _norm(exit_=(HOUR0 + H_MS, eff, "breakeven"))
+    rows, *_ = match([left], [right], end_ms=HOUR0 + 100 * H_MS)
+    assert rows[0].category == "unexplained"
+
+
+def test_gap_fill_needs_the_fill_at_the_hour_open():
+    left = _norm(half=None, exit_=(HOUR0 + 2 * H_MS, 96.0, "stop_loss"), hour_ohlc=(96.5, 95.0))
+    right = _norm(half=None, exit_=(HOUR0 + 2 * H_MS, 97.0, "stop_loss"))
+    rows, *_ = match([left], [right], end_ms=HOUR0 + 100 * H_MS)
+    assert rows[0].category == "unexplained"
+
+
+def test_closed_on_one_side_open_at_end_on_the_other():
+    trade = _norm(opened=HOUR0 + 20 * H_MS, exit_=(HOUR0 + 30 * H_MS, 102.0, "stop_loss"))
+    rows, left_only, right_only, still_open = match(
+        [trade], [], end_ms=HOUR0 + 100 * H_MS,
+        right_open=[{"symbol": "SOLUSDT", "opened_ms": HOUR0 + 20 * H_MS}])
+    assert rows == [] and left_only == [] and right_only == []
+    assert len(still_open) == 2
+
+
+def test_normalize_engine_keeps_the_exit_hour_open_and_close():
+    from sonic_research.data import Bars as B
+    trade = {"symbol": "SOLUSDT", "qty": 1.0, "entry_price": 100.02, "stop_price": 97.0,
+             "risk_usdt": 100.02 - 97.0, "target_price": 101.0, "opened_ms": HOUR0,
+             "closed_ms": HOUR0 + H_MS, "exit_price": 97.0 * 0.9998,
+             "pnl": costs([{"raw": 100.0, "qty": 1.0}, {"raw": 97.0, "qty": 1.0}])["pnl"],
+             "scaled": 0, "exit_reason": "stop_loss"}
+    hours = B("SOLUSDT", np.array([HOUR0], dtype=np.int64), np.array([99.0]),
+              np.array([99.5]), np.array([96.0]), np.array([96.5]))
+    got = normalize_engine(trade, [], hours, step="0.01", tick="0.01")
+    assert (got["legs"][-1]["open"], got["legs"][-1]["close"]) == (99.0, 96.5)

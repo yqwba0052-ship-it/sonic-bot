@@ -46,7 +46,10 @@ def normalize_engine(
                      "raw": max(float(hours.o[index]), target), "qty": sold})
     exit_hour = int(trade["closed_ms"]) - H_MS
     exit_raw = float(trade["exit_price"]) / (1 - SLIPPAGE)
-    legs.append({"kind": "exit", "hour": exit_hour, "raw": exit_raw, "qty": qty - sold})
+    where = (hours.t == exit_hour).nonzero()[0]
+    anchor = ({"open": float(hours.o[where[0]]), "close": float(hours.c[where[0]])}
+              if len(where) else {})  # the exit hour's own open/close, to check fill causes
+    legs.append({"kind": "exit", "hour": exit_hour, "raw": exit_raw, "qty": qty - sold, **anchor})
     reason = trade["exit_reason"]
     if (reason == "stop_loss" and not trade.get("scaled") and target is not None
             and abs(costs(legs)["pnl"] - float(trade["pnl"])) > 1e-9):
@@ -54,11 +57,11 @@ def normalize_engine(
         # closes the rest at the hour close in the same sync, before the engine marks the trade
         # scaled, so the row says stop_loss / unscaled. Rebuild it; keep it only if its cost
         # matches the engine's own pnl, and keep the engine's label for the report.
-        index = int((hours.t == exit_hour).nonzero()[0][0])
         half = _floor_to(qty / 2, step)
         rebuilt = [legs[0], {"kind": "half", "hour": exit_hour,
-                             "raw": max(float(hours.o[index]), target), "qty": half},
-                   {"kind": "exit", "hour": exit_hour, "raw": exit_raw, "qty": qty - half}]
+                             "raw": max(anchor["open"], target), "qty": half},
+                   {"kind": "exit", "hour": exit_hour, "raw": exit_raw, "qty": qty - half,
+                    **anchor}]
         if abs(costs(rebuilt)["pnl"] - float(trade["pnl"])) <= 1e-9:
             legs, reason = rebuilt, "breakeven"
     # The engine overwrites stop_price with the entry when it scales; risk_usdt keeps the
@@ -102,15 +105,17 @@ class Row:
     cost_diff: float = 0.0
 
 
-def _same(a: float | None, b: float | None) -> bool:
+def _same(a: float | None, b: float | None, tick: float = 0.0) -> bool:
+    """Equal within PRICE_TOL, and never as loose as a quarter tick (one tick is a difference)."""
     if a is None or b is None:
         return a is b
-    return abs(a - b) <= PRICE_TOL * max(abs(a), abs(b), 1e-12)
+    tol = PRICE_TOL * max(abs(a), abs(b), 1e-12)
+    return abs(a - b) <= (min(tol, tick / 4) if tick else tol)
 
 
-def _legs_same(a: list[dict], b: list[dict], qty: bool = True) -> bool:
+def _legs_same(a: list[dict], b: list[dict], qty: bool = True, tick: float = 0.0) -> bool:
     return len(a) == len(b) and all(
-        x["kind"] == y["kind"] and x["hour"] == y["hour"] and _same(x["raw"], y["raw"])
+        x["kind"] == y["kind"] and x["hour"] == y["hour"] and _same(x["raw"], y["raw"], tick)
         and (not qty or abs(x["qty"] - y["qty"]) < 1e-9) for x, y in zip(a, b, strict=True))
 
 
@@ -118,37 +123,43 @@ def classify(row: Row, parity: bool = False) -> str:
     """parity=True (R0 vs R1, same hours on both sides): a different order inside an hour cannot
     come from the data, so it counts as unexplained."""
     left, right = row.left, row.right
+    tick = left["tick"]
     lq, rq = left["legs"][0]["qty"], right["legs"][0]["qty"]
-    if not _same(left["legs"][0]["raw"], right["legs"][0]["raw"]):
+    if not _same(left["legs"][0]["raw"], right["legs"][0]["raw"], tick):
         return "unexplained"
     rounding = abs(lq - rq) > 1e-9
     if rounding and abs(lq - rq) > left["step"] + 1e-9:
         return "unexplained"
     for name in ("stop", "target"):
-        if not _same(left[name], right[name]):
+        if not _same(left[name], right[name], tick):
             if abs((left[name] or 0) - (right[name] or 0)) > left["tick"] + 1e-9:
                 return "unexplained"
             rounding = True
     if rounding:  # only rounding may differ; anything else as well needs a human look
-        same = _legs_same(left["legs"], right["legs"], qty=False)
+        same = _legs_same(left["legs"], right["legs"], qty=False, tick=tick)
         return "rounding" if same and left["reason"] == right["reason"] else "unexplained"
-    if _legs_same(left["legs"], right["legs"]) and left["reason"] == right["reason"]:
+    if _legs_same(left["legs"], right["legs"], tick=tick) and left["reason"] == right["reason"]:
         return "identical" if abs(row.cost_diff) < 1e-9 else "slippage"
     lk = [(x["kind"], x["hour"]) for x in left["legs"]]
     rk = [(x["kind"], x["hour"]) for x in right["legs"]]
     if lk == rk:
         lx, rx = left["legs"][-1], right["legs"][-1]
-        if _legs_same(left["legs"][:-1], right["legs"][:-1]):
+        if _legs_same(left["legs"][:-1], right["legs"][:-1], tick=tick):
             level = left["legs"][0]["raw"] * (1 + SLIPPAGE) if left["reason"] == "breakeven" \
                 else left["stop"]
             half_same_hour = len(left["legs"]) == 3 and left["legs"][1]["hour"] == lx["hour"]
-            if left["reason"] == right["reason"] == "breakeven" and half_same_hour and (
-                    _same(rx["raw"], level) or _same(lx["raw"], level)):
+            at_level, other = (rx, lx) if _same(rx["raw"], level, tick) else (lx, rx)
+            hit = _same(at_level["raw"], level, tick)
+            same_reason = left["reason"] == right["reason"]
+            # The other side must have filled exactly where its own engine fills: the hour close
+            # (breakeven after the half in one hour) or the hour open (a gap through the stop).
+            if same_reason and left["reason"] == "breakeven" and half_same_hour and hit \
+                    and "close" in other and _same(other["raw"], other["close"], tick):
                 return "breakeven_same_hour"
-            if left["reason"] == right["reason"] and left["reason"] in ("stop_loss", "breakeven"):
-                low, high = sorted((lx["raw"], rx["raw"]))
-                if _same(high, level) and low < high:
-                    return "gap_fill"
+            if same_reason and left["reason"] in ("stop_loss", "breakeven") and hit \
+                    and other["raw"] < at_level["raw"] \
+                    and ("open" not in other or _same(other["raw"], other["open"], tick)):
+                return "gap_fill"
     for x, y in zip(lk, rk, strict=False):
         if x != y:
             return "intrahour_order" if x[1] == y[1] and not parity else "unexplained"
@@ -172,15 +183,24 @@ def _row(left: dict, right: dict, parity: bool = False) -> Row:
 
 
 def match(
-    left: list[dict], right: list[dict], end_ms: int, parity: bool = False
+    left: list[dict], right: list[dict], end_ms: int, parity: bool = False,
+    left_open: list[dict] | None = None, right_open: list[dict] | None = None,
 ) -> tuple[list[Row], list[dict], list[dict], list[dict]]:
-    """Pair trades by coin and entry bar; trades still open at end_ms are set aside."""
-    def closed(t: dict) -> bool:
-        return t.get("closed_ms") is not None and t["closed_ms"] <= end_ms
+    """Pair trades by coin and entry bar. A trade still open at the end on EITHER side (passed in
+    left_open/right_open, or closing after end_ms) is set aside as open-at-end, not 'missing'."""
+    def key(t: dict) -> tuple[str, int]:
+        return t["symbol"], int(t["opened_ms"])
 
-    still_open = [t for t in left + right if not closed(t)]
-    lmap = {(t["symbol"], t["opened_ms"]): t for t in left if closed(t)}
-    rmap = {(t["symbol"], t["opened_ms"]): t for t in right if closed(t)}
+    opened_at_end = [*(left_open or []), *(right_open or [])]
+    open_keys = {key(t) for t in opened_at_end}
+
+    def closed(t: dict) -> bool:
+        return (t.get("closed_ms") is not None and t["closed_ms"] <= end_ms
+                and key(t) not in open_keys)
+
+    still_open = opened_at_end + [t for t in left + right if not closed(t)]
+    lmap = {key(t): t for t in left if closed(t)}
+    rmap = {key(t): t for t in right if closed(t)}
     both = sorted(lmap.keys() & rmap.keys(), key=lambda k: k[1])
     rows = [_row(lmap[k], rmap[k], parity) for k in both]
     left_only = [lmap[k] for k in sorted(lmap.keys() - rmap.keys(), key=lambda k: k[1])]
