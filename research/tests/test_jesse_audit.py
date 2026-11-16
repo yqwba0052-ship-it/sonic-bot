@@ -734,3 +734,42 @@ def test_normalize_engine_keeps_the_exit_hour_open_and_close():
               np.array([99.5]), np.array([96.0]), np.array([96.5]))
     got = normalize_engine(trade, [], hours, step="0.01", tick="0.01")
     assert (got["legs"][-1]["open"], got["legs"][-1]["close"]) == (99.0, 96.5)
+
+
+# ---- Phase 2, Task 10: frozen filters, open trades, network guard
+
+
+def test_replay_uses_frozen_filters_and_lists_open_trades(monkeypatch):
+    from sonic_research.data import DATA_DIR
+    if not any((DATA_DIR / "klines").glob("*-1h-2023-*.zip")):
+        pytest.skip("history not downloaded")
+    import asyncio
+    import json
+
+    from sonic_research import engine_replay
+    from sonic_research.jesse_audit.filters import load_filters
+
+    def refuse(symbols):
+        raise AssertionError("live filters must not be fetched")
+
+    monkeypatch.setattr(engine_replay, "live_filters", refuse)
+    frozen = Path(__file__).resolve().parents[1] / "reports" / "jesse_filters.json"
+    filters = load_filters(frozen)
+    assert set(json.loads(frozen.read_text(encoding="utf-8"))) == set(filters)
+    report = asyncio.run(engine_replay.replay(
+        "2023-09", "2023-10", engine_replay.Limits(symbols=["SOLUSDT", "TRXUSDT"]),
+        filters=filters))
+    assert isinstance(report["open"], list)
+    assert len(report["open"]) == report["open_at_end"]
+
+
+def test_block_network_refuses_connect_ex_and_sendto():
+    with block_network():
+        s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+        with pytest.raises(NetworkBlocked):
+            s.sendto(b"x", ("93.184.216.34", 53))
+        t = socket.socket()
+        with pytest.raises(NetworkBlocked):
+            t.connect_ex(("93.184.216.34", 80))
+        s.close()
+        t.close()

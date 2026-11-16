@@ -77,12 +77,15 @@ def live_filters(symbols: list[str]) -> dict[str, Filters]:
     return {symbol: parse_filters(info, symbol) for symbol in symbols}
 
 
-async def replay(start: str, end: str, limits: Limits, save_trades: bool = False) -> dict:
+async def replay(
+    start: str, end: str, limits: Limits, save_trades: bool = False,
+    filters: dict[str, Filters] | None = None,
+) -> dict:
     symbols = sorted(set(limits.symbols) | {"BTCUSDT"})
     year, month = map(int, start.split("-"))
     year, month = (year, month - 7) if month > 7 else (year - 1, month + 5)
     history = month_range(f"{year:04d}-{month:02d}", end)  # 1000 4h bars of warm-up
-    market = ReplayMarket(symbols, history, live_filters(symbols))
+    market = ReplayMarket(symbols, history, filters or live_filters(symbols))
     store = Store(":memory:")
     clock = {"now": 0.0}
     exchange = PaperExchange(market, store, 10_000.0, clock=lambda: clock["now"])
@@ -136,6 +139,7 @@ async def replay(start: str, end: str, limits: Limits, save_trades: bool = False
         "seconds": round(time.time() - started),
         "trades": len(trades),
         "open_at_end": len(store.open_trades()),
+        "open": [dict(t) for t in store.open_trades()],
         "win_rate": float((r > 0).mean()) if len(r) else None,
         "avg_r": float(r.mean()) if len(r) else None,
         "pnl_usdt": round(sum(t["pnl"] for t in trades), 2),
