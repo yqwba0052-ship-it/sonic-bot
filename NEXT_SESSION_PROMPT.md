@@ -9,7 +9,7 @@
 1. افتح المشروع `C:\Users\sa\Projects\sonic_bot`، وانتقل إلى الفرع `research/jesse`، واسحب آخر نسخة من GitHub
    (`git fetch` ثم `git status`). لا تغيّر الفرع main.
 2. اقرأ كاملًا: `SESSION_HANDOFF.md` و `docs/STORAGE_PLAN.md` و `research/reports/jesse_full.md`
-   و `research/reports/jesse_pilot.md`.
+   و `research/reports/jesse_pilot.md` (اقرأ القسم 10ب في `SESSION_HANDOFF.md` أولًا).
 3. تحقق دون أي تغيير:
    - `git log -1` وأن الفرع مطابق لـ `origin/research/jesse`، وأن الشجرة نظيفة.
    - أن الفلاشة موصولة، وأن `D:\Sonic-Jesse-Research` موجود. إن تغيّر حرفها فأخبرني.
