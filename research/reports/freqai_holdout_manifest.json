@@ -1,0 +1,47 @@
+{
+ "backtest_period_days": 30,
+ "files": {
+  "docs/superpowers/specs/2026-11-17-freqai-design.md": "5359754382027332644ec821b3a9d17e3a2033b2822517eaf4f4d4ab20d9c6df",
+  "research/reports/jesse_filters_full.json": "238331b9c8464ea3a5147273aa8df7fa7aed592b8e97dd358fced6dc788d4528",
+  "research/sonic_research/data.py": "39ffe5b86c4c3e486ab5a06a6f04ddead9f0ddafedb7fb6c82011ccc0cd5dae4",
+  "research/sonic_research/engine_replay.py": "a1f7d5ba31240ac54e62ab032ba90e4e905060a5bb7219cbb1a37bb267066db3",
+  "research/sonic_research/freqai_lab/__init__.py": "4fc04dba22795323ff8f4db4abf166f64d3212f29df17771375e859004667e0e",
+  "research/sonic_research/freqai_lab/audit.py": "e23ab0d864b32d759cc3c517f31762c62aecb4e5f94034c26e4ecf124e9737cb",
+  "research/sonic_research/freqai_lab/convert.py": "d6f968a3320fb96498576ed42c7676d2da168255f870fdb1193df3edd368954e",
+  "research/sonic_research/freqai_lab/evaluate.py": "92bc3cd732c9c6f9d303d79df5f773420485b6fd8fbc6ce0feab4e3d9a64cb8e",
+  "research/sonic_research/freqai_lab/experiment.py": "22a8e119d2f5ec58b3a662a01dbb15e604462260b53694cd81c27857749cd636",
+  "research/sonic_research/freqai_lab/freeze.py": "3d96ee96cd7afd27e6af7945b146939e7487e69dd1008a6c779552058289480b",
+  "research/sonic_research/freqai_lab/predict.py": "18f7f6c9c8916c3dc69bfad3efed21a0e81e8d59bd6bc32b06c5f0998032855d",
+  "research/sonic_research/freqai_lab/strategies/SonicFreqAI.py": "e3bffaa69f82352472bfba0cf34c0fd400c66b5bc07ce0b92e3d3d617a43969d",
+  "research/sonic_research/jesse_audit/bridge.py": "c60f82eb00a862bd54ff13304474f11e2da1b9c8554910f3938ecce59f12b6a3",
+  "research/sonic_research/jesse_audit/costs.py": "e9d07f131d13f157d1cf41364ec194187e81f3cbc45a934172ca05a5073be4cc",
+  "research/sonic_research/jesse_audit/data_1m.py": "5b3fad31f20ee7bcf924581d570a16942800c57352d70657e56c4e396842b960",
+  "research/sonic_research/jesse_audit/filters.py": "81f327418eab4a8a75ce27fa4059454a466c9a9113731b541a43dcaf2634f1f3",
+  "research/sonic_research/jesse_audit/holdout.py": "a98419579cde19b7ac3d30aeffc492b351265e570b29cd155e4fc17e7c6617f1",
+  "research/sonic_research/jesse_audit/offline.py": "10e981a341e62c5d4dafb69c4a2bcfcc6c7236b619ad46bdd8584e715366530a",
+  "research/sonic_research/jesse_audit/planner.py": "162a2d629c59a368204039832718c24c5eba189f59191e1a7b8f485edac87cbf",
+  "research/sonic_research/jesse_audit/synth.py": "524b8b18d25c10f3cb098f00cfac788df6e893760e6c92bea83a376ff3d9e223",
+  "server/sonic/engine.py": "2bc4cb723479807a7c67f87f498dcdf6f878970d7182545d3fef00a61d61abe3",
+  "server/sonic/exchange.py": "a35aba343ce57285380097e6e2f047f21167c96824f7786cda6c20a5ffdf9da4",
+  "server/sonic/risk.py": "0b832497fbe5f8396dfd9907f4241d50dff3f40407f1021a3e2c9b14c7bdf659",
+  "server/sonic/strategy.py": "ee85eb07050872966c549b9865c76b5904736de5e4e5ea3a0a69a01f7f018af3"
+ },
+ "label_period_candles": 24,
+ "model_params": {
+  "deterministic": true,
+  "learning_rate": 0.03,
+  "n_estimators": 300,
+  "n_jobs": 4,
+  "num_leaves": 15,
+  "random_state": 42,
+  "verbose": -1
+ },
+ "sha256": "d93d85d9dd48f39da3e8ec64b4e45caf5fa1356ebd6795e8f515c2028e825c81",
+ "threshold": 0.0,
+ "train_period_days": 210,
+ "warmup_first": "2023-07",
+ "window": [
+  "2024-01",
+  "2026-10"
+ ]
+}
