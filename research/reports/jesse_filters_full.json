@@ -1,0 +1,50 @@
+{
+ "ADAUSDT": {
+  "step_size": "1",
+  "tick_size": "0.00010",
+  "min_qty": 1.0,
+  "min_notional": 5.0
+ },
+ "AVAXUSDT": {
+  "step_size": "1",
+  "tick_size": "0.0010",
+  "min_qty": 1.0,
+  "min_notional": 5.0
+ },
+ "BNBUSDT": {
+  "step_size": "0.01",
+  "tick_size": "0.010",
+  "min_qty": 0.01,
+  "min_notional": 5.0
+ },
+ "BTCUSDT": {
+  "step_size": "0.001",
+  "tick_size": "0.10",
+  "min_qty": 0.001,
+  "min_notional": 50.0
+ },
+ "DOGEUSDT": {
+  "step_size": "1",
+  "tick_size": "0.000010",
+  "min_qty": 1.0,
+  "min_notional": 5.0
+ },
+ "SOLUSDT": {
+  "step_size": "0.01",
+  "tick_size": "0.0100",
+  "min_qty": 0.01,
+  "min_notional": 5.0
+ },
+ "TRXUSDT": {
+  "step_size": "1",
+  "tick_size": "0.00001",
+  "min_qty": 1.0,
+  "min_notional": 5.0
+ },
+ "XRPUSDT": {
+  "step_size": "0.1",
+  "tick_size": "0.0001",
+  "min_qty": 0.1,
+  "min_notional": 5.0
+ }
+}
