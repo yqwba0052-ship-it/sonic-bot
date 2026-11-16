@@ -38,6 +38,7 @@ def test_frame_refuses_months_after_the_allowed_end(tmp_path):
 
 
 def test_feather_name_is_freqtrade_spot_style():
+    pytest.importorskip("pandas")
     from sonic_research.freqai_lab.convert import feather_name
     assert feather_name("SOLUSDT", "4h") == "SOL_USDT-4h.feather"
     assert feather_name("BTCUSDT", "1h") == "BTC_USDT-1h.feather"
