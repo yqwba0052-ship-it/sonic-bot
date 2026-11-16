@@ -172,3 +172,62 @@ def test_verdict_follows_the_preregistered_rules():
     assert ev.verdict(base, safer, stable)["promising"] is True
     worse = {"net": 8.5, "max_dd_pct": 7.0}  # -15% profit
     assert ev.verdict(base, worse, stable)["promising"] is False
+
+
+# ---- review fixes: leak and reproducibility are computed, not typed in
+
+
+def _audit():
+    pytest.importorskip("pandas")
+    from sonic_research.freqai_lab import audit
+    return audit
+
+
+def _fake_run(tmp_path, model_ts, rows, found_cached=0):
+    models = tmp_path / "models" / "run"
+    for ts in model_ts:
+        (models / f"sub-train-SOL_{ts}").mkdir(parents=True)
+    preds = tmp_path / "predictions" / "run"
+    preds.mkdir(parents=True)
+    lines = ["date,close,&-fwd_ret,do_predict"]
+    lines += [f"{d},1.0,0.01,1" for d in rows]
+    (preds / "SOL_USDT.csv").write_text("\n".join(lines) + "\n", encoding="utf-8")
+    log = tmp_path / "run.log"
+    log.write_text("Found backtesting prediction file\n" * found_cached, encoding="utf-8")
+    return models, preds, log
+
+
+def test_every_prediction_comes_from_a_model_trained_before_it(tmp_path):
+    audit = _audit()
+    jan, feb = 1_672_531_200, 1_675_123_200  # 2023-01-01, 2023-01-31 (model ids = train end)
+    models, preds, _ = _fake_run(tmp_path, [jan, feb], [
+        "2023-01-01 00:00:00+00:00", "2023-01-30 20:00:00+00:00", "2023-01-31 00:00:00+00:00"])
+    got = audit.leak_check(models, preds, ["SOLUSDT"], start="2023-01-01")
+    assert got["ok"] is True and got["rows"] == 3
+
+
+def test_prediction_before_its_first_model_is_a_leak(tmp_path):
+    audit = _audit()
+    feb = 1_675_123_200
+    models, preds, _ = _fake_run(tmp_path, [feb], ["2023-01-15 00:00:00+00:00"])
+    got = audit.leak_check(models, preds, ["SOLUSDT"], start="2023-01-01")
+    assert got["ok"] is False and got["bad"][0]["symbol"] == "SOLUSDT"
+
+
+def test_reproducibility_needs_identical_files_and_no_cached_predictions(tmp_path):
+    audit = _audit()
+    a_models, a, a_log = _fake_run(tmp_path / "a", [1], ["2023-01-01 00:00:00+00:00"])
+    b_models, b, b_log = _fake_run(tmp_path / "b", [1], ["2023-01-01 00:00:00+00:00"])
+    assert audit.reproducible(a, b, a_log, b_log, ["SOLUSDT"])["ok"] is True
+    (b / "SOL_USDT.csv").write_text("date,close,&-fwd_ret,do_predict\nx,1,0.02,1\n",
+                                    encoding="utf-8")
+    assert audit.reproducible(a, b, a_log, b_log, ["SOLUSDT"])["ok"] is False
+    c_models, c, c_log = _fake_run(tmp_path / "c", [1], ["2023-01-01 00:00:00+00:00"],
+                                   found_cached=1)
+    assert audit.reproducible(a, c, a_log, c_log, ["SOLUSDT"])["ok"] is False
+
+
+def test_freqai_still_cuts_targets_at_the_training_window_end():
+    pytest.importorskip("freqtrade")
+    audit = _audit()
+    assert audit.freqai_cut_in_source() is True

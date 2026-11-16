@@ -13,6 +13,32 @@
  "start": "2021-06",
  "end": "2023-12",
  "predictions": 39648,
+ "audit": {
+  "leak": {
+   "ok": true,
+   "rows": 39648,
+   "bad": []
+  },
+  "reproducible": {
+   "ok": true,
+   "identical_files": true,
+   "cached_prediction_lines": {
+    "D:\\Sonic-FreqAI\\logs\\train-v1.log": 0,
+    "D:\\Sonic-FreqAI\\logs\\train-v1b.log": 0
+   },
+   "sha256": {
+    "SOLUSDT": "790d74ba895b6a78d520ac883c04ae12701887656ee4d8091cb7541611e3a0ae",
+    "XRPUSDT": "4b41748e54479b57767e9d53e65a89c814baaa4ced319e68aa211c82b88caa50",
+    "DOGEUSDT": "2f36a13306f516f0706c77ec75f7ba1704315b45772a9e52308d8cdf2ab06914",
+    "ADAUSDT": "5111df4f3fcbf2edae904d3cfeb54738e36428e15156c7c90d6cb8daaf3a00a6",
+    "TRXUSDT": "fbb793b90db2581b9a3a4a81ef53cdeb9204736596002efda42ae529e8b6d164",
+    "BNBUSDT": "915d172f57e0d27f64632efe29e9c9d7aa208f0a1eccabcac5deeaa10b9d8d7f",
+    "AVAXUSDT": "dff8ffc8f20a0c14277de2616593293df6c8c6c7f76cb03c79b1a6bb4a289452"
+   }
+  },
+  "freqai_cut_in_source": true,
+  "leak_tests": true
+ },
  "cases": {
   "A": {
    "metrics": {
@@ -2271,5 +2297,5 @@
    }
   }
  },
- "seconds": 432
+ "seconds": 422
 }

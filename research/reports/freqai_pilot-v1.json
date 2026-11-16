@@ -8,6 +8,27 @@
  "start": "2023-01",
  "end": "2023-06",
  "predictions": 2172,
+ "audit": {
+  "leak": {
+   "ok": true,
+   "rows": 2174,
+   "bad": []
+  },
+  "reproducible": {
+   "ok": true,
+   "identical_files": true,
+   "cached_prediction_lines": {
+    "D:\\Sonic-FreqAI\\logs\\pilot-v1.log": 0,
+    "D:\\Sonic-FreqAI\\logs\\pilot-v1b.log": 0
+   },
+   "sha256": {
+    "SOLUSDT": "faf17b69f639c160c18cfa3d3467c71e313cbc0ade65dae03dffbc67e3e31c34",
+    "TRXUSDT": "52bb40f1caec2fe238d877f05c0ea40f754131217b60f31362ab7c118f111489"
+   }
+  },
+  "freqai_cut_in_source": true,
+  "leak_tests": true
+ },
  "cases": {
   "A": {
    "metrics": {
@@ -282,5 +303,5 @@
    }
   }
  },
- "seconds": 27
+ "seconds": 26
 }

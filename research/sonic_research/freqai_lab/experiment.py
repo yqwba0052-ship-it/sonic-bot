@@ -69,7 +69,11 @@ def stability(base_m: dict, case_m: dict, change: dict) -> dict:
             "after_drop_each_coin_min": min((diff - v for v in by_coin.values()), default=diff)}
 
 
-def main(name: str, window: str, reproducible: bool, leak_tests: bool) -> dict:
+def main(name: str, window: str) -> dict:
+    """Rules 4 and 5 come from <name>_audit.json, written by `audit` in the FreqAI venv."""
+    audit = json.loads((LAB / "reports" / f"{name}_audit.json").read_text(encoding="utf-8"))
+    reproducible = bool(audit["reproducible"]["ok"])
+    leak_tests = bool(audit["leak_tests"])
     coins, first, start, end = WINDOWS[window]
     months = month_range(first, end)
     warmup_bars = (_ms(start) - _ms(first)) // FOUR_H
@@ -79,7 +83,7 @@ def main(name: str, window: str, reproducible: bool, leak_tests: bool) -> dict:
     minutes = {s: load_minutes(s, months, cache_dir=JESSE_DATA) for s in coins + [BTC]}
     preds = load_predictions(LAB / "predictions" / name, coins)
     out = {"name": name, "window": window, "coins": coins, "start": start, "end": end,
-           "predictions": len(preds), "cases": {}}
+           "predictions": len(preds), "audit": audit, "cases": {}}
     trades = {}
     for case in ("A", "B", "C"):
         ledger, log = run_case(case, minutes, coins, filters, warmup_bars, limits, preds)
@@ -104,8 +108,7 @@ def main(name: str, window: str, reproducible: bool, leak_tests: bool) -> dict:
 
 
 if __name__ == "__main__":
-    result = main(sys.argv[1], sys.argv[2], reproducible=sys.argv[3] == "yes",
-                  leak_tests=sys.argv[4] == "yes")
+    result = main(sys.argv[1], sys.argv[2])
     for case, part in result["cases"].items():
         m = part["metrics"]
         print(case, {k: (round(v, 3) if isinstance(v, float) else v) for k, v in m.items()
