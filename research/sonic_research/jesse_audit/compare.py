@@ -44,8 +44,23 @@ def normalize_engine(
         sold = _floor_to(qty / 2, step)
         legs.append({"kind": "half", "hour": at - H_MS,
                      "raw": max(float(hours.o[index]), target), "qty": sold})
-    legs.append({"kind": "exit", "hour": int(trade["closed_ms"]) - H_MS,
-                 "raw": float(trade["exit_price"]) / (1 - SLIPPAGE), "qty": qty - sold})
+    exit_hour = int(trade["closed_ms"]) - H_MS
+    exit_raw = float(trade["exit_price"]) / (1 - SLIPPAGE)
+    legs.append({"kind": "exit", "hour": exit_hour, "raw": exit_raw, "qty": qty - sold})
+    reason = trade["exit_reason"]
+    if (reason == "stop_loss" and not trade.get("scaled") and target is not None
+            and abs(costs(legs)["pnl"] - float(trade["pnl"])) > 1e-9):
+        # Half target and breakeven stop in ONE hour: the paper exchange takes the half, then
+        # closes the rest at the hour close in the same sync, before the engine marks the trade
+        # scaled, so the row says stop_loss / unscaled. Rebuild it; keep it only if its cost
+        # matches the engine's own pnl, and keep the engine's label for the report.
+        index = int((hours.t == exit_hour).nonzero()[0][0])
+        half = _floor_to(qty / 2, step)
+        rebuilt = [legs[0], {"kind": "half", "hour": exit_hour,
+                             "raw": max(float(hours.o[index]), target), "qty": half},
+                   {"kind": "exit", "hour": exit_hour, "raw": exit_raw, "qty": qty - half}]
+        if abs(costs(rebuilt)["pnl"] - float(trade["pnl"])) <= 1e-9:
+            legs, reason = rebuilt, "breakeven"
     # The engine overwrites stop_price with the entry when it scales; risk_usdt keeps the
     # original distance (qty * |entry - stop|), and the original stop sat on the tick grid.
     unit = float(tick)
@@ -53,8 +68,8 @@ def normalize_engine(
                  * unit, 12)
     return {"symbol": trade["symbol"], "opened_ms": int(trade["opened_ms"]),
             "closed_ms": int(trade["closed_ms"]), "stop": stop,
-            "target": target, "reason": trade["exit_reason"], "pnl": float(trade["pnl"]),
-            "legs": legs, "step": float(step), "tick": float(tick)}
+            "target": target, "reason": reason, "engine_label": trade["exit_reason"],
+            "pnl": float(trade["pnl"]), "legs": legs, "step": float(step), "tick": float(tick)}
 
 
 def normalize_jesse(trade: dict, step: str, tick: str) -> dict:
@@ -66,7 +81,7 @@ def normalize_jesse(trade: dict, step: str, tick: str) -> dict:
         elif leg["kind"] == "exit" and trade["reason"] in MARKET_EXITS:
             hour = leg["ms"] - H_MS
         else:
-            hour = leg["ms"] // H_MS * H_MS
+            hour = (leg["ms"] - 1) // H_MS * H_MS  # Jesse stamps a fill at its minute's end
         legs.append({"kind": leg["kind"], "hour": int(hour), "raw": leg["raw"], "qty": leg["qty"]})
     return {"symbol": trade["symbol"], "opened_ms": trade["opened_ms"],
             "closed_ms": trade["closed_ms"], "stop": trade["stop"], "target": trade["target"],
@@ -93,23 +108,30 @@ def _same(a: float | None, b: float | None) -> bool:
     return abs(a - b) <= PRICE_TOL * max(abs(a), abs(b), 1e-12)
 
 
-def _legs_same(a: list[dict], b: list[dict]) -> bool:
+def _legs_same(a: list[dict], b: list[dict], qty: bool = True) -> bool:
     return len(a) == len(b) and all(
         x["kind"] == y["kind"] and x["hour"] == y["hour"] and _same(x["raw"], y["raw"])
-        and abs(x["qty"] - y["qty"]) < 1e-9 for x, y in zip(a, b, strict=True))
+        and (not qty or abs(x["qty"] - y["qty"]) < 1e-9) for x, y in zip(a, b, strict=True))
 
 
-def classify(row: Row) -> str:
+def classify(row: Row, parity: bool = False) -> str:
+    """parity=True (R0 vs R1, same hours on both sides): a different order inside an hour cannot
+    come from the data, so it counts as unexplained."""
     left, right = row.left, row.right
     lq, rq = left["legs"][0]["qty"], right["legs"][0]["qty"]
-    if not _same(left["legs"][0]["raw"], right["legs"][0]["raw"]) or abs(lq - rq) > 1e-9:
-        within = abs(lq - rq) <= left["step"] + 1e-9
-        return "rounding" if within and _same(left["legs"][0]["raw"], right["legs"][0]["raw"]) \
-            else "unexplained"
+    if not _same(left["legs"][0]["raw"], right["legs"][0]["raw"]):
+        return "unexplained"
+    rounding = abs(lq - rq) > 1e-9
+    if rounding and abs(lq - rq) > left["step"] + 1e-9:
+        return "unexplained"
     for name in ("stop", "target"):
         if not _same(left[name], right[name]):
-            gap = abs((left[name] or 0) - (right[name] or 0))
-            return "rounding" if gap <= left["tick"] + 1e-9 else "unexplained"
+            if abs((left[name] or 0) - (right[name] or 0)) > left["tick"] + 1e-9:
+                return "unexplained"
+            rounding = True
+    if rounding:  # only rounding may differ; anything else as well needs a human look
+        same = _legs_same(left["legs"], right["legs"], qty=False)
+        return "rounding" if same and left["reason"] == right["reason"] else "unexplained"
     if _legs_same(left["legs"], right["legs"]) and left["reason"] == right["reason"]:
         return "identical" if abs(row.cost_diff) < 1e-9 else "slippage"
     lk = [(x["kind"], x["hour"]) for x in left["legs"]]
@@ -129,11 +151,11 @@ def classify(row: Row) -> str:
                     return "gap_fill"
     for x, y in zip(lk, rk, strict=False):
         if x != y:
-            return "intrahour_order" if x[1] == y[1] else "unexplained"
+            return "intrahour_order" if x[1] == y[1] and not parity else "unexplained"
     return "unexplained"
 
 
-def _row(left: dict, right: dict) -> Row:
+def _row(left: dict, right: dict, parity: bool = False) -> Row:
     le, re_ = costs(left["legs"])["pnl"], costs(right["legs"])["pnl"]
     row = Row(left["symbol"], left["opened_ms"], left, right)
     row.execution_diff = re_ - le
@@ -145,12 +167,12 @@ def _row(left: dict, right: dict) -> Row:
             row.fields[f"leg{i}.{key}"] = (x[key], y[key])
     row.fields["execution_pnl"] = (le, re_)
     row.fields["reported_pnl"] = (left["pnl"], right["pnl"])
-    row.category = classify(row)
+    row.category = classify(row, parity)
     return row
 
 
 def match(
-    left: list[dict], right: list[dict], end_ms: int
+    left: list[dict], right: list[dict], end_ms: int, parity: bool = False
 ) -> tuple[list[Row], list[dict], list[dict], list[dict]]:
     """Pair trades by coin and entry bar; trades still open at end_ms are set aside."""
     def closed(t: dict) -> bool:
@@ -159,7 +181,8 @@ def match(
     still_open = [t for t in left + right if not closed(t)]
     lmap = {(t["symbol"], t["opened_ms"]): t for t in left if closed(t)}
     rmap = {(t["symbol"], t["opened_ms"]): t for t in right if closed(t)}
-    rows = [_row(lmap[k], rmap[k]) for k in sorted(lmap.keys() & rmap.keys(), key=lambda k: k[1])]
+    both = sorted(lmap.keys() & rmap.keys(), key=lambda k: k[1])
+    rows = [_row(lmap[k], rmap[k], parity) for k in both]
     left_only = [lmap[k] for k in sorted(lmap.keys() - rmap.keys(), key=lambda k: k[1])]
     right_only = [rmap[k] for k in sorted(rmap.keys() - lmap.keys(), key=lambda k: k[1])]
     return rows, left_only, right_only, still_open

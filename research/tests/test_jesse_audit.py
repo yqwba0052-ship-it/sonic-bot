@@ -548,3 +548,57 @@ def test_block_network_can_allow_loopback_only():
         with pytest.raises(NetworkBlocked):
             socket.create_connection(("93.184.216.34", 80), timeout=1)
     server.close()
+
+
+# ---- Final review fixes
+
+
+def test_engine_half_and_breakeven_in_one_hour_is_rebuilt():
+    """I1: the engine stores this as stop_loss, scaled=0, no trade_scaled event."""
+    from sonic_research.data import Bars as B
+    eff = 100.0 * 1.0002
+    hours = B("SOLUSDT", np.array([HOUR0 + k * H_MS for k in range(3)], dtype=np.int64),
+              np.array([100.0, 100.5, 100.1]), np.array([100.6, 101.5, 100.6]),
+              np.array([99.9, 99.8, 99.9]), np.array([100.5, 99.9, 100.1]))
+    legs = [{"kind": "entry", "raw": 100.0, "qty": 1.0},
+            {"kind": "half", "raw": 101.0, "qty": 0.5},
+            {"kind": "exit", "raw": 99.9, "qty": 0.5}]
+    trade = {"symbol": "SOLUSDT", "qty": 1.0, "entry_price": eff, "stop_price": 97.0,
+             "risk_usdt": eff - 97.0, "target_price": 101.0, "opened_ms": HOUR0,
+             "closed_ms": HOUR0 + 2 * H_MS, "exit_price": 99.9 * 0.9998,
+             "pnl": costs(legs)["pnl"], "scaled": 0, "exit_reason": "stop_loss"}
+    got = normalize_engine(trade, [], hours, step="0.01", tick="0.01")
+    assert [leg["kind"] for leg in got["legs"]] == ["entry", "half", "exit"]
+    assert got["legs"][1]["hour"] == HOUR0 + H_MS and got["legs"][1]["raw"] == 101.0
+    assert got["reason"] == "breakeven"
+    assert got["engine_label"] == "stop_loss"
+    jesse = _norm(half=(HOUR0 + H_MS, 101.0, 0.5), exit_=(HOUR0 + H_MS, eff, "breakeven"))
+    rows, *_ = match([got], [jesse], end_ms=HOUR0 + 100 * H_MS)
+    assert rows[0].category == "breakeven_same_hour"
+
+
+def test_intrahour_order_is_unexplained_in_parity_check():
+    left = _norm(half=None, exit_=(HOUR0 + 2 * H_MS, 97.0, "stop_loss"))
+    right = _norm(half=(HOUR0 + 2 * H_MS, 101.0, 0.5), exit_=(HOUR0 + 2 * H_MS, 100.02,
+                                                            "breakeven"))
+    rows, *_ = match([left], [right], end_ms=HOUR0 + 100 * H_MS, parity=True)
+    assert rows[0].category == "unexplained"
+
+
+def test_fill_in_last_minute_stays_in_its_hour():
+    """I2: Jesse stamps a fill at the END of its minute."""
+    from sonic_research.jesse_audit.compare import normalize_jesse
+    trade = {"symbol": "SOLUSDT", "opened_ms": HOUR0, "closed_ms": HOUR0 + 2 * H_MS,
+             "stop": 97.0, "target": 101.0, "reason": "stop_loss", "pnl": 0.0,
+             "legs": [{"kind": "entry", "ms": HOUR0, "raw": 100.0, "qty": 1.0},
+                      {"kind": "exit", "ms": HOUR0 + 2 * H_MS, "raw": 97.0, "qty": 1.0}]}
+    got = normalize_jesse(trade, "0.01", "0.01")
+    assert got["legs"][1]["hour"] == HOUR0 + H_MS
+
+
+def test_rounding_does_not_hide_a_different_exit():
+    """I3"""
+    left = _norm()
+    right = _norm(qty=1.01, exit_=(HOUR0 + 9 * H_MS, 90.0, "stop_loss"))
+    rows, *_ = match([left], [right], end_ms=HOUR0 + 100 * H_MS)
+    assert rows[0].category == "unexplained"

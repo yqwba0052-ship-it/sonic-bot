@@ -163,7 +163,8 @@ def main() -> None:
     n1, n2 = [jes(t) for t in r1.trades], [jes(t) for t in r2.trades]
     out_rows = {}
     for name, (a, b) in {"R0_vs_R1": (n0, n1), "R1_vs_R2": (n1, n2)}.items():
-        rows, left_only, right_only, still_open = match(a, b, end_ms)
+        rows, left_only, right_only, still_open = match(a, b, end_ms,
+                                                        parity=name == "R0_vs_R1")
         out_rows[name] = {"summary": summary(rows), "rows": [asdict(r) for r in rows],
                           "left_only": left_only, "right_only": right_only,
                           "open_at_end": still_open}

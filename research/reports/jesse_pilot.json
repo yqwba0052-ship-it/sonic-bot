@@ -59,6 +59,7 @@
       "stop": 0.05251,
       "target": 0.05529,
       "reason": "breakeven",
+      "engine_label": "breakeven",
       "pnl": 0.020870616217265707,
       "legs": [
        {
@@ -203,6 +204,7 @@
       "stop": 22.23,
       "target": 24.19,
       "reason": "stop_loss",
+      "engine_label": "stop_loss",
       "pnl": -0.3490752642299992,
       "legs": [
        {
@@ -319,6 +321,7 @@
       "stop": 0.06257,
       "target": 0.06803,
       "reason": "breakeven",
+      "engine_label": "breakeven",
       "pnl": 0.027479304429803564,
       "legs": [
        {
@@ -463,6 +466,7 @@
       "stop": 20.41,
       "target": 23.11,
       "reason": "breakeven",
+      "engine_label": "breakeven",
       "pnl": 0.04227141020519325,
       "legs": [
        {
@@ -607,6 +611,7 @@
       "stop": 0.06381,
       "target": 0.06659,
       "reason": "breakeven",
+      "engine_label": "breakeven",
       "pnl": 0.019055986657434333,
       "legs": [
        {
@@ -751,6 +756,7 @@
       "stop": 21.21,
       "target": 22.44,
       "reason": "breakeven",
+      "engine_label": "breakeven",
       "pnl": 0.020599642071699557,
       "legs": [
        {
@@ -895,6 +901,7 @@
       "stop": 0.06453,
       "target": 0.06729,
       "reason": "stop_loss",
+      "engine_label": "stop_loss",
       "pnl": -0.3072709345409994,
       "legs": [
        {
@@ -1011,6 +1018,7 @@
       "stop": 0.06455,
       "target": 0.06677,
       "reason": "breakeven",
+      "engine_label": "breakeven",
       "pnl": 0.0162820715402238,
       "legs": [
        {
@@ -1155,6 +1163,7 @@
       "stop": 0.06486,
       "target": 0.06685,
       "reason": "trade_exit_time",
+      "engine_label": "trade_exit_time",
       "pnl": 0.9759705393240025,
       "legs": [
        {
@@ -1299,6 +1308,7 @@
       "stop": 21.76,
       "target": 23.6,
       "reason": "breakeven",
+      "engine_label": "breakeven",
       "pnl": 0.02719441674244255,
       "legs": [
        {
@@ -1443,6 +1453,7 @@
       "stop": 0.07047,
       "target": 0.07351,
       "reason": "breakeven",
+      "engine_label": "breakeven",
       "pnl": 0.01979111009158882,
       "legs": [
        {
@@ -1587,6 +1598,7 @@
       "stop": 16.28,
       "target": 18.01,
       "reason": "breakeven",
+      "engine_label": "breakeven",
       "pnl": 0.033207101818174926,
       "legs": [
        {
@@ -3498,44 +3510,44 @@
  },
  "monte_carlo_smoke": {
   "scenarios": 200,
-  "seconds": 29,
+  "seconds": 17,
   "note": "run-check only; Jesse here has no fees, numbers are not used for anything"
  },
  "seconds": {
   "R0": 6,
   "R1": 9,
   "R2": 9,
-  "monte_carlo": 29
+  "monte_carlo": 17
  },
  "disk": [
   {
-   "at": "2026-11-15T23:47:01+00:00",
+   "at": "2026-11-16T00:01:43+00:00",
    "step": "start",
-   "free": 8670826496,
+   "free": 8620498944,
    "venv": 779787392,
    "data_1m": 75691008,
    "extra": 855478400
   },
   {
-   "at": "2026-11-15T23:47:21+00:00",
+   "at": "2026-11-16T00:02:03+00:00",
    "step": "after R1",
-   "free": 8670822400,
+   "free": 8620564480,
    "venv": 779787392,
    "data_1m": 75691008,
    "extra": 855478400
   },
   {
-   "at": "2026-11-15T23:47:24+00:00",
+   "at": "2026-11-16T00:02:06+00:00",
    "step": "after 1m download",
-   "free": 8670822400,
+   "free": 8620564480,
    "venv": 779787392,
    "data_1m": 75691008,
    "extra": 855478400
   },
   {
-   "at": "2026-11-15T23:48:05+00:00",
+   "at": "2026-11-16T00:02:35+00:00",
    "step": "end",
-   "free": 8670679040,
+   "free": 8620322816,
    "venv": 779787392,
    "data_1m": 75691008,
    "extra": 855478400
