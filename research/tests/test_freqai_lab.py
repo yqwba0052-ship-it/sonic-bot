@@ -231,3 +231,22 @@ def test_freqai_still_cuts_targets_at_the_training_window_end():
     pytest.importorskip("freqtrade")
     audit = _audit()
     assert audit.freqai_cut_in_source() is True
+
+
+# ---- hold-out freeze and lock
+
+
+def test_freqai_freeze_detects_change_and_writes_once(tmp_path):
+    pytest.importorskip("jesse")
+    from sonic_research.freqai_lab import freeze
+    body = freeze.build()
+    assert "research/sonic_research/freqai_lab/strategies/SonicFreqAI.py" in body["files"]
+    assert body["threshold"] == 0.0 and body["label_period_candles"] == 24
+    changed = dict(body, files=dict(body["files"], **{
+        "research/sonic_research/freqai_lab/evaluate.py": "0" * 64}))
+    assert freeze.differences(changed) == ["research/sonic_research/freqai_lab/evaluate.py"]
+    target = tmp_path / "m.json"
+    freeze.write(target)
+    with pytest.raises(SystemExit, match="already frozen"):
+        freeze.write(target)
+    assert freeze.check_frozen(target)["threshold"] == 0.0

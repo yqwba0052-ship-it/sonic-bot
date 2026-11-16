@@ -16,6 +16,8 @@ from pathlib import Path
 
 from ..data import month_range
 from ..engine_replay import Limits
+from ..jesse_audit import data_1m as jesse_data
+from ..jesse_audit import holdout as jesse_holdout
 from ..jesse_audit.costs import costs
 from ..jesse_audit.data_1m import load_minutes
 from ..jesse_audit.filters import load_filters
@@ -28,6 +30,7 @@ FOUR_H = 4 * 3_600_000
 WINDOWS = {  # name: (coins, warm-up first month, start, end)
     "pilot": (["SOLUSDT", "TRXUSDT"], "2022-07", "2023-01", "2023-06"),
     "train": (COINS, "2020-12", "2021-06", "2023-12"),
+    "holdout": (COINS, "2023-07", "2024-01", "2026-10"),  # one-time historical check, locked
 }
 
 
@@ -72,6 +75,13 @@ def stability(base_m: dict, case_m: dict, change: dict) -> dict:
 def main(name: str, window: str) -> dict:
     """Rules 4 and 5 come from <name>_audit.json, written by `audit` in the FreqAI venv."""
     audit = json.loads((LAB / "reports" / f"{name}_audit.json").read_text(encoding="utf-8"))
+    lock = LAB / "reports" / f"{name}.lock.json"
+    if window == "holdout":
+        if lock.exists():
+            raise SystemExit(f"hold-out already run ({lock}); results stay as they are")
+        from .freeze import check_frozen
+        check_frozen()
+        jesse_data.guard_training = jesse_holdout.window_guard(WINDOWS["holdout"][3])
     reproducible = bool(audit["reproducible"]["ok"])
     leak_tests = bool(audit["leak_tests"])
     coins, first, start, end = WINDOWS[window]
@@ -104,6 +114,10 @@ def main(name: str, window: str) -> dict:
     (LAB / "reports").mkdir(parents=True, exist_ok=True)
     (LAB / "reports" / f"{name}.json").write_text(text, encoding="utf-8")
     (REPORTS / f"freqai_{name}.json").write_text(text, encoding="utf-8")
+    if window == "holdout":
+        import hashlib
+        jesse_holdout.write_lock(lock, {"result": f"freqai_{name}.json",
+                                        "result_sha256": hashlib.sha256(text.encode()).hexdigest()})
     return out
 
 

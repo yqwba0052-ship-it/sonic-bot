@@ -58,7 +58,7 @@ def build_config(name: str, symbols: list[str]) -> dict:
     }
 
 
-def run(name: str, timerange: str, symbols: list[str]) -> dict:
+def run(name: str, timerange: str, symbols: list[str], data: str = "binance") -> dict:
     """One FreqAI walk-forward run; returns where its predictions and log are."""
     user = LAB / "user_data"
     for sub in ("models", "backtest_results", "logs", "data"):
@@ -71,7 +71,7 @@ def run(name: str, timerange: str, symbols: list[str]) -> dict:
     log = LAB / "logs" / f"{name}.log"
     env = dict(os.environ, TMP=str(LAB / "cache" / "tmp"), TEMP=str(LAB / "cache" / "tmp"))
     cmd = [str(FREQTRADE), "backtesting", "-c", str(cfg_path), "--userdir", str(user),
-           "--datadir", str(LAB / "data" / "binance"), "--strategy", "SonicFreqAI",
+           "--datadir", str(LAB / "data" / data), "--strategy", "SonicFreqAI",
            "--strategy-path", str(STRATEGIES), "--freqaimodel", "LightGBMRegressor",
            "--timerange", timerange, "--cache", "none", "--logfile", str(log)]
     started = time.time()
@@ -84,4 +84,6 @@ def run(name: str, timerange: str, symbols: list[str]) -> dict:
 
 
 if __name__ == "__main__":
-    print(json.dumps(run(sys.argv[1], sys.argv[2], sys.argv[3:]), indent=1))
+    args = sys.argv[3:]
+    data = args.pop(0).split("=", 1)[1] if args and args[0].startswith("--data=") else "binance"
+    print(json.dumps(run(sys.argv[1], sys.argv[2], args, data=data), indent=1))
