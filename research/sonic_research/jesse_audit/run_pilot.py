@@ -25,7 +25,7 @@ import numpy as np
 
 from ..data import Bars, load_bars, month_range
 from ..engine_replay import Limits, live_filters, replay
-from . import DISK_BUDGET_BYTES, full
+from . import DISK_BUDGET_BYTES, data_1m, freeze, full, holdout, synth
 from .bridge import BTC, jesse_inputs, reset_ledger, run_bridge
 from .compare import match, normalize_engine, normalize_jesse, summary
 from .costs import costs
@@ -38,6 +38,9 @@ from .synth import minutes_from_hours
 REPORTS = Path(__file__).resolve().parents[2] / "reports"
 CHOICE = REPORTS / "jesse_pilot_choice.json"
 ESTIMATE = REPORTS / "jesse_full_estimate.json"
+HOLDOUT_OUT = REPORTS / "jesse_holdout.json"
+HOLDOUT_LOCK = REPORTS / "jesse_holdout.lock.json"
+HOLDOUT_LOG = REPORTS / "jesse_holdout_progress.json"
 VENV = Path.home() / "tools" / "jesse-venv"
 FOUR_H = 4 * 3_600_000
 WARMUP_MONTHS = 6
@@ -134,8 +137,16 @@ def _filters_for(symbols: list[str], path: Path) -> dict:
     return filters
 
 
-def run(is_full: bool, data_dir: Path) -> None:
-    if is_full:
+def run(is_full: bool, data_dir: Path, manifest: dict | None = None) -> None:
+    def step(name: str, **details) -> None:
+        if manifest is not None:
+            holdout.progress(HOLDOUT_LOG, name, **details)
+
+    if manifest is not None:  # the one-time 2024-2026 hold-out, settings from the frozen manifest
+        coins = manifest["coins"]
+        first, start, end = manifest["warmup_first"], manifest["start"], manifest["end"]
+        filters_path, out_path = REPORTS / "jesse_filters_full.json", HOLDOUT_OUT
+    elif is_full:
         coins = json.loads(ESTIMATE.read_text(encoding="utf-8"))["coins"]
         first, start, end = full.FULL_FIRST, full.FULL_START, full.FULL_END
         filters_path, out_path = REPORTS / "jesse_filters_full.json", REPORTS / "jesse_full.json"
@@ -157,6 +168,7 @@ def run(is_full: bool, data_dir: Path) -> None:
     t0 = time.time()
     r0 = asyncio.run(replay(start, end, limits, filters=filters))
     seconds["R0"] = round(time.time() - t0)
+    step("R0 done", trades=len(r0["closed"]), open_at_end=r0["open_at_end"], halts=r0["halts"])
 
     hours = {s: _cut(load_bars(s, months, "1h"), first_ms, end_ms) for s in symbols}
     fours = {s: _cut(load_bars(s, months, "4h"), first_ms, end_ms) for s in symbols}
@@ -168,16 +180,19 @@ def run(is_full: bool, data_dir: Path) -> None:
     r1 = run_bridge(synth, coins, filters, warmup_bars, limits=limits)
     seconds["R1"] = round(time.time() - t0)
     disk(log, "after R1", data_dir)
+    step("R1 done", trades=len(r1.trades))
 
     real = {}
     for s in symbols:
         real[s] = load_minutes(s, months, cache_dir=data_dir)
         disk(log, f"after 1m {s}", data_dir)
+    step("1m data ready", files=len(list(Path(data_dir).glob("*.npy"))))
     real_check = {s: {"1h": compare_to_bars(real[s], hours[s], 60),
                       "4h": compare_to_bars(real[s], fours[s], 240)} for s in symbols}
     t0 = time.time()
     r2 = run_bridge(real, coins, filters, warmup_bars, limits=limits)
     seconds["R2"] = round(time.time() - t0)
+    step("R2 done", trades=len(r2.trades))
 
     def eng(t: dict) -> dict:
         f = filters[t["symbol"]]
@@ -209,7 +224,10 @@ def run(is_full: bool, data_dir: Path) -> None:
         return sum(costs(t["legs"])["pnl"] for t in trades)
 
     report = {
-        "mode": "full" if is_full else "pilot", "coins": coins, "window": [start, end],
+        "mode": "holdout" if manifest is not None else "full" if is_full else "pilot",
+        "manifest_sha256": freeze.MANIFEST.exists() and json.loads(
+            freeze.MANIFEST.read_text(encoding="utf-8"))["sha256"] if manifest else None,
+        "coins": coins, "window": [start, end],
         "warmup_months": months[:WARMUP_MONTHS], "warmup_bars": warmup_bars,
         "R0": {"trades": len(n0), "open_at_end": r0["open_at_end"], "halts": r0["halts"],
                "errors": r0["errors"], "skipped": r0["skipped"]},
@@ -233,12 +251,17 @@ def run(is_full: bool, data_dir: Path) -> None:
         "versions": {p: version(p) for p in ("jesse", "jesse-rust", "ray", "numpy")}
         | {"python": platform.python_version()},
     }
-    if not is_full:
+    if not is_full and manifest is None:
         t0 = time.time()
         report["monte_carlo_smoke"] = monte_carlo_smoke(real, coins, warmup_bars, filters, limits)
         seconds["monte_carlo"] = round(time.time() - t0)
     disk(log, "end", data_dir)
-    out_path.write_text(json.dumps(report, indent=1, default=float), encoding="utf-8")
+    text = json.dumps(report, indent=1, default=float)
+    out_path.write_text(text, encoding="utf-8")
+    if manifest is not None:  # results exist now: the hold-out can never run again
+        digest = hashlib.sha256(text.encode()).hexdigest()
+        holdout.write_lock(HOLDOUT_LOCK, {"result": out_path.name, "result_sha256": digest})
+        step("results written and locked", result=out_path.name)
     print(json.dumps({k: report[k] for k in ("R0", "R1", "R2", "minute_effect", "seconds")},
                      indent=1, default=float))
     for name, part in comparisons.items():
@@ -251,9 +274,17 @@ def main(argv: list[str] | None = None) -> None:
     parser = argparse.ArgumentParser()
     parser.add_argument("--full", action="store_true")
     parser.add_argument("--estimate", action="store_true")
+    parser.add_argument("--holdout", action="store_true")
     parser.add_argument("--data-dir", type=Path)
     args = parser.parse_args(argv)
-    if args.estimate:
+    if args.holdout:
+        data_dir = full.check_data_dir(args.data_dir)
+        manifest = holdout.check_ready(freeze.MANIFEST, HOLDOUT_LOCK)
+        guard = holdout.window_guard(manifest["end"])  # opens 2024..end for this run only
+        synth.guard_training = data_1m.guard_training = guard
+        holdout.progress(HOLDOUT_LOG, "started", data_dir=str(data_dir))
+        run(False, data_dir, manifest=manifest)
+    elif args.estimate:
         run_estimate()
     elif args.full:
         run(True, full.check_data_dir(args.data_dir))

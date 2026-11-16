@@ -1065,3 +1065,60 @@ def test_manifest_is_written_once(tmp_path):
     freeze.write_manifest(target)
     with pytest.raises(SystemExit, match="already frozen"):
         freeze.write_manifest(target)
+
+
+# ---- Hold-out step 2: run once, only with an unchanged frozen method
+
+from sonic_research.jesse_audit import holdout  # noqa: E402
+
+
+def test_holdout_refuses_a_changed_method(tmp_path, monkeypatch):
+    monkeypatch.setattr(holdout.freeze, "differences", lambda m: ["research/x.py"])
+    with pytest.raises(SystemExit, match="research/x.py"):
+        holdout.check_ready(freeze.MANIFEST, tmp_path / "lock.json")
+
+
+def test_holdout_refuses_a_second_run(tmp_path):
+    lock = tmp_path / "lock.json"
+    holdout.write_lock(lock, {"result": "x"})
+    with pytest.raises(SystemExit, match="already run"):
+        holdout.check_ready(freeze.MANIFEST, lock)
+
+
+def test_holdout_refuses_a_tampered_manifest(tmp_path):
+    import json
+    bad = tmp_path / "m.json"
+    data = json.loads(freeze.MANIFEST.read_text(encoding="utf-8"))
+    data["end"] = "2026-11"
+    bad.write_text(json.dumps(data), encoding="utf-8")
+    with pytest.raises(SystemExit, match="manifest"):
+        holdout.check_ready(bad, tmp_path / "lock.json")
+
+
+def test_holdout_guard_opens_only_the_frozen_window():
+    guard = holdout.window_guard("2026-10")
+    guard(1_704_067_200_000)  # 2024-01-01 allowed now
+    guard(1_793_491_200_000 - 1)  # last ms of 2026-10
+    with pytest.raises(ValueError, match="beyond_frozen_window"):
+        guard(1_793_491_200_000)  # 2026-11-01
+
+
+def test_holdout_progress_is_appended(tmp_path):
+    log = tmp_path / "progress.json"
+    holdout.progress(log, "started")
+    holdout.progress(log, "R0 done", trades=3)
+    import json
+    steps = json.loads(log.read_text(encoding="utf-8"))
+    assert [s["step"] for s in steps] == ["started", "R0 done"] and steps[1]["trades"] == 3
+
+
+def test_holdout_command_refuses_without_data_dir():
+    pytest.importorskip("jesse")
+    from sonic_research.jesse_audit.run_pilot import main
+    with pytest.raises(SystemExit, match="data dir"):
+        main(["--holdout"])
+
+
+def test_training_guards_still_refuse_2024():
+    with pytest.raises(ValueError, match="holdout_locked"):
+        guard_training(HOLDOUT_START_MS)
