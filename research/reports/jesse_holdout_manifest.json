@@ -1,0 +1,86 @@
+{
+ "btc_filter": "BTCUSDT",
+ "coins": [
+  "SOLUSDT",
+  "XRPUSDT",
+  "DOGEUSDT",
+  "ADAUSDT",
+  "TRXUSDT",
+  "BNBUSDT",
+  "AVAXUSDT"
+ ],
+ "comparison": {
+  "categories": [
+   "identical",
+   "slippage",
+   "rounding",
+   "breakeven_same_hour",
+   "gap_fill",
+   "intrahour_order",
+   "missing",
+   "unexplained"
+  ],
+  "price_tol": 5e-05
+ },
+ "costs": {
+  "fee_rate": 0.0005,
+  "slippage": 0.0002
+ },
+ "end": "2026-10",
+ "files": {
+  "research/reports/jesse_filters_full.json": "238331b9c8464ea3a5147273aa8df7fa7aed592b8e97dd358fced6dc788d4528",
+  "research/sonic_research/data.py": "39ffe5b86c4c3e486ab5a06a6f04ddead9f0ddafedb7fb6c82011ccc0cd5dae4",
+  "research/sonic_research/engine_replay.py": "a1f7d5ba31240ac54e62ab032ba90e4e905060a5bb7219cbb1a37bb267066db3",
+  "research/sonic_research/jesse_audit/__init__.py": "6edf41768bcbc2478a825342c62d3bc77bfecda28349937318cbd28be2a89205",
+  "research/sonic_research/jesse_audit/bridge.py": "c60f82eb00a862bd54ff13304474f11e2da1b9c8554910f3938ecce59f12b6a3",
+  "research/sonic_research/jesse_audit/compare.py": "af4bfc25e4acd2ba5a9db8e6da5fd3812c0214ccb67d68a895884f85379dc973",
+  "research/sonic_research/jesse_audit/costs.py": "e9d07f131d13f157d1cf41364ec194187e81f3cbc45a934172ca05a5073be4cc",
+  "research/sonic_research/jesse_audit/data_1m.py": "5b3fad31f20ee7bcf924581d570a16942800c57352d70657e56c4e396842b960",
+  "research/sonic_research/jesse_audit/explain.py": "21440bb4f9953adce51d5074f4c486777a7d3d841b47605eb0db321314c87894",
+  "research/sonic_research/jesse_audit/filters.py": "81f327418eab4a8a75ce27fa4059454a466c9a9113731b541a43dcaf2634f1f3",
+  "research/sonic_research/jesse_audit/full.py": "028a7770355c64df4c578eb2590b596051d8252c875898a667f4a9054ae55288",
+  "research/sonic_research/jesse_audit/offline.py": "10e981a341e62c5d4dafb69c4a2bcfcc6c7236b619ad46bdd8584e715366530a",
+  "research/sonic_research/jesse_audit/planner.py": "162a2d629c59a368204039832718c24c5eba189f59191e1a7b8f485edac87cbf",
+  "research/sonic_research/jesse_audit/synth.py": "524b8b18d25c10f3cb098f00cfac788df6e893760e6c92bea83a376ff3d9e223",
+  "server/sonic/engine.py": "2bc4cb723479807a7c67f87f498dcdf6f878970d7182545d3fef00a61d61abe3",
+  "server/sonic/exchange.py": "a35aba343ce57285380097e6e2f047f21167c96824f7786cda6c20a5ffdf9da4",
+  "server/sonic/risk.py": "0b832497fbe5f8396dfd9907f4241d50dff3f40407f1021a3e2c9b14c7bdf659",
+  "server/sonic/strategy.py": "ee85eb07050872966c549b9865c76b5904736de5e4e5ea3a0a69a01f7f018af3"
+ },
+ "limits": {
+  "allow_shorts": false,
+  "capital_usdt": 30.0,
+  "leverage": 3,
+  "max_daily_loss_usdt": 6.0,
+  "max_open": 3,
+  "risk_per_trade_pct": 1.0,
+  "symbols": [
+   "SOLUSDT",
+   "XRPUSDT",
+   "DOGEUSDT",
+   "ADAUSDT",
+   "TRXUSDT",
+   "BNBUSDT",
+   "AVAXUSDT"
+  ]
+ },
+ "purpose": "Jesse audit of execution accuracy on 2024-01..2026-10 (run once)",
+ "sha256": "280d1aa97c8a62b2224a6e10421b0be6bfbe50918fae5ec5140c447a8f115b6f",
+ "sonic": {
+  "ATR_K": 2.5,
+  "ATR_PERIOD": 14,
+  "COIN_TREND_PERIOD": 200,
+  "DRIFT_FLOOR": -0.25,
+  "DRIFT_WINDOW": 30,
+  "FAST": 20,
+  "HALF_AT_R": 0.2,
+  "HISTORY_BARS": 1000,
+  "INTERVAL": "4h",
+  "MAX_HOLD_BARS": 240,
+  "NAME": "trend-20-100-4h",
+  "REGIME_PERIOD": 300,
+  "SLOW": 100
+ },
+ "start": "2024-01",
+ "warmup_first": "2023-07"
+}

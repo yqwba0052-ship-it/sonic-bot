@@ -1028,3 +1028,40 @@ def test_minute_path_measures_each_series_after_its_own_half():
                               {"SOLUSDT": _hour_minutes(real)})
     assert rows[0].category == "intrahour_order"
     assert rows[0].proof["synthetic_low_after_half"] > eff
+
+
+# ---- Hold-out step 1: freeze the method before any 2024-2026 data is opened
+
+from sonic_research.jesse_audit import freeze  # noqa: E402
+
+
+def test_manifest_lists_method_files_and_settings():
+    m = freeze.build_manifest()
+    for path in ("research/sonic_research/jesse_audit/compare.py",
+                 "research/sonic_research/jesse_audit/costs.py",
+                 "research/sonic_research/jesse_audit/bridge.py",
+                 "server/sonic/strategy.py", "server/sonic/risk.py",
+                 "research/reports/jesse_filters_full.json"):
+        assert len(m["files"][path]) == 64
+    assert m["coins"] == ["SOLUSDT", "XRPUSDT", "DOGEUSDT", "ADAUSDT", "TRXUSDT", "BNBUSDT",
+                          "AVAXUSDT"]
+    assert (m["warmup_first"], m["start"], m["end"]) == ("2023-07", "2024-01", "2026-10")
+    assert m["costs"] == {"slippage": 0.0002, "fee_rate": 0.0005}
+    assert m["comparison"]["price_tol"] == 0.00005
+    assert m["sonic"]["HALF_AT_R"] == 0.2 and m["limits"]["capital_usdt"] == 30.0
+    assert freeze.build_manifest() == m  # deterministic
+
+
+def test_changed_method_file_is_detected(tmp_path):
+    m = freeze.build_manifest()
+    path = "research/sonic_research/jesse_audit/costs.py"
+    changed = dict(m, files=dict(m["files"], **{path: "0" * 64}))
+    assert freeze.differences(changed) == [path]
+    assert freeze.differences(m) == []
+
+
+def test_manifest_is_written_once(tmp_path):
+    target = tmp_path / "manifest.json"
+    freeze.write_manifest(target)
+    with pytest.raises(SystemExit, match="already frozen"):
+        freeze.write_manifest(target)
