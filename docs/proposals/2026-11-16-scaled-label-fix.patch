@@ -1,0 +1,121 @@
+diff --git a/server/sonic/engine.py b/server/sonic/engine.py
+index fe39503..84c094b 100644
+--- a/server/sonic/engine.py
++++ b/server/sonic/engine.py
+@@ -246,8 +246,13 @@ class Engine:
+         for symbol, trade in tracked.items():
+             if symbol not in positions:
+                 result = await self.exchange.closed_result(symbol, trade["opened_ms"])
++                scaled = bool(trade["scaled"]) or result.scaled
++                if scaled and not trade["scaled"]:
++                    # The half filled and the rest closed before _follow_scaling saw it.
++                    self.store.mark_scaled(trade["id"], trade["entry_price"])
++                    self.log("info", "trade_scaled", symbol)
+                 reason = self.pending_exit.pop(symbol, "") or (
+-                    "breakeven" if trade["scaled"] else "stop_loss"
++                    "breakeven" if scaled else "stop_loss"
+                 )
+                 self.store.close_trade(
+                     trade["id"], self.now_ms(), result.exit_price, result.pnl, result.fees, reason
+diff --git a/server/sonic/exchange.py b/server/sonic/exchange.py
+index 3e10f61..5e5c959 100644
+--- a/server/sonic/exchange.py
++++ b/server/sonic/exchange.py
+@@ -52,6 +52,7 @@ class Closed:
+     exit_price: float
+     pnl: float
+     fees: float
++    scaled: bool = False  # part of the position was closed earlier (the half take-profit)
+ 
+ 
+ class Exchange(Protocol):
+@@ -240,7 +241,8 @@ class PaperExchange:
+         self.state["balance"] += gross - fee
+         fees = pos["fees"] + fee
+         total = gross + pos.get("realized", 0.0)
+-        self.state["closed"][symbol] = {"exit": price, "pnl": total - fees, "fees": fees}
++        self.state["closed"][symbol] = {"exit": price, "pnl": total - fees, "fees": fees,
++                                        "scaled": "realized" in pos}
+         self._save()
+ 
+     async def _replay_missed(self, symbol: str, pos: dict[str, Any]) -> bool:
+@@ -295,7 +297,7 @@ class PaperExchange:
+         data = self.state["closed"].get(symbol)
+         if data is None:
+             raise ExchangeError(f"no closed result for {symbol}")
+-        return Closed(data["exit"], data["pnl"], data["fees"])
++        return Closed(data["exit"], data["pnl"], data["fees"], bool(data.get("scaled")))
+ 
+ 
+ class BinanceDemo:
+@@ -477,4 +479,7 @@ class BinanceDemo:
+             raise ExchangeError(f"no fills for {symbol}")
+         fees = sum(float(item["commission"]) for item in fills)
+         gross = sum(float(item["realizedPnl"]) for item in fills)
+-        return Closed(float(fills[-1]["price"]), gross - fees, fees)
++        # Closing fills are on the other side of the opening one; two closing orders mean the
++        # half take-profit filled before the rest closed.
++        closing = {item["orderId"] for item in fills if item["side"] != fills[0]["side"]}
++        return Closed(float(fills[-1]["price"]), gross - fees, fees, len(closing) > 1)
+diff --git a/server/tests/test_scaled_label.py b/server/tests/test_scaled_label.py
+new file mode 100644
+index 0000000..545d98d
+--- /dev/null
++++ b/server/tests/test_scaled_label.py
+@@ -0,0 +1,56 @@
++"""Half target and breakeven stop inside ONE hour must be recorded as a scaled breakeven."""
++
++from __future__ import annotations
++
++from test_system import build
++
++from sonic.strategy import Bar
++
++
++async def test_half_then_breakeven_in_one_hour_is_labelled_breakeven() -> None:
++    engine, _, market, clock = build()
++    await engine.start()
++    await engine.tick()
++    trade = engine.store.open_trades()[0]
++    entry, target = trade["entry_price"], trade["target_price"]
++    hour = Bar(trade["opened_ms"], entry, target * 1.001, entry * 0.999, entry * 0.998)
++    plain = market.bars
++
++    async def bars(symbol: str, interval: str, limit: int) -> list[Bar]:
++        if interval == "1h" and symbol != "BTCUSDT":
++            return [hour]
++        return await plain(symbol, interval, limit)
++
++    market.bars = bars
++    market.last = entry * 0.998  # the hour closed below the entry, after reaching the target
++    clock.now += 3600
++    await engine.tick()
++    closed = engine.store.trades()[0]
++    assert closed["closed_ms"] is not None
++    assert closed["exit_reason"] == "breakeven"
++    assert closed["scaled"] == 1
++    assert any(e["code"] == "trade_scaled" for e in engine.store.events(10))
++
++
++async def test_live_closed_result_sees_the_earlier_half() -> None:
++    import httpx
++
++    from sonic.exchange import DEMO_URL, BinanceDemo
++
++    client = BinanceDemo(httpx.AsyncClient(base_url=DEMO_URL), "k", "s")
++    fills = [
++        {"orderId": 1, "side": "BUY", "price": "100", "commission": "0.01", "realizedPnl": "0"},
++        {"orderId": 2, "side": "SELL", "price": "101", "commission": "0.01", "realizedPnl": "0.5"},
++        {"orderId": 3, "side": "SELL", "price": "100", "commission": "0.01", "realizedPnl": "0"},
++    ]
++
++    async def signed(method, path, params):
++        return fills
++
++    async def nothing(symbol):
++        return None
++
++    client.signed, client.cancel_protection = signed, nothing
++    assert (await client.closed_result("SOLUSDT", 0)).scaled is True
++    fills[:] = [fills[0], fills[2]]  # one closing order only: no half before
++    assert (await client.closed_result("SOLUSDT", 0)).scaled is False
