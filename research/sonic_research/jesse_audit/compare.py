@@ -12,6 +12,8 @@ from collections import defaultdict
 from dataclasses import dataclass, field
 from math import floor
 
+import numpy as np
+
 from ..data import Bars
 from .costs import SLIPPAGE, costs
 
@@ -40,10 +42,13 @@ def normalize_engine(
     if trade.get("scaled"):
         at = next(at for symbol, at in scale_events if symbol == trade["symbol"]
                   and trade["opened_ms"] < at <= trade["closed_ms"])
-        index = int((hours.t == at - H_MS).nonzero()[0][0])
+        found = (hours.t == at - H_MS).nonzero()[0]
         sold = _floor_to(qty / 2, step)
-        legs.append({"kind": "half", "hour": at - H_MS,
-                     "raw": max(float(hours.o[index]), target), "qty": sold})
+        half = {"kind": "half", "hour": at - H_MS, "qty": sold,
+                "raw": max(float(hours.o[found[0]]), target) if len(found) else target}
+        if not len(found):  # hour missing from our bars: the fill price is the target, unchecked
+            half["anchor_missing"] = True
+        legs.append(half)
     exit_hour = int(trade["closed_ms"]) - H_MS
     exit_raw = float(trade["exit_price"]) / (1 - SLIPPAGE)
     where = (hours.t == exit_hour).nonzero()[0]
@@ -51,7 +56,7 @@ def normalize_engine(
               if len(where) else {})  # the exit hour's own open/close, to check fill causes
     legs.append({"kind": "exit", "hour": exit_hour, "raw": exit_raw, "qty": qty - sold, **anchor})
     reason = trade["exit_reason"]
-    if (reason == "stop_loss" and not trade.get("scaled") and target is not None
+    if (reason == "stop_loss" and not trade.get("scaled") and target is not None and anchor
             and abs(costs(legs)["pnl"] - float(trade["pnl"])) > 1e-9):
         # Half target and breakeven stop in ONE hour: the paper exchange takes the half, then
         # closes the rest at the hour close in the same sync, before the engine marks the trade
@@ -75,17 +80,26 @@ def normalize_engine(
             "pnl": float(trade["pnl"]), "legs": legs, "step": float(step), "tick": float(tick)}
 
 
-def normalize_jesse(trade: dict, step: str, tick: str) -> dict:
-    """The bridge's trade -> the same shape. Stop and half fills carry Jesse's minute time."""
+def normalize_jesse(trade: dict, step: str, tick: str, minutes: np.ndarray | None = None) -> dict:
+    """The bridge's trade -> the same shape. Stop and half fills carry Jesse's minute time; with
+    the minutes Jesse ran on, each such fill also carries the open of its own minute (a gap fill
+    happens exactly there)."""
     legs = []
     for leg in trade["legs"]:
+        anchor = {}
         if leg["kind"] == "entry":
             hour = leg["ms"]
         elif leg["kind"] == "exit" and trade["reason"] in MARKET_EXITS:
             hour = leg["ms"] - H_MS
         else:
             hour = (leg["ms"] - 1) // H_MS * H_MS  # Jesse stamps a fill at its minute's end
-        legs.append({"kind": leg["kind"], "hour": int(hour), "raw": leg["raw"], "qty": leg["qty"]})
+            if minutes is not None:
+                start = leg["ms"] - 60_000
+                i = int(np.searchsorted(minutes[:, 0], start))
+                if i < len(minutes) and int(minutes[i, 0]) == start:
+                    anchor = {"open": float(minutes[i, 1])}
+        legs.append({"kind": leg["kind"], "hour": int(hour), "raw": leg["raw"],
+                     "qty": leg["qty"], **anchor})
     return {"symbol": trade["symbol"], "opened_ms": trade["opened_ms"],
             "closed_ms": trade["closed_ms"], "stop": trade["stop"], "target": trade["target"],
             "reason": trade["reason"], "pnl": trade["pnl"], "legs": legs,
@@ -158,7 +172,7 @@ def classify(row: Row, parity: bool = False) -> str:
                 return "breakeven_same_hour"
             if same_reason and left["reason"] in ("stop_loss", "breakeven") and hit \
                     and other["raw"] < at_level["raw"] \
-                    and ("open" not in other or _same(other["raw"], other["open"], tick)):
+                    and "open" in other and _same(other["raw"], other["open"], tick):
                 return "gap_fill"
     for x, y in zip(lk, rk, strict=False):
         if x != y:
@@ -198,6 +212,10 @@ def match(
         return (t.get("closed_ms") is not None and t["closed_ms"] <= end_ms
                 and key(t) not in open_keys)
 
+    for side in (left, right):
+        keys = [key(t) for t in side]
+        if len(keys) != len(set(keys)):
+            raise ValueError(f"duplicate trade key: {sorted(k for k in keys if keys.count(k) > 1)}")
     still_open = opened_at_end + [t for t in left + right if not closed(t)]
     lmap = {key(t): t for t in left if closed(t)}
     rmap = {key(t): t for t in right if closed(t)}

@@ -166,7 +166,6 @@ def run(is_full: bool, data_dir: Path) -> None:
     t0 = time.time()
     r1 = run_bridge(synth, coins, filters, warmup_bars, limits=limits)
     seconds["R1"] = round(time.time() - t0)
-    del synth
     disk(log, "after R1", data_dir)
 
     real = {}
@@ -184,18 +183,19 @@ def run(is_full: bool, data_dir: Path) -> None:
         return normalize_engine(t, r0["scale_events"], hours[t["symbol"]], f.step_size,
                                 f.tick_size)
 
-    def jes(t: dict) -> dict:
+    def jes(t: dict, minutes: dict) -> dict:
         f = filters[t["symbol"]]
-        return normalize_jesse(t, f.step_size, f.tick_size)
+        return normalize_jesse(t, f.step_size, f.tick_size, minutes=minutes[t["symbol"]])
 
     n0 = [eng(t) for t in r0["closed"]]
-    n1, n2 = [jes(t) for t in r1.trades], [jes(t) for t in r2.trades]
+    n1, n2 = [jes(t, synth) for t in r1.trades], [jes(t, real) for t in r2.trades]
+    cut_ms, cut_reason = full.comparison_end(end_ms, r0["halts"])
     opens = {"R0": r0["open"], "R1": r1.open_at_end, "R2": r2.open_at_end}
     comparisons = {}
     for name, (a, b, la, lb) in {"R0_vs_R1": (n0, n1, "R0", "R1"),
                                  "R1_vs_R2": (n1, n2, "R1", "R2")}.items():
         rows, left_only, right_only, still_open = match(
-            a, b, end_ms, parity=name == "R0_vs_R1", left_open=opens[la], right_open=opens[lb])
+            a, b, cut_ms, parity=name == "R0_vs_R1", left_open=opens[la], right_open=opens[lb])
         comparisons[name] = {"summary": summary(rows), "rows": [asdict(r) for r in rows],
                              "left_only": left_only, "right_only": right_only,
                              "open_at_end": still_open}
@@ -214,6 +214,9 @@ def run(is_full: bool, data_dir: Path) -> None:
                        "not real movement inside the hour"},
         "R2": {"trades": len(n2), "open_at_end": len(r2.open_at_end), "skipped": r2.skipped,
                "plan_mismatch": r2.plan_mismatch},
+        "comparison_end": {"at_ms": cut_ms, "reason": cut_reason or "window end",
+                           "note": "comparison stops at our replay's first safety halt; trades "
+                                   "open at that point are set aside as open"},
         "comparisons": comparisons,
         "minute_effect": {"R1_pnl_all_closed": total(n1), "R2_pnl_all_closed": total(n2),
                           "difference": total(n2) - total(n1)},

@@ -111,7 +111,11 @@ async def replay(
         await engine.tick()
         if engine.halted:
             # A real owner would look and decide; the replay records it and carries on.
-            await engine.clear_halt() if engine.halted not in ("budget_used",) else None
+            if engine.halted not in ("budget_used",):
+                try:
+                    await engine.clear_halt()
+                except ValueError:  # e.g. daily loss still breached: retried on the next hour
+                    pass
             if not engine.halted:
                 await engine.start()
         budget_curve.append(engine.budget_left())

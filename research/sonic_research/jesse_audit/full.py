@@ -52,6 +52,15 @@ def estimate(sizes: dict[str, list[int | None]], months: list[str]) -> dict:
             "npy_bytes": len(sizes) * (minutes * 6 * 8 + NPY_HEADER * len(months))}
 
 
+def comparison_end(end_ms: int, halts: list) -> tuple[int, str]:
+    """The trade-by-trade comparison stops at the first safety halt of our replay: the bridge
+    does not copy halts (drift, daily loss, budget), so after one the two runs part ways."""
+    if not halts:
+        return end_ms, ""
+    code, at = min(halts, key=lambda h: h[1])
+    return min(end_ms, int(at)), code
+
+
 def check_data_dir(path: Path | None) -> Path:
     if path is None:
         raise SystemExit("the full run needs a data dir (--data-dir) on the external drive")

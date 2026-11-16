@@ -819,3 +819,84 @@ def test_full_command_refuses_without_data_dir():
     from sonic_research.jesse_audit.run_pilot import main
     with pytest.raises(SystemExit, match="data dir"):
         main(["--full"])
+
+
+# ---- Phase 2 review fixes
+
+
+def test_gap_fill_needs_an_anchor_on_the_lower_jesse_side():
+    left = _norm(half=None, exit_=(HOUR0 + 2 * H_MS, 97.0, "stop_loss"), hour_ohlc=(98.0, 96.0))
+    unanchored = _norm(half=None, exit_=(HOUR0 + 2 * H_MS, 90.0, "stop_loss"))
+    wrong = _norm(half=None, exit_=(HOUR0 + 2 * H_MS, 90.0, "stop_loss"))
+    wrong["legs"][-1]["open"] = 98.0
+    real_gap = _norm(half=None, exit_=(HOUR0 + 2 * H_MS, 96.0, "stop_loss"))
+    real_gap["legs"][-1]["open"] = 96.0
+    for right, want in ((unanchored, "unexplained"), (wrong, "unexplained"),
+                        (real_gap, "gap_fill")):
+        rows, *_ = match([left], [right], end_ms=HOUR0 + 100 * H_MS)
+        assert rows[0].category == want
+
+
+def test_normalize_jesse_anchors_a_stop_fill_to_its_minute_open():
+    from sonic_research.jesse_audit.compare import normalize_jesse
+    minutes = np.array([[HOUR0 + 60_000 * k, 100 - k, 99 - k, 100 - k, 98 - k, 0]
+                        for k in range(60)], dtype=float)
+    trade = {"symbol": "SOLUSDT", "opened_ms": HOUR0, "closed_ms": HOUR0 + 3 * 60_000,
+             "stop": 97.0, "target": 101.0, "reason": "stop_loss", "pnl": 0.0,
+             "legs": [{"kind": "entry", "ms": HOUR0, "raw": 100.0, "qty": 1.0},
+                      {"kind": "exit", "ms": HOUR0 + 3 * 60_000, "raw": 97.0, "qty": 1.0}]}
+    got = normalize_jesse(trade, "0.01", "0.01", minutes=minutes)
+    assert got["legs"][-1]["open"] == 98.0  # the minute that ended at the fill time
+
+
+def test_comparison_stops_at_the_first_safety_halt():
+    end = HOUR0 + 100 * H_MS
+    assert full.comparison_end(end, []) == (end, "")
+    halts = [["strategy_drift", HOUR0 + 50 * H_MS], ["daily_loss_limit", HOUR0 + 70 * H_MS]]
+    assert full.comparison_end(end, halts) == (HOUR0 + 50 * H_MS, "strategy_drift")
+
+
+def test_replay_survives_a_halt_that_cannot_be_cleared_yet(monkeypatch):
+    from sonic_research.data import DATA_DIR
+    if not any((DATA_DIR / "klines").glob("*-1h-2023-*.zip")):
+        pytest.skip("history not downloaded")
+    import asyncio
+
+    from sonic_research import engine_replay
+    from sonic_research.jesse_audit.filters import load_filters
+
+    tick, calls = engine_replay.Engine.tick, {"n": 0}
+
+    async def halting_tick(self):
+        await tick(self)
+        calls["n"] += 1
+        if calls["n"] == 5:
+            self.halted = "daily_loss_limit"
+
+    async def refuse(self):
+        raise ValueError("daily_loss_still_breached")
+
+    monkeypatch.setattr(engine_replay.Engine, "tick", halting_tick)
+    monkeypatch.setattr(engine_replay.Engine, "clear_halt", refuse)
+    frozen = Path(__file__).resolve().parents[1] / "reports" / "jesse_filters.json"
+    report = asyncio.run(engine_replay.replay(
+        "2023-09", "2023-09", engine_replay.Limits(symbols=["SOLUSDT"]),
+        filters=load_filters(frozen)))
+    assert report["errors"] == []
+
+
+def test_engine_half_in_a_missing_hour_does_not_crash():
+    from sonic_research.data import Bars as B
+    trade = {"symbol": "SOLUSDT", "qty": 1.0, "entry_price": 100.02, "stop_price": 100.02,
+             "risk_usdt": 3.02, "target_price": 101.0, "opened_ms": HOUR0,
+             "closed_ms": HOUR0 + 5 * H_MS, "exit_price": 100.0, "pnl": 0.0, "scaled": 1,
+             "exit_reason": "breakeven"}
+    empty = B("SOLUSDT", np.array([], dtype=np.int64), *(np.array([]) for _ in range(4)))
+    got = normalize_engine(trade, [("SOLUSDT", HOUR0 + 2 * H_MS)], empty, step="0.01",
+                           tick="0.01")
+    assert got["legs"][1]["raw"] == 101.0 and got["legs"][1]["anchor_missing"] is True
+
+
+def test_duplicate_trade_keys_are_refused():
+    with pytest.raises(ValueError, match="duplicate"):
+        match([_norm(), _norm()], [_norm()], end_ms=HOUR0 + 100 * H_MS)
