@@ -116,7 +116,8 @@ def prove_minute_path(row: Row, synthetic: dict[str, np.ndarray],
     if len(right["legs"]) != 3 or len(left["legs"]) != 3:
         return
     lh, rh, rx = left["legs"][1], right["legs"][1], right["legs"][2]
-    if (lh["kind"], rh["kind"], rx["kind"]) != ("half", "half", "exit") or "ms" not in rh:
+    if (lh["kind"], rh["kind"], rx["kind"]) != ("half", "half", "exit") \
+            or "ms" not in rh or "ms" not in lh:
         return
     if not (lh["hour"] == rh["hour"] == rx["hour"] and _same(lh["raw"], rh["raw"])
             and left["legs"][2]["hour"] > rx["hour"]):
@@ -125,13 +126,15 @@ def prove_minute_path(row: Row, synthetic: dict[str, np.ndarray],
         else right["stop"]
     if not _same(rx["raw"], level):
         return
-    lo, hi = rh["ms"] - 60_000, rx["hour"] + H_MS
+    hi = rx["hour"] + H_MS
 
-    def low(minutes: np.ndarray) -> float:
-        window = minutes[(minutes[:, 0] >= lo) & (minutes[:, 0] < hi)]
+    def low(minutes: np.ndarray, half_ms: int) -> float:
+        """Lowest low from the minute of THIS series' own half fill to the end of the hour."""
+        window = minutes[(minutes[:, 0] >= half_ms - 60_000) & (minutes[:, 0] < hi)]
         return float(window[:, 4].min()) if len(window) else float("nan")
 
-    real_low, synth_low = low(real[row.symbol]), low(synthetic[row.symbol])
+    real_low = low(real[row.symbol], rh["ms"])
+    synth_low = low(synthetic[row.symbol], lh["ms"])
     row.proof.update({"exit_level": level, "real_low_after_half": real_low,
                       "synthetic_low_after_half": synth_low})
     if real_low <= level < synth_low:

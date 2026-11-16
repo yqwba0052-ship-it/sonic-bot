@@ -1011,3 +1011,20 @@ def test_minute_path_refused_when_real_minutes_never_touch():
     explain.prove_minute_path(rows[0], {"SOLUSDT": _hour_minutes(hold)},
                               {"SOLUSDT": _hour_minutes(hold)})
     assert rows[0].category == "unexplained"
+
+
+def test_minute_path_measures_each_series_after_its_own_half():
+    """The synthetic path dips to the hour low BEFORE its own (later) half fill; that dip must
+    not count, since the question is what happened after each side's half."""
+    eff = 100 * 1.0002
+    synthetic = [99.8] * 20 + [101.2] * 20 + [100.6] * 20  # low first, half at minute 21+
+    real = [100.5] * 5 + [101.2] * 10 + [99.9] * 45        # half early, then back to entry
+    left = _norm(half=(HOUR0 + 2 * H_MS, 101.0, 0.5), exit_=(HOUR0 + 9 * H_MS, eff, "breakeven"))
+    right = _norm(half=(HOUR0 + 2 * H_MS, 101.0, 0.5), exit_=(HOUR0 + 2 * H_MS, eff, "breakeven"))
+    left["legs"][1]["ms"] = HOUR0 + 2 * H_MS + 22 * 60_000
+    right["legs"][1]["ms"] = HOUR0 + 2 * H_MS + 6 * 60_000
+    rows, *_ = match([left], [right], end_ms=HOUR0 + 100 * H_MS)
+    explain.prove_minute_path(rows[0], {"SOLUSDT": _hour_minutes(synthetic)},
+                              {"SOLUSDT": _hour_minutes(real)})
+    assert rows[0].category == "intrahour_order"
+    assert rows[0].proof["synthetic_low_after_half"] > eff
