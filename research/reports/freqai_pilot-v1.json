@@ -1,0 +1,286 @@
+{
+ "name": "pilot-v1",
+ "window": "pilot",
+ "coins": [
+  "SOLUSDT",
+  "TRXUSDT"
+ ],
+ "start": "2023-01",
+ "end": "2023-06",
+ "predictions": 2172,
+ "cases": {
+  "A": {
+   "metrics": {
+    "trades": 12,
+    "win_rate_pct": 83.3,
+    "net": 0.5463760003268304,
+    "profit_factor": 1.8324509250604537,
+    "max_dd_pct": 1.82,
+    "avg_win": 0.1202722199097829,
+    "avg_loss": -0.3281730993854993,
+    "trading_days": 12,
+    "by_year": {
+     "2023": 0.5463760003268303
+    },
+    "by_month": {
+     "2023-01": 0.020870616217265707,
+     "2023-02": -0.3490752642299992,
+     "2023-03": 0.06975071463499681,
+     "2023-04": -0.22413881752919917,
+     "2023-06": 1.0289687512337662
+    },
+    "by_coin": {
+     "TRXUSDT": 0.7721786937193194,
+     "SOLUSDT": -0.22580269339248887
+    }
+   },
+   "rejected": [],
+   "missing_predictions": [],
+   "reordered_bars": 0,
+   "open_at_end": 0,
+   "plan_mismatch": []
+  },
+  "B": {
+   "metrics": {
+    "trades": 2,
+    "win_rate_pct": 50.0,
+    "net": -0.2930840201917756,
+    "profit_factor": 0.05350784914556787,
+    "max_dd_pct": 1.03,
+    "avg_win": 0.016568859578223794,
+    "avg_loss": -0.3096528797699994,
+    "trading_days": 2,
+    "by_year": {
+     "2023": -0.2930840201917756
+    },
+    "by_month": {
+     "2023-04": -0.2930840201917756
+    },
+    "by_coin": {
+     "TRXUSDT": -0.2930840201917756
+    }
+   },
+   "rejected": [
+    {
+     "symbol": "TRXUSDT",
+     "at_ms": 1673395200000,
+     "pred": -0.025751840908487835
+    },
+    {
+     "symbol": "SOLUSDT",
+     "at_ms": 1676563200000,
+     "pred": -0.24669854824541634
+    },
+    {
+     "symbol": "TRXUSDT",
+     "at_ms": 1678867200000,
+     "pred": -0.09934634392763987
+    },
+    {
+     "symbol": "SOLUSDT",
+     "at_ms": 1679112000000,
+     "pred": -0.02565358953873189
+    },
+    {
+     "symbol": "TRXUSDT",
+     "at_ms": 1680278400000,
+     "pred": -0.02020389324430719
+    },
+    {
+     "symbol": "SOLUSDT",
+     "at_ms": 1681214400000,
+     "pred": -0.16013444920217654
+    },
+    {
+     "symbol": "TRXUSDT",
+     "at_ms": 1682712000000,
+     "pred": -0.030714325779381345
+    },
+    {
+     "symbol": "SOLUSDT",
+     "at_ms": 1682740800000,
+     "pred": -0.004543487586285852
+    },
+    {
+     "symbol": "TRXUSDT",
+     "at_ms": 1687665600000,
+     "pred": -0.004219629293156864
+    },
+    {
+     "symbol": "SOLUSDT",
+     "at_ms": 1688068800000,
+     "pred": -0.10731820866701906
+    }
+   ],
+   "missing_predictions": [],
+   "reordered_bars": 0,
+   "open_at_end": 0,
+   "plan_mismatch": [],
+   "changes": {
+    "items": [
+     {
+      "symbol": "TRXUSDT",
+      "opened_ms": 1682712000000,
+      "effect": -0.9759705393240025,
+      "kind": "dropped"
+     },
+     {
+      "symbol": "SOLUSDT",
+      "opened_ms": 1679112000000,
+      "effect": -0.04227141020519325,
+      "kind": "dropped"
+     },
+     {
+      "symbol": "SOLUSDT",
+      "opened_ms": 1688068800000,
+      "effect": -0.033207101818174926,
+      "kind": "dropped"
+     },
+     {
+      "symbol": "TRXUSDT",
+      "opened_ms": 1678867200000,
+      "effect": -0.027479304429803564,
+      "kind": "dropped"
+     },
+     {
+      "symbol": "SOLUSDT",
+      "opened_ms": 1682740800000,
+      "effect": -0.02719441674244255,
+      "kind": "dropped"
+     },
+     {
+      "symbol": "TRXUSDT",
+      "opened_ms": 1673395200000,
+      "effect": -0.020870616217265707,
+      "kind": "dropped"
+     },
+     {
+      "symbol": "SOLUSDT",
+      "opened_ms": 1681214400000,
+      "effect": -0.020599642071699557,
+      "kind": "dropped"
+     },
+     {
+      "symbol": "TRXUSDT",
+      "opened_ms": 1687665600000,
+      "effect": -0.01979111009158882,
+      "kind": "dropped"
+     },
+     {
+      "symbol": "TRXUSDT",
+      "opened_ms": 1680278400000,
+      "effect": -0.019055986657434333,
+      "kind": "dropped"
+     },
+     {
+      "symbol": "TRXUSDT",
+      "opened_ms": 1681473600000,
+      "effect": -0.002381945228999982,
+      "kind": "changed"
+     },
+     {
+      "symbol": "TRXUSDT",
+      "opened_ms": 1682265600000,
+      "effect": 0.00028678803799999514,
+      "kind": "changed"
+     },
+     {
+      "symbol": "SOLUSDT",
+      "opened_ms": 1676563200000,
+      "effect": 0.3490752642299992,
+      "kind": "dropped"
+     }
+    ],
+    "improved": 2,
+    "worsened": 10,
+    "dropped_losers": 1,
+    "dropped_winners": 9
+   },
+   "stability": {
+    "diff": -0.839460020518606,
+    "by_year": {
+     "2023": -0.8394600205186059
+    },
+    "by_coin": {
+     "SOLUSDT": 0.22580269339248887,
+     "TRXUSDT": -1.0652627139110948
+    },
+    "years_better": 0,
+    "after_drop_best_trade": -1.1885352847486053,
+    "after_drop_each_coin_min": -1.0652627139110948
+   },
+   "verdict": {
+    "promising": false,
+    "checks": {
+     "1_net_or_risk": false,
+     "2_two_of_three_years": false,
+     "3_not_one_trade_or_coin": false,
+     "4_reproducible": true,
+     "5_no_leak": true
+    }
+   }
+  },
+  "C": {
+   "metrics": {
+    "trades": 12,
+    "win_rate_pct": 83.3,
+    "net": 0.5463760003268304,
+    "profit_factor": 1.8324509250604537,
+    "max_dd_pct": 1.82,
+    "avg_win": 0.1202722199097829,
+    "avg_loss": -0.3281730993854993,
+    "trading_days": 12,
+    "by_year": {
+     "2023": 0.5463760003268303
+    },
+    "by_month": {
+     "2023-01": 0.020870616217265707,
+     "2023-02": -0.3490752642299992,
+     "2023-03": 0.06975071463499681,
+     "2023-04": -0.22413881752919917,
+     "2023-06": 1.0289687512337662
+    },
+    "by_coin": {
+     "TRXUSDT": 0.7721786937193194,
+     "SOLUSDT": -0.22580269339248887
+    }
+   },
+   "rejected": [],
+   "missing_predictions": [],
+   "reordered_bars": 0,
+   "open_at_end": 0,
+   "plan_mismatch": [],
+   "changes": {
+    "items": [],
+    "improved": 0,
+    "worsened": 0,
+    "dropped_losers": 0,
+    "dropped_winners": 0
+   },
+   "stability": {
+    "diff": 0.0,
+    "by_year": {
+     "2023": 0.0
+    },
+    "by_coin": {
+     "SOLUSDT": 0.0,
+     "TRXUSDT": 0.0
+    },
+    "years_better": 0,
+    "after_drop_best_trade": 0.0,
+    "after_drop_each_coin_min": 0.0
+   },
+   "verdict": {
+    "promising": false,
+    "checks": {
+     "1_net_or_risk": false,
+     "2_two_of_three_years": false,
+     "3_not_one_trade_or_coin": false,
+     "4_reproducible": true,
+     "5_no_leak": true
+    }
+   }
+  }
+ },
+ "seconds": 27
+}
