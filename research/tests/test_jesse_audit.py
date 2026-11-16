@@ -773,3 +773,49 @@ def test_block_network_refuses_connect_ex_and_sendto():
             t.connect_ex(("93.184.216.34", 80))
         s.close()
         t.close()
+
+
+# ---- Phase 2, Task 11: full training run settings (no download in tests)
+
+from sonic_research.jesse_audit import full  # noqa: E402
+
+
+def test_full_window_is_training_only():
+    first, start, end = full.FULL_FIRST, full.FULL_START, full.FULL_END
+    assert (first, start, end) == ("2020-12", "2021-06", "2023-12")
+    assert all(m < "2024-01" for m in full.months_needed())
+
+
+def test_usable_coins_need_every_month_and_btc():
+    months = ["2020-12", "2021-01"]
+    sizes = {"SOLUSDT": [1, 2], "SUIUSDT": [None, 2], "BTCUSDT": [3, 4]}
+    assert full.usable_coins(sizes, ["SOLUSDT", "SUIUSDT"], months) == ["SOLUSDT"]
+    with pytest.raises(SystemExit, match="BTCUSDT"):
+        full.usable_coins({"SOLUSDT": [1, 2], "BTCUSDT": [None, 4]}, ["SOLUSDT"], months)
+
+
+def test_estimate_counts_minutes_per_month():
+    got = full.estimate({"SOLUSDT": [10, 20]}, ["2021-01", "2021-02"])
+    minutes = (31 + 28) * 1440
+    assert got["npy_bytes"] == minutes * 6 * 8 + 2 * 128
+    assert got["zip_bytes"] == 30
+
+
+def test_full_run_refuses_without_external_data_dir(tmp_path):
+    with pytest.raises(SystemExit, match="data dir"):
+        full.check_data_dir(None)
+    with pytest.raises(SystemExit, match="does not exist"):
+        full.check_data_dir(tmp_path / "missing")
+    assert full.check_data_dir(tmp_path) == tmp_path
+
+
+def test_data_on_c_counts_toward_budget(tmp_path):
+    assert full.on_c_drive(Path("C:/Users/x")) is True
+    assert full.on_c_drive(Path("E:/sonic")) is False
+
+
+def test_full_command_refuses_without_data_dir():
+    pytest.importorskip("jesse")
+    from sonic_research.jesse_audit.run_pilot import main
+    with pytest.raises(SystemExit, match="data dir"):
+        main(["--full"])
