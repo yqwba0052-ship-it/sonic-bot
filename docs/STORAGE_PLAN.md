@@ -60,3 +60,17 @@ D:\
 ## تحذير
 - إذا لم تكن الفلاشة موصولة، تتوقف الأدوات التي تحتاجها (مثل `--full`) برسالة واضحة، ولا تكتب إلى C بدلًا منها.
 - إذا تغيّر حرف الفلاشة (مثلًا E: بدل D:)، يُمرَّر المسار الجديد في الأمر، فلا شيء مثبَّت على الحرف داخل الكود.
+
+## تحديث 2026-11-17: مختبر FreqAI (موجود فعلًا)
+| المكان | المحتوى | الحجم |
+|---|---|---|
+| `D:\Sonic-FreqAI\venv` | Python 3.13 + Freqtrade 2026.10 + LightGBM/sklearn/datasieve/xgboost | 666 MB فعليًا (يحجز ≈ 2.8 GB على exFAT) |
+| `D:\Sonic-FreqAI\data\binance` و `binance-holdout` | شموع 4h بصيغة feather (محوَّلة من zip الموجودة) | ≈ 4 MB |
+| `D:\Sonic-FreqAI\user_data\models` | نماذج FreqAI المحفوظة لكل نافذة | ≈ 1.1 GB |
+| `D:\Sonic-FreqAI\predictions` | توقعات كل تشغيل (CSV لكل عملة) | ≈ 12 MB |
+| `D:\Sonic-FreqAI\reports`, `logs`, `configs`, `cache\tmp` | تقارير، فحوص، أقفال، سجلات، ملفات مؤقتة | صغيرة |
+| `D:\Sonic-FreqAI\progress.json` | نقاط الاستئناف | — |
+- **قاعدة مضافة:** بيئة FreqAI على الفلاشة (بطلب المالك). C لم يُستهلك منه إلا حوالي 20 MB للتثبيت. إن تغيّر حرف الفلاشة
+  فالبيئة تحتاج إعادة إنشاء: `python -m venv` ثم `pip install -r D:\Sonic-FreqAI\logs\pip_freeze.txt` مع
+  `TMP/TEMP` على الفلاشة و `--no-cache-dir`.
+- مصدر البيانات واحد: ملفات `research/data/klines` الموجودة، تُحوَّل بـ `freqai_lab/convert.py` دون تنزيل.

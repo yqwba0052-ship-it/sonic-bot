@@ -106,7 +106,35 @@ C:\Users\sa\tools\jesse-venv\Scripts\python -W ignore -m sonic_research.jesse_au
 - C: بيئة Jesse 780 MB + بيانات بحث صغيرة (≈ 220 MB). D: بيانات الدقائق الكبيرة.
 - المساحة المسجّلة: انظر القسم 10.
 
-## 10ج. آخر تحديث 2026-11-17: اختبار 2024–2026 (مرة واحدة، مقفل)
+## 11. آخر تحديث 2026-11-17: مختبر FreqAI (اكتمل، والنتيجة: رفض)
+- الفرع: `research/freqai` (من `research/jesse` عند `7438022`). لا دمج في main.
+- التصميم ومعايير النجاح (مثبتة قبل التدريب): `docs/superpowers/specs/2026-11-17-freqai-design.md`.
+- **التقرير النهائي: `research/reports/freqai_final.md`.**
+- النتيجة: FreqAI (LightGBM، تدريب دوري كل 30 يومًا، دون تسرب، ومع قابلية تكرار مثبتة) **لم يحسّن Sonic**:
+  - التدريب 2021-06..2023-12:
+    - A: +13.81$ (82 صفقة، تراجع 5.11%).
+    - B (فلتر): +12.62$ (36 صفقة، تراجع 1.84%)، **فشل** في الشرطين 2 و3.
+    - C (ترتيب): مطابق لـ A.
+  - التحقق التاريخي 2024–2026 (مرة واحدة، مقفل): A +26.23$، B **+0.83$**، C +26.15$.
+  - **التوصية: رفض.** لا فلتر ولا ترتيب في Sonic.
+- الكود في `research/sonic_research/freqai_lab/`: convert، strategies/SonicFreqAI، predict، evaluate، experiment،
+  audit، freeze. البيئة والبيانات والنماذج والتوقعات على `D:\Sonic-FreqAI` (انظر `docs/STORAGE_PLAN.md`).
+- حالة الإغلاق: `D:\Sonic-FreqAI\FINAL_SESSION_STATUS.md`، والتقدم: `D:\Sonic-FreqAI\progress.json`.
+- **للتشغيل والتحقق في جلسة جديدة** (من مجلد `research\`):
+  ```
+  D:\Sonic-FreqAI\venv\Scripts\python -m pytest -q -p no:cacheprovider tests/test_freqai_lab.py
+  C:\Users\sa\tools\jesse-venv\Scripts\python -m pytest -q -p no:cacheprovider -p no:anyio -W ignore::DeprecationWarning tests/test_freqai_lab.py
+  D:\Sonic-FreqAI\venv\Scripts\python -m sonic_research.freqai_lab.predict <name> 20210601-20240101 SOLUSDT XRPUSDT DOGEUSDT ADAUSDT TRXUSDT BNBUSDT AVAXUSDT
+  D:\Sonic-FreqAI\venv\Scripts\python -m sonic_research.freqai_lab.audit <name> <twin> 2021-06-01 <coins...>
+  C:\Users\sa\tools\jesse-venv\Scripts\python -m sonic_research.freqai_lab.experiment <name> train
+  ```
+  التحقق التاريخي `holdout` **مقفل**، فلا يُعاد تشغيله.
+- **غير مكتمل أو مؤجل:**
+  - لا شيء مطلوب في FreqAI.
+  - Hummingbot لم يبدأ.
+  - مقترحا الخادم (تصنيف التعادل، وسجل Binance في الحساب التجريبي) ما زالا مؤجلين.
+
+## 10ج. تحديث 2026-11-17: اختبار 2024–2026 (مرة واحدة، مقفل)
 - المالك **اعتمد Jesse مدققًا بحثيًا لـ Sonic** مع حدوده. الحدود مكتوبة في `research/reports/jesse_holdout.md`.
 - ثُبّت المنهج قبل فتح البيانات: `research/reports/jesse_holdout_manifest.json` (commit `ff261de`).
   وضع `--holdout` في `run_pilot.py` و `jesse_audit/holdout.py` و `jesse_audit/freeze.py`.
