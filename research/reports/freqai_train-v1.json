@@ -1,0 +1,2275 @@
+{
+ "name": "train-v1",
+ "window": "train",
+ "coins": [
+  "SOLUSDT",
+  "XRPUSDT",
+  "DOGEUSDT",
+  "ADAUSDT",
+  "TRXUSDT",
+  "BNBUSDT",
+  "AVAXUSDT"
+ ],
+ "start": "2021-06",
+ "end": "2023-12",
+ "predictions": 39648,
+ "cases": {
+  "A": {
+   "metrics": {
+    "trades": 82,
+    "win_rate_pct": 86.6,
+    "net": 13.80572579965805,
+    "profit_factor": 4.819809096360795,
+    "max_dd_pct": 5.11,
+    "avg_win": 0.24535170093233866,
+    "avg_loss": -0.3285677242307268,
+    "trading_days": 66,
+    "by_year": {
+     "2021": 0.7186177133576023,
+     "2022": 0.9843821316950129,
+     "2023": 12.10272595460544
+    },
+    "by_month": {
+     "2021-07": -0.33238791731887185,
+     "2021-08": 0.6684946636200009,
+     "2021-09": 0.06917657028915442,
+     "2021-10": 0.22966852901801005,
+     "2021-11": 0.08366586774930887,
+     "2022-03": -0.579757131666472,
+     "2022-07": 0.11366152335743235,
+     "2022-08": 0.047783412097872076,
+     "2022-10": 0.0907154442088435,
+     "2022-11": 1.293151364548882,
+     "2022-12": 0.018827519148455003,
+     "2023-01": 0.022244933384154886,
+     "2023-02": -0.6041771226692119,
+     "2023-03": -0.23248313350544658,
+     "2023-04": -0.5393818320713237,
+     "2023-05": -0.2054574778038049,
+     "2023-06": 1.061949838382626,
+     "2023-07": -0.2140101349620121,
+     "2023-08": 0.043296791974145,
+     "2023-09": 0.02116082997914396,
+     "2023-10": -0.22086802515272985,
+     "2023-11": 0.017867520424689566,
+     "2023-12": 12.95258376662521
+    },
+    "by_coin": {
+     "XRPUSDT": -0.30273807894539356,
+     "DOGEUSDT": 1.9832213596787516,
+     "BNBUSDT": -1.1257348370634548,
+     "SOLUSDT": -0.5735274928084991,
+     "TRXUSDT": 1.0342564937060807,
+     "ADAUSDT": 0.029628176790564044,
+     "AVAXUSDT": 12.760620178300002
+    }
+   },
+   "rejected": [],
+   "missing_predictions": [],
+   "reordered_bars": 0,
+   "open_at_end": 0,
+   "plan_mismatch": [
+    {
+     "at_ms": 1645848000000,
+     "symbol": "SOLUSDT",
+     "what": "candles_not_aligned"
+    },
+    {
+     "at_ms": 1645848000000,
+     "symbol": "XRPUSDT",
+     "what": "candles_not_aligned"
+    },
+    {
+     "at_ms": 1645848000000,
+     "symbol": "TRXUSDT",
+     "what": "candles_not_aligned"
+    },
+    {
+     "at_ms": 1645862400000,
+     "symbol": "SOLUSDT",
+     "what": "candles_not_aligned"
+    },
+    {
+     "at_ms": 1645862400000,
+     "symbol": "XRPUSDT",
+     "what": "candles_not_aligned"
+    },
+    {
+     "at_ms": 1645862400000,
+     "symbol": "TRXUSDT",
+     "what": "candles_not_aligned"
+    },
+    {
+     "at_ms": 1645876800000,
+     "symbol": "SOLUSDT",
+     "what": "candles_not_aligned"
+    },
+    {
+     "at_ms": 1645876800000,
+     "symbol": "XRPUSDT",
+     "what": "candles_not_aligned"
+    },
+    {
+     "at_ms": 1645876800000,
+     "symbol": "TRXUSDT",
+     "what": "candles_not_aligned"
+    },
+    {
+     "at_ms": 1645891200000,
+     "symbol": "SOLUSDT",
+     "what": "candles_not_aligned"
+    },
+    {
+     "at_ms": 1645891200000,
+     "symbol": "XRPUSDT",
+     "what": "candles_not_aligned"
+    },
+    {
+     "at_ms": 1645891200000,
+     "symbol": "TRXUSDT",
+     "what": "candles_not_aligned"
+    },
+    {
+     "at_ms": 1645905600000,
+     "symbol": "SOLUSDT",
+     "what": "candles_not_aligned"
+    },
+    {
+     "at_ms": 1645905600000,
+     "symbol": "XRPUSDT",
+     "what": "candles_not_aligned"
+    },
+    {
+     "at_ms": 1645905600000,
+     "symbol": "TRXUSDT",
+     "what": "candles_not_aligned"
+    },
+    {
+     "at_ms": 1645920000000,
+     "symbol": "SOLUSDT",
+     "what": "candles_not_aligned"
+    },
+    {
+     "at_ms": 1645920000000,
+     "symbol": "XRPUSDT",
+     "what": "candles_not_aligned"
+    },
+    {
+     "at_ms": 1645920000000,
+     "symbol": "TRXUSDT",
+     "what": "candles_not_aligned"
+    },
+    {
+     "at_ms": 1645934400000,
+     "symbol": "SOLUSDT",
+     "what": "candles_not_aligned"
+    },
+    {
+     "at_ms": 1645934400000,
+     "symbol": "XRPUSDT",
+     "what": "candles_not_aligned"
+    },
+    {
+     "at_ms": 1645934400000,
+     "symbol": "TRXUSDT",
+     "what": "candles_not_aligned"
+    },
+    {
+     "at_ms": 1645948800000,
+     "symbol": "SOLUSDT",
+     "what": "candles_not_aligned"
+    },
+    {
+     "at_ms": 1645948800000,
+     "symbol": "XRPUSDT",
+     "what": "candles_not_aligned"
+    },
+    {
+     "at_ms": 1645948800000,
+     "symbol": "TRXUSDT",
+     "what": "candles_not_aligned"
+    },
+    {
+     "at_ms": 1645963200000,
+     "symbol": "SOLUSDT",
+     "what": "candles_not_aligned"
+    },
+    {
+     "at_ms": 1645963200000,
+     "symbol": "XRPUSDT",
+     "what": "candles_not_aligned"
+    },
+    {
+     "at_ms": 1645963200000,
+     "symbol": "TRXUSDT",
+     "what": "candles_not_aligned"
+    },
+    {
+     "at_ms": 1645977600000,
+     "symbol": "SOLUSDT",
+     "what": "candles_not_aligned"
+    },
+    {
+     "at_ms": 1645977600000,
+     "symbol": "XRPUSDT",
+     "what": "candles_not_aligned"
+    },
+    {
+     "at_ms": 1645977600000,
+     "symbol": "TRXUSDT",
+     "what": "candles_not_aligned"
+    },
+    {
+     "at_ms": 1645992000000,
+     "symbol": "SOLUSDT",
+     "what": "candles_not_aligned"
+    },
+    {
+     "at_ms": 1645992000000,
+     "symbol": "XRPUSDT",
+     "what": "candles_not_aligned"
+    },
+    {
+     "at_ms": 1645992000000,
+     "symbol": "TRXUSDT",
+     "what": "candles_not_aligned"
+    },
+    {
+     "at_ms": 1646006400000,
+     "symbol": "SOLUSDT",
+     "what": "candles_not_aligned"
+    },
+    {
+     "at_ms": 1646006400000,
+     "symbol": "XRPUSDT",
+     "what": "candles_not_aligned"
+    },
+    {
+     "at_ms": 1646006400000,
+     "symbol": "TRXUSDT",
+     "what": "candles_not_aligned"
+    },
+    {
+     "at_ms": 1646020800000,
+     "symbol": "SOLUSDT",
+     "what": "candles_not_aligned"
+    },
+    {
+     "at_ms": 1646020800000,
+     "symbol": "XRPUSDT",
+     "what": "candles_not_aligned"
+    },
+    {
+     "at_ms": 1646020800000,
+     "symbol": "TRXUSDT",
+     "what": "candles_not_aligned"
+    },
+    {
+     "at_ms": 1646035200000,
+     "symbol": "SOLUSDT",
+     "what": "candles_not_aligned"
+    },
+    {
+     "at_ms": 1646035200000,
+     "symbol": "XRPUSDT",
+     "what": "candles_not_aligned"
+    },
+    {
+     "at_ms": 1646035200000,
+     "symbol": "TRXUSDT",
+     "what": "candles_not_aligned"
+    },
+    {
+     "at_ms": 1646049600000,
+     "symbol": "SOLUSDT",
+     "what": "candles_not_aligned"
+    },
+    {
+     "at_ms": 1646049600000,
+     "symbol": "XRPUSDT",
+     "what": "candles_not_aligned"
+    },
+    {
+     "at_ms": 1646049600000,
+     "symbol": "TRXUSDT",
+     "what": "candles_not_aligned"
+    },
+    {
+     "at_ms": 1646064000000,
+     "symbol": "SOLUSDT",
+     "what": "candles_not_aligned"
+    },
+    {
+     "at_ms": 1646064000000,
+     "symbol": "XRPUSDT",
+     "what": "candles_not_aligned"
+    },
+    {
+     "at_ms": 1646064000000,
+     "symbol": "TRXUSDT",
+     "what": "candles_not_aligned"
+    },
+    {
+     "at_ms": 1646078400000,
+     "symbol": "SOLUSDT",
+     "what": "candles_not_aligned"
+    },
+    {
+     "at_ms": 1646078400000,
+     "symbol": "XRPUSDT",
+     "what": "candles_not_aligned"
+    },
+    {
+     "at_ms": 1646078400000,
+     "symbol": "TRXUSDT",
+     "what": "candles_not_aligned"
+    },
+    {
+     "at_ms": 1646092800000,
+     "symbol": "SOLUSDT",
+     "what": "candles_not_aligned"
+    },
+    {
+     "at_ms": 1646092800000,
+     "symbol": "XRPUSDT",
+     "what": "candles_not_aligned"
+    },
+    {
+     "at_ms": 1646092800000,
+     "symbol": "TRXUSDT",
+     "what": "candles_not_aligned"
+    },
+    {
+     "at_ms": 1648785600000,
+     "symbol": "SOLUSDT",
+     "what": "candles_not_aligned"
+    },
+    {
+     "at_ms": 1648785600000,
+     "symbol": "XRPUSDT",
+     "what": "candles_not_aligned"
+    },
+    {
+     "at_ms": 1648785600000,
+     "symbol": "TRXUSDT",
+     "what": "candles_not_aligned"
+    },
+    {
+     "at_ms": 1648800000000,
+     "symbol": "SOLUSDT",
+     "what": "candles_not_aligned"
+    },
+    {
+     "at_ms": 1648800000000,
+     "symbol": "XRPUSDT",
+     "what": "candles_not_aligned"
+    },
+    {
+     "at_ms": 1648800000000,
+     "symbol": "TRXUSDT",
+     "what": "candles_not_aligned"
+    },
+    {
+     "at_ms": 1648814400000,
+     "symbol": "SOLUSDT",
+     "what": "candles_not_aligned"
+    },
+    {
+     "at_ms": 1648814400000,
+     "symbol": "XRPUSDT",
+     "what": "candles_not_aligned"
+    },
+    {
+     "at_ms": 1648814400000,
+     "symbol": "TRXUSDT",
+     "what": "candles_not_aligned"
+    },
+    {
+     "at_ms": 1648828800000,
+     "symbol": "SOLUSDT",
+     "what": "candles_not_aligned"
+    },
+    {
+     "at_ms": 1648828800000,
+     "symbol": "XRPUSDT",
+     "what": "candles_not_aligned"
+    },
+    {
+     "at_ms": 1648828800000,
+     "symbol": "TRXUSDT",
+     "what": "candles_not_aligned"
+    },
+    {
+     "at_ms": 1648843200000,
+     "symbol": "SOLUSDT",
+     "what": "candles_not_aligned"
+    },
+    {
+     "at_ms": 1648843200000,
+     "symbol": "XRPUSDT",
+     "what": "candles_not_aligned"
+    },
+    {
+     "at_ms": 1648843200000,
+     "symbol": "TRXUSDT",
+     "what": "candles_not_aligned"
+    },
+    {
+     "at_ms": 1648857600000,
+     "symbol": "SOLUSDT",
+     "what": "candles_not_aligned"
+    },
+    {
+     "at_ms": 1648857600000,
+     "symbol": "XRPUSDT",
+     "what": "candles_not_aligned"
+    },
+    {
+     "at_ms": 1648857600000,
+     "symbol": "TRXUSDT",
+     "what": "candles_not_aligned"
+    },
+    {
+     "at_ms": 1648872000000,
+     "symbol": "SOLUSDT",
+     "what": "candles_not_aligned"
+    },
+    {
+     "at_ms": 1648872000000,
+     "symbol": "XRPUSDT",
+     "what": "candles_not_aligned"
+    },
+    {
+     "at_ms": 1648872000000,
+     "symbol": "TRXUSDT",
+     "what": "candles_not_aligned"
+    },
+    {
+     "at_ms": 1648886400000,
+     "symbol": "SOLUSDT",
+     "what": "candles_not_aligned"
+    },
+    {
+     "at_ms": 1648886400000,
+     "symbol": "XRPUSDT",
+     "what": "candles_not_aligned"
+    },
+    {
+     "at_ms": 1648886400000,
+     "symbol": "TRXUSDT",
+     "what": "candles_not_aligned"
+    },
+    {
+     "at_ms": 1648900800000,
+     "symbol": "SOLUSDT",
+     "what": "candles_not_aligned"
+    },
+    {
+     "at_ms": 1648900800000,
+     "symbol": "XRPUSDT",
+     "what": "candles_not_aligned"
+    },
+    {
+     "at_ms": 1648900800000,
+     "symbol": "TRXUSDT",
+     "what": "candles_not_aligned"
+    },
+    {
+     "at_ms": 1648915200000,
+     "symbol": "SOLUSDT",
+     "what": "candles_not_aligned"
+    },
+    {
+     "at_ms": 1648915200000,
+     "symbol": "XRPUSDT",
+     "what": "candles_not_aligned"
+    },
+    {
+     "at_ms": 1648915200000,
+     "symbol": "TRXUSDT",
+     "what": "candles_not_aligned"
+    },
+    {
+     "at_ms": 1648929600000,
+     "symbol": "SOLUSDT",
+     "what": "candles_not_aligned"
+    },
+    {
+     "at_ms": 1648929600000,
+     "symbol": "XRPUSDT",
+     "what": "candles_not_aligned"
+    },
+    {
+     "at_ms": 1648929600000,
+     "symbol": "TRXUSDT",
+     "what": "candles_not_aligned"
+    },
+    {
+     "at_ms": 1648944000000,
+     "symbol": "SOLUSDT",
+     "what": "candles_not_aligned"
+    },
+    {
+     "at_ms": 1648944000000,
+     "symbol": "XRPUSDT",
+     "what": "candles_not_aligned"
+    },
+    {
+     "at_ms": 1648944000000,
+     "symbol": "TRXUSDT",
+     "what": "candles_not_aligned"
+    }
+   ]
+  },
+  "B": {
+   "metrics": {
+    "trades": 36,
+    "win_rate_pct": 91.7,
+    "net": 12.620423986127872,
+    "profit_factor": 13.659128686602477,
+    "max_dd_pct": 1.84,
+    "avg_win": 0.4126474706781173,
+    "avg_loss": -0.3323141820833328,
+    "trading_days": 30,
+    "by_year": {
+     "2021": -0.09085039529676536,
+     "2022": 0.14935452014856543,
+     "2023": 12.561919861276072
+    },
+    "by_month": {
+     "2021-07": -0.37191576292422235,
+     "2021-09": 0.028481779667217128,
+     "2021-10": 0.19347251787228895,
+     "2021-11": 0.05911107008795093,
+     "2022-03": 0.03363687898352786,
+     "2022-07": 0.025174714924128948,
+     "2022-08": 0.024040271066292647,
+     "2022-10": 0.025439811234287926,
+     "2022-11": 0.023226246852318055,
+     "2022-12": 0.01783659708801,
+     "2023-03": 0.12719328572123134,
+     "2023-04": -0.5198285415299231,
+     "2023-05": 0.018733403696194244,
+     "2023-06": 0.019043808204728997,
+     "2023-10": 0.0478455769080953,
+     "2023-12": 12.868932328275745
+    },
+    "by_coin": {
+     "XRPUSDT": 0.2146112246644857,
+     "DOGEUSDT": 0.23738834283990207,
+     "BNBUSDT": -0.6234275068281643,
+     "TRXUSDT": -0.17408069931471631,
+     "SOLUSDT": 0.15702401275392763,
+     "ADAUSDT": 0.048288433712435186,
+     "AVAXUSDT": 12.760620178300002
+    }
+   },
+   "rejected": [
+    {
+     "symbol": "ADAUSDT",
+     "at_ms": 1627300800000,
+     "pred": -0.0024502599505445374
+    },
+    {
+     "symbol": "TRXUSDT",
+     "at_ms": 1627300800000,
+     "pred": -0.0316877368728283
+    },
+    {
+     "symbol": "SOLUSDT",
+     "at_ms": 1627588800000,
+     "pred": -0.2237388304753049
+    },
+    {
+     "symbol": "DOGEUSDT",
+     "at_ms": 1628308800000,
+     "pred": -0.09001842330674707
+    },
+    {
+     "symbol": "AVAXUSDT",
+     "at_ms": 1631289600000,
+     "pred": -0.13672654753351962
+    },
+    {
+     "symbol": "TRXUSDT",
+     "at_ms": 1631361600000,
+     "pred": -0.12339228052701645
+    },
+    {
+     "symbol": "SOLUSDT",
+     "at_ms": 1633118400000,
+     "pred": -0.04419562072558807
+    },
+    {
+     "symbol": "DOGEUSDT",
+     "at_ms": 1633392000000,
+     "pred": -0.00699879713345403
+    },
+    {
+     "symbol": "DOGEUSDT",
+     "at_ms": 1636329600000,
+     "pred": -0.0076963942205908
+    },
+    {
+     "symbol": "ADAUSDT",
+     "at_ms": 1636430400000,
+     "pred": -0.10807239697077167
+    },
+    {
+     "symbol": "BNBUSDT",
+     "at_ms": 1644926400000,
+     "pred": -0.0004751394401799312
+    },
+    {
+     "symbol": "AVAXUSDT",
+     "at_ms": 1646121600000,
+     "pred": -0.028434653638329737
+    },
+    {
+     "symbol": "SOLUSDT",
+     "at_ms": 1646222400000,
+     "pred": -0.03816491357480378
+    },
+    {
+     "symbol": "BNBUSDT",
+     "at_ms": 1647561600000,
+     "pred": -0.0013826977026843471
+    },
+    {
+     "symbol": "SOLUSDT",
+     "at_ms": 1659038400000,
+     "pred": -0.12636030607077955
+    },
+    {
+     "symbol": "TRXUSDT",
+     "at_ms": 1659038400000,
+     "pred": -0.06063827422389168
+    },
+    {
+     "symbol": "DOGEUSDT",
+     "at_ms": 1659067200000,
+     "pred": -0.08296844475904935
+    },
+    {
+     "symbol": "DOGEUSDT",
+     "at_ms": 1659672000000,
+     "pred": -0.05726015739034305
+    },
+    {
+     "symbol": "DOGEUSDT",
+     "at_ms": 1666728000000,
+     "pred": -0.034393976638309384
+    },
+    {
+     "symbol": "BNBUSDT",
+     "at_ms": 1666728000000,
+     "pred": -0.05208914102380465
+    },
+    {
+     "symbol": "AVAXUSDT",
+     "at_ms": 1666756800000,
+     "pred": -0.041022512896904936
+    },
+    {
+     "symbol": "ADAUSDT",
+     "at_ms": 1666785600000,
+     "pred": -0.08502560761374905
+    },
+    {
+     "symbol": "TRXUSDT",
+     "at_ms": 1666785600000,
+     "pred": -0.0140195317791676
+    },
+    {
+     "symbol": "XRPUSDT",
+     "at_ms": 1667044800000,
+     "pred": -0.06355466670867568
+    },
+    {
+     "symbol": "TRXUSDT",
+     "at_ms": 1667606400000,
+     "pred": -0.018041366069932938
+    },
+    {
+     "symbol": "TRXUSDT",
+     "at_ms": 1673395200000,
+     "pred": -0.023006522669381593
+    },
+    {
+     "symbol": "ADAUSDT",
+     "at_ms": 1676491200000,
+     "pred": -0.09173332455406877
+    },
+    {
+     "symbol": "SOLUSDT",
+     "at_ms": 1676563200000,
+     "pred": -0.14003316440809693
+    },
+    {
+     "symbol": "AVAXUSDT",
+     "at_ms": 1676577600000,
+     "pred": -0.0515852253986143
+    },
+    {
+     "symbol": "DOGEUSDT",
+     "at_ms": 1676678400000,
+     "pred": -0.04469931582908408
+    },
+    {
+     "symbol": "BNBUSDT",
+     "at_ms": 1676721600000,
+     "pred": -0.06336981556225178
+    },
+    {
+     "symbol": "XRPUSDT",
+     "at_ms": 1676736000000,
+     "pred": -0.05033926204451134
+    },
+    {
+     "symbol": "XRPUSDT",
+     "at_ms": 1676908800000,
+     "pred": -0.03938920710007409
+    },
+    {
+     "symbol": "BNBUSDT",
+     "at_ms": 1678780800000,
+     "pred": -0.01535725990607992
+    },
+    {
+     "symbol": "TRXUSDT",
+     "at_ms": 1678867200000,
+     "pred": -0.09909009003198503
+    },
+    {
+     "symbol": "DOGEUSDT",
+     "at_ms": 1679126400000,
+     "pred": -0.02595401279738395
+    },
+    {
+     "symbol": "AVAXUSDT",
+     "at_ms": 1680105600000,
+     "pred": -0.0003156261739747929
+    },
+    {
+     "symbol": "TRXUSDT",
+     "at_ms": 1680278400000,
+     "pred": -0.013170874696498733
+    },
+    {
+     "symbol": "SOLUSDT",
+     "at_ms": 1681214400000,
+     "pred": -0.17436896721518297
+    },
+    {
+     "symbol": "TRXUSDT",
+     "at_ms": 1682712000000,
+     "pred": -0.00712305189317598
+    },
+    {
+     "symbol": "SOLUSDT",
+     "at_ms": 1682740800000,
+     "pred": -0.006751919663918712
+    },
+    {
+     "symbol": "ADAUSDT",
+     "at_ms": 1682784000000,
+     "pred": -0.03004865898671409
+    },
+    {
+     "symbol": "BNBUSDT",
+     "at_ms": 1682928000000,
+     "pred": -0.0003722760679511599
+    },
+    {
+     "symbol": "SOLUSDT",
+     "at_ms": 1688068800000,
+     "pred": -0.040323563673702344
+    },
+    {
+     "symbol": "DOGEUSDT",
+     "at_ms": 1688184000000,
+     "pred": -0.0266491703207412
+    },
+    {
+     "symbol": "XRPUSDT",
+     "at_ms": 1688529600000,
+     "pred": -0.05683258113836707
+    },
+    {
+     "symbol": "AVAXUSDT",
+     "at_ms": 1688817600000,
+     "pred": -0.11969884473919559
+    },
+    {
+     "symbol": "XRPUSDT",
+     "at_ms": 1689264000000,
+     "pred": -0.07222942220570408
+    },
+    {
+     "symbol": "DOGEUSDT",
+     "at_ms": 1689292800000,
+     "pred": -0.06928863581720214
+    },
+    {
+     "symbol": "SOLUSDT",
+     "at_ms": 1690430400000,
+     "pred": -0.09750816441204609
+    },
+    {
+     "symbol": "SOLUSDT",
+     "at_ms": 1691596800000,
+     "pred": -0.0371625659812404
+    },
+    {
+     "symbol": "DOGEUSDT",
+     "at_ms": 1691640000000,
+     "pred": -0.000746589204054199
+    },
+    {
+     "symbol": "SOLUSDT",
+     "at_ms": 1695960000000,
+     "pred": -0.008772065820416224
+    },
+    {
+     "symbol": "BNBUSDT",
+     "at_ms": 1697500800000,
+     "pred": -0.006384413075287939
+    },
+    {
+     "symbol": "XRPUSDT",
+     "at_ms": 1697817600000,
+     "pred": -0.015441844244039792
+    },
+    {
+     "symbol": "ADAUSDT",
+     "at_ms": 1697904000000,
+     "pred": -0.01253244980230705
+    },
+    {
+     "symbol": "TRXUSDT",
+     "at_ms": 1700856000000,
+     "pred": -0.025107620750157905
+    },
+    {
+     "symbol": "BNBUSDT",
+     "at_ms": 1702065600000,
+     "pred": -0.02318189825114731
+    },
+    {
+     "symbol": "TRXUSDT",
+     "at_ms": 1702569600000,
+     "pred": -0.02662658534827142
+    },
+    {
+     "symbol": "XRPUSDT",
+     "at_ms": 1703520000000,
+     "pred": -0.03411782766334704
+    }
+   ],
+   "missing_predictions": [],
+   "reordered_bars": 0,
+   "open_at_end": 0,
+   "plan_mismatch": [
+    {
+     "at_ms": 1645848000000,
+     "symbol": "SOLUSDT",
+     "what": "candles_not_aligned"
+    },
+    {
+     "at_ms": 1645848000000,
+     "symbol": "XRPUSDT",
+     "what": "candles_not_aligned"
+    },
+    {
+     "at_ms": 1645848000000,
+     "symbol": "TRXUSDT",
+     "what": "candles_not_aligned"
+    },
+    {
+     "at_ms": 1645862400000,
+     "symbol": "SOLUSDT",
+     "what": "candles_not_aligned"
+    },
+    {
+     "at_ms": 1645862400000,
+     "symbol": "XRPUSDT",
+     "what": "candles_not_aligned"
+    },
+    {
+     "at_ms": 1645862400000,
+     "symbol": "TRXUSDT",
+     "what": "candles_not_aligned"
+    },
+    {
+     "at_ms": 1645876800000,
+     "symbol": "SOLUSDT",
+     "what": "candles_not_aligned"
+    },
+    {
+     "at_ms": 1645876800000,
+     "symbol": "XRPUSDT",
+     "what": "candles_not_aligned"
+    },
+    {
+     "at_ms": 1645876800000,
+     "symbol": "TRXUSDT",
+     "what": "candles_not_aligned"
+    },
+    {
+     "at_ms": 1645891200000,
+     "symbol": "SOLUSDT",
+     "what": "candles_not_aligned"
+    },
+    {
+     "at_ms": 1645891200000,
+     "symbol": "XRPUSDT",
+     "what": "candles_not_aligned"
+    },
+    {
+     "at_ms": 1645891200000,
+     "symbol": "TRXUSDT",
+     "what": "candles_not_aligned"
+    },
+    {
+     "at_ms": 1645905600000,
+     "symbol": "SOLUSDT",
+     "what": "candles_not_aligned"
+    },
+    {
+     "at_ms": 1645905600000,
+     "symbol": "XRPUSDT",
+     "what": "candles_not_aligned"
+    },
+    {
+     "at_ms": 1645905600000,
+     "symbol": "TRXUSDT",
+     "what": "candles_not_aligned"
+    },
+    {
+     "at_ms": 1645920000000,
+     "symbol": "SOLUSDT",
+     "what": "candles_not_aligned"
+    },
+    {
+     "at_ms": 1645920000000,
+     "symbol": "XRPUSDT",
+     "what": "candles_not_aligned"
+    },
+    {
+     "at_ms": 1645920000000,
+     "symbol": "TRXUSDT",
+     "what": "candles_not_aligned"
+    },
+    {
+     "at_ms": 1645934400000,
+     "symbol": "SOLUSDT",
+     "what": "candles_not_aligned"
+    },
+    {
+     "at_ms": 1645934400000,
+     "symbol": "XRPUSDT",
+     "what": "candles_not_aligned"
+    },
+    {
+     "at_ms": 1645934400000,
+     "symbol": "TRXUSDT",
+     "what": "candles_not_aligned"
+    },
+    {
+     "at_ms": 1645948800000,
+     "symbol": "SOLUSDT",
+     "what": "candles_not_aligned"
+    },
+    {
+     "at_ms": 1645948800000,
+     "symbol": "XRPUSDT",
+     "what": "candles_not_aligned"
+    },
+    {
+     "at_ms": 1645948800000,
+     "symbol": "TRXUSDT",
+     "what": "candles_not_aligned"
+    },
+    {
+     "at_ms": 1645963200000,
+     "symbol": "SOLUSDT",
+     "what": "candles_not_aligned"
+    },
+    {
+     "at_ms": 1645963200000,
+     "symbol": "XRPUSDT",
+     "what": "candles_not_aligned"
+    },
+    {
+     "at_ms": 1645963200000,
+     "symbol": "TRXUSDT",
+     "what": "candles_not_aligned"
+    },
+    {
+     "at_ms": 1645977600000,
+     "symbol": "SOLUSDT",
+     "what": "candles_not_aligned"
+    },
+    {
+     "at_ms": 1645977600000,
+     "symbol": "XRPUSDT",
+     "what": "candles_not_aligned"
+    },
+    {
+     "at_ms": 1645977600000,
+     "symbol": "TRXUSDT",
+     "what": "candles_not_aligned"
+    },
+    {
+     "at_ms": 1645992000000,
+     "symbol": "SOLUSDT",
+     "what": "candles_not_aligned"
+    },
+    {
+     "at_ms": 1645992000000,
+     "symbol": "XRPUSDT",
+     "what": "candles_not_aligned"
+    },
+    {
+     "at_ms": 1645992000000,
+     "symbol": "TRXUSDT",
+     "what": "candles_not_aligned"
+    },
+    {
+     "at_ms": 1646006400000,
+     "symbol": "SOLUSDT",
+     "what": "candles_not_aligned"
+    },
+    {
+     "at_ms": 1646006400000,
+     "symbol": "XRPUSDT",
+     "what": "candles_not_aligned"
+    },
+    {
+     "at_ms": 1646006400000,
+     "symbol": "TRXUSDT",
+     "what": "candles_not_aligned"
+    },
+    {
+     "at_ms": 1646020800000,
+     "symbol": "SOLUSDT",
+     "what": "candles_not_aligned"
+    },
+    {
+     "at_ms": 1646020800000,
+     "symbol": "XRPUSDT",
+     "what": "candles_not_aligned"
+    },
+    {
+     "at_ms": 1646020800000,
+     "symbol": "TRXUSDT",
+     "what": "candles_not_aligned"
+    },
+    {
+     "at_ms": 1646035200000,
+     "symbol": "SOLUSDT",
+     "what": "candles_not_aligned"
+    },
+    {
+     "at_ms": 1646035200000,
+     "symbol": "XRPUSDT",
+     "what": "candles_not_aligned"
+    },
+    {
+     "at_ms": 1646035200000,
+     "symbol": "TRXUSDT",
+     "what": "candles_not_aligned"
+    },
+    {
+     "at_ms": 1646049600000,
+     "symbol": "SOLUSDT",
+     "what": "candles_not_aligned"
+    },
+    {
+     "at_ms": 1646049600000,
+     "symbol": "XRPUSDT",
+     "what": "candles_not_aligned"
+    },
+    {
+     "at_ms": 1646049600000,
+     "symbol": "TRXUSDT",
+     "what": "candles_not_aligned"
+    },
+    {
+     "at_ms": 1646064000000,
+     "symbol": "SOLUSDT",
+     "what": "candles_not_aligned"
+    },
+    {
+     "at_ms": 1646064000000,
+     "symbol": "XRPUSDT",
+     "what": "candles_not_aligned"
+    },
+    {
+     "at_ms": 1646064000000,
+     "symbol": "TRXUSDT",
+     "what": "candles_not_aligned"
+    },
+    {
+     "at_ms": 1646078400000,
+     "symbol": "SOLUSDT",
+     "what": "candles_not_aligned"
+    },
+    {
+     "at_ms": 1646078400000,
+     "symbol": "XRPUSDT",
+     "what": "candles_not_aligned"
+    },
+    {
+     "at_ms": 1646078400000,
+     "symbol": "TRXUSDT",
+     "what": "candles_not_aligned"
+    },
+    {
+     "at_ms": 1646092800000,
+     "symbol": "SOLUSDT",
+     "what": "candles_not_aligned"
+    },
+    {
+     "at_ms": 1646092800000,
+     "symbol": "XRPUSDT",
+     "what": "candles_not_aligned"
+    },
+    {
+     "at_ms": 1646092800000,
+     "symbol": "TRXUSDT",
+     "what": "candles_not_aligned"
+    },
+    {
+     "at_ms": 1648785600000,
+     "symbol": "SOLUSDT",
+     "what": "candles_not_aligned"
+    },
+    {
+     "at_ms": 1648785600000,
+     "symbol": "XRPUSDT",
+     "what": "candles_not_aligned"
+    },
+    {
+     "at_ms": 1648785600000,
+     "symbol": "TRXUSDT",
+     "what": "candles_not_aligned"
+    },
+    {
+     "at_ms": 1648800000000,
+     "symbol": "SOLUSDT",
+     "what": "candles_not_aligned"
+    },
+    {
+     "at_ms": 1648800000000,
+     "symbol": "XRPUSDT",
+     "what": "candles_not_aligned"
+    },
+    {
+     "at_ms": 1648800000000,
+     "symbol": "TRXUSDT",
+     "what": "candles_not_aligned"
+    },
+    {
+     "at_ms": 1648814400000,
+     "symbol": "SOLUSDT",
+     "what": "candles_not_aligned"
+    },
+    {
+     "at_ms": 1648814400000,
+     "symbol": "XRPUSDT",
+     "what": "candles_not_aligned"
+    },
+    {
+     "at_ms": 1648814400000,
+     "symbol": "TRXUSDT",
+     "what": "candles_not_aligned"
+    },
+    {
+     "at_ms": 1648828800000,
+     "symbol": "SOLUSDT",
+     "what": "candles_not_aligned"
+    },
+    {
+     "at_ms": 1648828800000,
+     "symbol": "XRPUSDT",
+     "what": "candles_not_aligned"
+    },
+    {
+     "at_ms": 1648828800000,
+     "symbol": "TRXUSDT",
+     "what": "candles_not_aligned"
+    },
+    {
+     "at_ms": 1648843200000,
+     "symbol": "SOLUSDT",
+     "what": "candles_not_aligned"
+    },
+    {
+     "at_ms": 1648843200000,
+     "symbol": "XRPUSDT",
+     "what": "candles_not_aligned"
+    },
+    {
+     "at_ms": 1648843200000,
+     "symbol": "TRXUSDT",
+     "what": "candles_not_aligned"
+    },
+    {
+     "at_ms": 1648857600000,
+     "symbol": "SOLUSDT",
+     "what": "candles_not_aligned"
+    },
+    {
+     "at_ms": 1648857600000,
+     "symbol": "XRPUSDT",
+     "what": "candles_not_aligned"
+    },
+    {
+     "at_ms": 1648857600000,
+     "symbol": "TRXUSDT",
+     "what": "candles_not_aligned"
+    },
+    {
+     "at_ms": 1648872000000,
+     "symbol": "SOLUSDT",
+     "what": "candles_not_aligned"
+    },
+    {
+     "at_ms": 1648872000000,
+     "symbol": "XRPUSDT",
+     "what": "candles_not_aligned"
+    },
+    {
+     "at_ms": 1648872000000,
+     "symbol": "TRXUSDT",
+     "what": "candles_not_aligned"
+    },
+    {
+     "at_ms": 1648886400000,
+     "symbol": "SOLUSDT",
+     "what": "candles_not_aligned"
+    },
+    {
+     "at_ms": 1648886400000,
+     "symbol": "XRPUSDT",
+     "what": "candles_not_aligned"
+    },
+    {
+     "at_ms": 1648886400000,
+     "symbol": "TRXUSDT",
+     "what": "candles_not_aligned"
+    },
+    {
+     "at_ms": 1648900800000,
+     "symbol": "SOLUSDT",
+     "what": "candles_not_aligned"
+    },
+    {
+     "at_ms": 1648900800000,
+     "symbol": "XRPUSDT",
+     "what": "candles_not_aligned"
+    },
+    {
+     "at_ms": 1648900800000,
+     "symbol": "TRXUSDT",
+     "what": "candles_not_aligned"
+    },
+    {
+     "at_ms": 1648915200000,
+     "symbol": "SOLUSDT",
+     "what": "candles_not_aligned"
+    },
+    {
+     "at_ms": 1648915200000,
+     "symbol": "XRPUSDT",
+     "what": "candles_not_aligned"
+    },
+    {
+     "at_ms": 1648915200000,
+     "symbol": "TRXUSDT",
+     "what": "candles_not_aligned"
+    },
+    {
+     "at_ms": 1648929600000,
+     "symbol": "SOLUSDT",
+     "what": "candles_not_aligned"
+    },
+    {
+     "at_ms": 1648929600000,
+     "symbol": "XRPUSDT",
+     "what": "candles_not_aligned"
+    },
+    {
+     "at_ms": 1648929600000,
+     "symbol": "TRXUSDT",
+     "what": "candles_not_aligned"
+    },
+    {
+     "at_ms": 1648944000000,
+     "symbol": "SOLUSDT",
+     "what": "candles_not_aligned"
+    },
+    {
+     "at_ms": 1648944000000,
+     "symbol": "XRPUSDT",
+     "what": "candles_not_aligned"
+    },
+    {
+     "at_ms": 1648944000000,
+     "symbol": "TRXUSDT",
+     "what": "candles_not_aligned"
+    }
+   ],
+   "changes": {
+    "items": [
+     {
+      "symbol": "DOGEUSDT",
+      "opened_ms": 1666728000000,
+      "effect": -1.2530705583600001,
+      "kind": "dropped"
+     },
+     {
+      "symbol": "TRXUSDT",
+      "opened_ms": 1682712000000,
+      "effect": -1.0086217746380024,
+      "kind": "dropped"
+     },
+     {
+      "symbol": "DOGEUSDT",
+      "opened_ms": 1628308800000,
+      "effect": -0.6684946636200009,
+      "kind": "dropped"
+     },
+     {
+      "symbol": "TRXUSDT",
+      "opened_ms": 1631361600000,
+      "effect": -0.04069479062193729,
+      "kind": "dropped"
+     },
+     {
+      "symbol": "SOLUSDT",
+      "opened_ms": 1659038400000,
+      "effect": -0.04019461083855597,
+      "kind": "dropped"
+     },
+     {
+      "symbol": "SOLUSDT",
+      "opened_ms": 1627588800000,
+      "effect": -0.03952784560535049,
+      "kind": "dropped"
+     },
+     {
+      "symbol": "DOGEUSDT",
+      "opened_ms": 1633392000000,
+      "effect": -0.03459519187818527,
+      "kind": "dropped"
+     },
+     {
+      "symbol": "SOLUSDT",
+      "opened_ms": 1688068800000,
+      "effect": -0.033207101818174926,
+      "kind": "dropped"
+     },
+     {
+      "symbol": "XRPUSDT",
+      "opened_ms": 1703520000000,
+      "effect": -0.030772973973504585,
+      "kind": "dropped"
+     },
+     {
+      "symbol": "DOGEUSDT",
+      "opened_ms": 1688184000000,
+      "effect": -0.03018500524046896,
+      "kind": "dropped"
+     },
+     {
+      "symbol": "XRPUSDT",
+      "opened_ms": 1689264000000,
+      "effect": -0.02914008129710382,
+      "kind": "dropped"
+     },
+     {
+      "symbol": "DOGEUSDT",
+      "opened_ms": 1659067200000,
+      "effect": -0.028108887626127402,
+      "kind": "dropped"
+     },
+     {
+      "symbol": "TRXUSDT",
+      "opened_ms": 1678867200000,
+      "effect": -0.027479304429803564,
+      "kind": "dropped"
+     },
+     {
+      "symbol": "SOLUSDT",
+      "opened_ms": 1682740800000,
+      "effect": -0.02719441674244255,
+      "kind": "dropped"
+     },
+     {
+      "symbol": "SOLUSDT",
+      "opened_ms": 1690430400000,
+      "effect": -0.025800191639210837,
+      "kind": "dropped"
+     },
+     {
+      "symbol": "TRXUSDT",
+      "opened_ms": 1702569600000,
+      "effect": -0.02511449281939375,
+      "kind": "dropped"
+     },
+     {
+      "symbol": "BNBUSDT",
+      "opened_ms": 1702065600000,
+      "effect": -0.02499299721123151,
+      "kind": "dropped"
+     },
+     {
+      "symbol": "DOGEUSDT",
+      "opened_ms": 1676678400000,
+      "effect": -0.02496966186570633,
+      "kind": "dropped"
+     },
+     {
+      "symbol": "DOGEUSDT",
+      "opened_ms": 1636329600000,
+      "effect": -0.02455479766135793,
+      "kind": "dropped"
+     },
+     {
+      "symbol": "ADAUSDT",
+      "opened_ms": 1666785600000,
+      "effect": -0.02437712647267208,
+      "kind": "dropped"
+     },
+     {
+      "symbol": "DOGEUSDT",
+      "opened_ms": 1659672000000,
+      "effect": -0.02374314103157943,
+      "kind": "dropped"
+     },
+     {
+      "symbol": "SOLUSDT",
+      "opened_ms": 1691596800000,
+      "effect": -0.02274956934263265,
+      "kind": "dropped"
+     },
+     {
+      "symbol": "XRPUSDT",
+      "opened_ms": 1676908800000,
+      "effect": -0.02247950936346388,
+      "kind": "dropped"
+     },
+     {
+      "symbol": "SOLUSDT",
+      "opened_ms": 1681214400000,
+      "effect": -0.022356931278699595,
+      "kind": "dropped"
+     },
+     {
+      "symbol": "DOGEUSDT",
+      "opened_ms": 1689292800000,
+      "effect": -0.022307987947203844,
+      "kind": "dropped"
+     },
+     {
+      "symbol": "TRXUSDT",
+      "opened_ms": 1673395200000,
+      "effect": -0.022244933384154886,
+      "kind": "dropped"
+     },
+     {
+      "symbol": "XRPUSDT",
+      "opened_ms": 1697817600000,
+      "effect": -0.021985325993421095,
+      "kind": "dropped"
+     },
+     {
+      "symbol": "XRPUSDT",
+      "opened_ms": 1667044800000,
+      "effect": -0.021868863782242766,
+      "kind": "dropped"
+     },
+     {
+      "symbol": "ADAUSDT",
+      "opened_ms": 1676491200000,
+      "effect": -0.02166553769161582,
+      "kind": "dropped"
+     },
+     {
+      "symbol": "SOLUSDT",
+      "opened_ms": 1695960000000,
+      "effect": -0.02116082997914396,
+      "kind": "dropped"
+     },
+     {
+      "symbol": "DOGEUSDT",
+      "opened_ms": 1691640000000,
+      "effect": -0.020547222631512353,
+      "kind": "dropped"
+     },
+     {
+      "symbol": "TRXUSDT",
+      "opened_ms": 1659038400000,
+      "effect": -0.02018330996862002,
+      "kind": "dropped"
+     },
+     {
+      "symbol": "TRXUSDT",
+      "opened_ms": 1680278400000,
+      "effect": -0.01957213298500156,
+      "kind": "dropped"
+     },
+     {
+      "symbol": "TRXUSDT",
+      "opened_ms": 1700856000000,
+      "effect": -0.017867520424689566,
+      "kind": "dropped"
+     },
+     {
+      "symbol": "ADAUSDT",
+      "opened_ms": 1697904000000,
+      "effect": -0.01724223626384097,
+      "kind": "dropped"
+     },
+     {
+      "symbol": "TRXUSDT",
+      "opened_ms": 1667606400000,
+      "effect": -0.016364083280563685,
+      "kind": "dropped"
+     },
+     {
+      "symbol": "TRXUSDT",
+      "opened_ms": 1666785600000,
+      "effect": -0.01331235926616404,
+      "kind": "dropped"
+     },
+     {
+      "symbol": "BNBUSDT",
+      "opened_ms": 1666728000000,
+      "effect": -0.00571728345347669,
+      "kind": "dropped"
+     },
+     {
+      "symbol": "TRXUSDT",
+      "opened_ms": 1687665600000,
+      "effect": -0.0010771537217196363,
+      "kind": "changed"
+     },
+     {
+      "symbol": "TRXUSDT",
+      "opened_ms": 1670976000000,
+      "effect": -0.0009909220604450014,
+      "kind": "changed"
+     },
+     {
+      "symbol": "DOGEUSDT",
+      "opened_ms": 1703232000000,
+      "effect": -0.0009182071426536015,
+      "kind": "changed"
+     },
+     {
+      "symbol": "TRXUSDT",
+      "opened_ms": 1633449600000,
+      "effect": -0.0008543229252838055,
+      "kind": "changed"
+     },
+     {
+      "symbol": "XRPUSDT",
+      "opened_ms": 1701619200000,
+      "effect": -0.0008269380281308129,
+      "kind": "changed"
+     },
+     {
+      "symbol": "DOGEUSDT",
+      "opened_ms": 1697918400000,
+      "effect": -0.0007579425198594066,
+      "kind": "changed"
+     },
+     {
+      "symbol": "XRPUSDT",
+      "opened_ms": 1635235200000,
+      "effect": -0.0007464963422520107,
+      "kind": "changed"
+     },
+     {
+      "symbol": "DOGEUSDT",
+      "opened_ms": 1703721600000,
+      "effect": -0.0007354729706755964,
+      "kind": "changed"
+     },
+     {
+      "symbol": "XRPUSDT",
+      "opened_ms": 1667592000000,
+      "effect": -0.0004904760560000034,
+      "kind": "changed"
+     },
+     {
+      "symbol": "TRXUSDT",
+      "opened_ms": 1682265600000,
+      "effect": -0.00041422148945559345,
+      "kind": "changed"
+     },
+     {
+      "symbol": "TRXUSDT",
+      "opened_ms": 1697486400000,
+      "effect": -0.00040135048869121594,
+      "kind": "changed"
+     },
+     {
+      "symbol": "TRXUSDT",
+      "opened_ms": 1703260800000,
+      "effect": -0.0002903562038711928,
+      "kind": "changed"
+     },
+     {
+      "symbol": "DOGEUSDT",
+      "opened_ms": 1680120000000,
+      "effect": 9.115063148100455e-05,
+      "kind": "changed"
+     },
+     {
+      "symbol": "SOLUSDT",
+      "opened_ms": 1697443200000,
+      "effect": 0.0002737279266383959,
+      "kind": "changed"
+     },
+     {
+      "symbol": "TRXUSDT",
+      "opened_ms": 1681473600000,
+      "effect": 0.007145835687000002,
+      "kind": "changed"
+     },
+     {
+      "symbol": "ADAUSDT",
+      "opened_ms": 1682784000000,
+      "effect": 0.08194515735,
+      "kind": "dropped"
+     },
+     {
+      "symbol": "BNBUSDT",
+      "opened_ms": 1682928000000,
+      "effect": 0.22419088149999916,
+      "kind": "dropped"
+     },
+     {
+      "symbol": "BNBUSDT",
+      "opened_ms": 1697500800000,
+      "effect": 0.3088267293999995,
+      "kind": "dropped"
+     },
+     {
+      "symbol": "XRPUSDT",
+      "opened_ms": 1688529600000,
+      "effect": 0.32144340108599956,
+      "kind": "dropped"
+     },
+     {
+      "symbol": "XRPUSDT",
+      "opened_ms": 1676736000000,
+      "effect": 0.3242165673599987,
+      "kind": "dropped"
+     },
+     {
+      "symbol": "SOLUSDT",
+      "opened_ms": 1676563200000,
+      "effect": 0.3490752642299992,
+      "kind": "dropped"
+     },
+     {
+      "symbol": "DOGEUSDT",
+      "opened_ms": 1679126400000,
+      "effect": 0.38706457302500047,
+      "kind": "dropped"
+     },
+     {
+      "symbol": "SOLUSDT",
+      "opened_ms": 1646222400000,
+      "effect": 0.6133940106499999,
+      "kind": "dropped"
+     }
+    ],
+    "improved": 11,
+    "worsened": 50,
+    "dropped_losers": 8,
+    "dropped_winners": 38
+   },
+   "stability": {
+    "diff": -1.1853018135301792,
+    "by_year": {
+     "2021": -0.8094681086543676,
+     "2022": -0.8350276115464474,
+     "2023": 0.45919390667063276
+    },
+    "by_coin": {
+     "ADAUSDT": 0.018660256921871142,
+     "AVAXUSDT": 0.0,
+     "BNBUSDT": 0.5023073302352905,
+     "DOGEUSDT": -1.7458330168388496,
+     "SOLUSDT": 0.7305515055624268,
+     "TRXUSDT": -1.2083371930207971,
+     "XRPUSDT": 0.5173493036098793
+    },
+    "years_better": 1,
+    "after_drop_best_trade": -1.7986958241801791,
+    "after_drop_each_coin_min": -1.915853319092606
+   },
+   "verdict": {
+    "promising": false,
+    "checks": {
+     "1_net_or_risk": true,
+     "2_two_of_three_years": false,
+     "3_not_one_trade_or_coin": false,
+     "4_reproducible": true,
+     "5_no_leak": true
+    }
+   }
+  },
+  "C": {
+   "metrics": {
+    "trades": 82,
+    "win_rate_pct": 86.6,
+    "net": 13.80572579965805,
+    "profit_factor": 4.819809096360795,
+    "max_dd_pct": 5.11,
+    "avg_win": 0.24535170093233866,
+    "avg_loss": -0.3285677242307268,
+    "trading_days": 66,
+    "by_year": {
+     "2021": 0.7186177133576023,
+     "2022": 0.9843821316950129,
+     "2023": 12.10272595460544
+    },
+    "by_month": {
+     "2021-07": -0.33238791731887185,
+     "2021-08": 0.6684946636200009,
+     "2021-09": 0.06917657028915442,
+     "2021-10": 0.22966852901801005,
+     "2021-11": 0.08366586774930887,
+     "2022-03": -0.579757131666472,
+     "2022-07": 0.11366152335743235,
+     "2022-08": 0.047783412097872076,
+     "2022-10": 0.0907154442088435,
+     "2022-11": 1.293151364548882,
+     "2022-12": 0.018827519148455003,
+     "2023-01": 0.022244933384154886,
+     "2023-02": -0.6041771226692119,
+     "2023-03": -0.23248313350544658,
+     "2023-04": -0.5393818320713237,
+     "2023-05": -0.2054574778038049,
+     "2023-06": 1.061949838382626,
+     "2023-07": -0.2140101349620121,
+     "2023-08": 0.043296791974145,
+     "2023-09": 0.02116082997914396,
+     "2023-10": -0.22086802515272985,
+     "2023-11": 0.017867520424689566,
+     "2023-12": 12.95258376662521
+    },
+    "by_coin": {
+     "XRPUSDT": -0.30273807894539356,
+     "DOGEUSDT": 1.9832213596787516,
+     "BNBUSDT": -1.1257348370634548,
+     "SOLUSDT": -0.5735274928084991,
+     "TRXUSDT": 1.0342564937060807,
+     "ADAUSDT": 0.029628176790564044,
+     "AVAXUSDT": 12.760620178300002
+    }
+   },
+   "rejected": [],
+   "missing_predictions": [],
+   "reordered_bars": 6,
+   "open_at_end": 0,
+   "plan_mismatch": [
+    {
+     "at_ms": 1645848000000,
+     "symbol": "SOLUSDT",
+     "what": "candles_not_aligned"
+    },
+    {
+     "at_ms": 1645848000000,
+     "symbol": "XRPUSDT",
+     "what": "candles_not_aligned"
+    },
+    {
+     "at_ms": 1645848000000,
+     "symbol": "TRXUSDT",
+     "what": "candles_not_aligned"
+    },
+    {
+     "at_ms": 1645862400000,
+     "symbol": "SOLUSDT",
+     "what": "candles_not_aligned"
+    },
+    {
+     "at_ms": 1645862400000,
+     "symbol": "XRPUSDT",
+     "what": "candles_not_aligned"
+    },
+    {
+     "at_ms": 1645862400000,
+     "symbol": "TRXUSDT",
+     "what": "candles_not_aligned"
+    },
+    {
+     "at_ms": 1645876800000,
+     "symbol": "SOLUSDT",
+     "what": "candles_not_aligned"
+    },
+    {
+     "at_ms": 1645876800000,
+     "symbol": "XRPUSDT",
+     "what": "candles_not_aligned"
+    },
+    {
+     "at_ms": 1645876800000,
+     "symbol": "TRXUSDT",
+     "what": "candles_not_aligned"
+    },
+    {
+     "at_ms": 1645891200000,
+     "symbol": "SOLUSDT",
+     "what": "candles_not_aligned"
+    },
+    {
+     "at_ms": 1645891200000,
+     "symbol": "XRPUSDT",
+     "what": "candles_not_aligned"
+    },
+    {
+     "at_ms": 1645891200000,
+     "symbol": "TRXUSDT",
+     "what": "candles_not_aligned"
+    },
+    {
+     "at_ms": 1645905600000,
+     "symbol": "SOLUSDT",
+     "what": "candles_not_aligned"
+    },
+    {
+     "at_ms": 1645905600000,
+     "symbol": "XRPUSDT",
+     "what": "candles_not_aligned"
+    },
+    {
+     "at_ms": 1645905600000,
+     "symbol": "TRXUSDT",
+     "what": "candles_not_aligned"
+    },
+    {
+     "at_ms": 1645920000000,
+     "symbol": "SOLUSDT",
+     "what": "candles_not_aligned"
+    },
+    {
+     "at_ms": 1645920000000,
+     "symbol": "XRPUSDT",
+     "what": "candles_not_aligned"
+    },
+    {
+     "at_ms": 1645920000000,
+     "symbol": "TRXUSDT",
+     "what": "candles_not_aligned"
+    },
+    {
+     "at_ms": 1645934400000,
+     "symbol": "SOLUSDT",
+     "what": "candles_not_aligned"
+    },
+    {
+     "at_ms": 1645934400000,
+     "symbol": "XRPUSDT",
+     "what": "candles_not_aligned"
+    },
+    {
+     "at_ms": 1645934400000,
+     "symbol": "TRXUSDT",
+     "what": "candles_not_aligned"
+    },
+    {
+     "at_ms": 1645948800000,
+     "symbol": "SOLUSDT",
+     "what": "candles_not_aligned"
+    },
+    {
+     "at_ms": 1645948800000,
+     "symbol": "XRPUSDT",
+     "what": "candles_not_aligned"
+    },
+    {
+     "at_ms": 1645948800000,
+     "symbol": "TRXUSDT",
+     "what": "candles_not_aligned"
+    },
+    {
+     "at_ms": 1645963200000,
+     "symbol": "SOLUSDT",
+     "what": "candles_not_aligned"
+    },
+    {
+     "at_ms": 1645963200000,
+     "symbol": "XRPUSDT",
+     "what": "candles_not_aligned"
+    },
+    {
+     "at_ms": 1645963200000,
+     "symbol": "TRXUSDT",
+     "what": "candles_not_aligned"
+    },
+    {
+     "at_ms": 1645977600000,
+     "symbol": "SOLUSDT",
+     "what": "candles_not_aligned"
+    },
+    {
+     "at_ms": 1645977600000,
+     "symbol": "XRPUSDT",
+     "what": "candles_not_aligned"
+    },
+    {
+     "at_ms": 1645977600000,
+     "symbol": "TRXUSDT",
+     "what": "candles_not_aligned"
+    },
+    {
+     "at_ms": 1645992000000,
+     "symbol": "SOLUSDT",
+     "what": "candles_not_aligned"
+    },
+    {
+     "at_ms": 1645992000000,
+     "symbol": "XRPUSDT",
+     "what": "candles_not_aligned"
+    },
+    {
+     "at_ms": 1645992000000,
+     "symbol": "TRXUSDT",
+     "what": "candles_not_aligned"
+    },
+    {
+     "at_ms": 1646006400000,
+     "symbol": "SOLUSDT",
+     "what": "candles_not_aligned"
+    },
+    {
+     "at_ms": 1646006400000,
+     "symbol": "XRPUSDT",
+     "what": "candles_not_aligned"
+    },
+    {
+     "at_ms": 1646006400000,
+     "symbol": "TRXUSDT",
+     "what": "candles_not_aligned"
+    },
+    {
+     "at_ms": 1646020800000,
+     "symbol": "SOLUSDT",
+     "what": "candles_not_aligned"
+    },
+    {
+     "at_ms": 1646020800000,
+     "symbol": "XRPUSDT",
+     "what": "candles_not_aligned"
+    },
+    {
+     "at_ms": 1646020800000,
+     "symbol": "TRXUSDT",
+     "what": "candles_not_aligned"
+    },
+    {
+     "at_ms": 1646035200000,
+     "symbol": "SOLUSDT",
+     "what": "candles_not_aligned"
+    },
+    {
+     "at_ms": 1646035200000,
+     "symbol": "XRPUSDT",
+     "what": "candles_not_aligned"
+    },
+    {
+     "at_ms": 1646035200000,
+     "symbol": "TRXUSDT",
+     "what": "candles_not_aligned"
+    },
+    {
+     "at_ms": 1646049600000,
+     "symbol": "SOLUSDT",
+     "what": "candles_not_aligned"
+    },
+    {
+     "at_ms": 1646049600000,
+     "symbol": "XRPUSDT",
+     "what": "candles_not_aligned"
+    },
+    {
+     "at_ms": 1646049600000,
+     "symbol": "TRXUSDT",
+     "what": "candles_not_aligned"
+    },
+    {
+     "at_ms": 1646064000000,
+     "symbol": "SOLUSDT",
+     "what": "candles_not_aligned"
+    },
+    {
+     "at_ms": 1646064000000,
+     "symbol": "XRPUSDT",
+     "what": "candles_not_aligned"
+    },
+    {
+     "at_ms": 1646064000000,
+     "symbol": "TRXUSDT",
+     "what": "candles_not_aligned"
+    },
+    {
+     "at_ms": 1646078400000,
+     "symbol": "SOLUSDT",
+     "what": "candles_not_aligned"
+    },
+    {
+     "at_ms": 1646078400000,
+     "symbol": "XRPUSDT",
+     "what": "candles_not_aligned"
+    },
+    {
+     "at_ms": 1646078400000,
+     "symbol": "TRXUSDT",
+     "what": "candles_not_aligned"
+    },
+    {
+     "at_ms": 1646092800000,
+     "symbol": "SOLUSDT",
+     "what": "candles_not_aligned"
+    },
+    {
+     "at_ms": 1646092800000,
+     "symbol": "XRPUSDT",
+     "what": "candles_not_aligned"
+    },
+    {
+     "at_ms": 1646092800000,
+     "symbol": "TRXUSDT",
+     "what": "candles_not_aligned"
+    },
+    {
+     "at_ms": 1648785600000,
+     "symbol": "SOLUSDT",
+     "what": "candles_not_aligned"
+    },
+    {
+     "at_ms": 1648785600000,
+     "symbol": "XRPUSDT",
+     "what": "candles_not_aligned"
+    },
+    {
+     "at_ms": 1648785600000,
+     "symbol": "TRXUSDT",
+     "what": "candles_not_aligned"
+    },
+    {
+     "at_ms": 1648800000000,
+     "symbol": "SOLUSDT",
+     "what": "candles_not_aligned"
+    },
+    {
+     "at_ms": 1648800000000,
+     "symbol": "XRPUSDT",
+     "what": "candles_not_aligned"
+    },
+    {
+     "at_ms": 1648800000000,
+     "symbol": "TRXUSDT",
+     "what": "candles_not_aligned"
+    },
+    {
+     "at_ms": 1648814400000,
+     "symbol": "SOLUSDT",
+     "what": "candles_not_aligned"
+    },
+    {
+     "at_ms": 1648814400000,
+     "symbol": "XRPUSDT",
+     "what": "candles_not_aligned"
+    },
+    {
+     "at_ms": 1648814400000,
+     "symbol": "TRXUSDT",
+     "what": "candles_not_aligned"
+    },
+    {
+     "at_ms": 1648828800000,
+     "symbol": "SOLUSDT",
+     "what": "candles_not_aligned"
+    },
+    {
+     "at_ms": 1648828800000,
+     "symbol": "XRPUSDT",
+     "what": "candles_not_aligned"
+    },
+    {
+     "at_ms": 1648828800000,
+     "symbol": "TRXUSDT",
+     "what": "candles_not_aligned"
+    },
+    {
+     "at_ms": 1648843200000,
+     "symbol": "SOLUSDT",
+     "what": "candles_not_aligned"
+    },
+    {
+     "at_ms": 1648843200000,
+     "symbol": "XRPUSDT",
+     "what": "candles_not_aligned"
+    },
+    {
+     "at_ms": 1648843200000,
+     "symbol": "TRXUSDT",
+     "what": "candles_not_aligned"
+    },
+    {
+     "at_ms": 1648857600000,
+     "symbol": "SOLUSDT",
+     "what": "candles_not_aligned"
+    },
+    {
+     "at_ms": 1648857600000,
+     "symbol": "XRPUSDT",
+     "what": "candles_not_aligned"
+    },
+    {
+     "at_ms": 1648857600000,
+     "symbol": "TRXUSDT",
+     "what": "candles_not_aligned"
+    },
+    {
+     "at_ms": 1648872000000,
+     "symbol": "SOLUSDT",
+     "what": "candles_not_aligned"
+    },
+    {
+     "at_ms": 1648872000000,
+     "symbol": "XRPUSDT",
+     "what": "candles_not_aligned"
+    },
+    {
+     "at_ms": 1648872000000,
+     "symbol": "TRXUSDT",
+     "what": "candles_not_aligned"
+    },
+    {
+     "at_ms": 1648886400000,
+     "symbol": "SOLUSDT",
+     "what": "candles_not_aligned"
+    },
+    {
+     "at_ms": 1648886400000,
+     "symbol": "XRPUSDT",
+     "what": "candles_not_aligned"
+    },
+    {
+     "at_ms": 1648886400000,
+     "symbol": "TRXUSDT",
+     "what": "candles_not_aligned"
+    },
+    {
+     "at_ms": 1648900800000,
+     "symbol": "SOLUSDT",
+     "what": "candles_not_aligned"
+    },
+    {
+     "at_ms": 1648900800000,
+     "symbol": "XRPUSDT",
+     "what": "candles_not_aligned"
+    },
+    {
+     "at_ms": 1648900800000,
+     "symbol": "TRXUSDT",
+     "what": "candles_not_aligned"
+    },
+    {
+     "at_ms": 1648915200000,
+     "symbol": "SOLUSDT",
+     "what": "candles_not_aligned"
+    },
+    {
+     "at_ms": 1648915200000,
+     "symbol": "XRPUSDT",
+     "what": "candles_not_aligned"
+    },
+    {
+     "at_ms": 1648915200000,
+     "symbol": "TRXUSDT",
+     "what": "candles_not_aligned"
+    },
+    {
+     "at_ms": 1648929600000,
+     "symbol": "SOLUSDT",
+     "what": "candles_not_aligned"
+    },
+    {
+     "at_ms": 1648929600000,
+     "symbol": "XRPUSDT",
+     "what": "candles_not_aligned"
+    },
+    {
+     "at_ms": 1648929600000,
+     "symbol": "TRXUSDT",
+     "what": "candles_not_aligned"
+    },
+    {
+     "at_ms": 1648944000000,
+     "symbol": "SOLUSDT",
+     "what": "candles_not_aligned"
+    },
+    {
+     "at_ms": 1648944000000,
+     "symbol": "XRPUSDT",
+     "what": "candles_not_aligned"
+    },
+    {
+     "at_ms": 1648944000000,
+     "symbol": "TRXUSDT",
+     "what": "candles_not_aligned"
+    }
+   ],
+   "changes": {
+    "items": [],
+    "improved": 0,
+    "worsened": 0,
+    "dropped_losers": 0,
+    "dropped_winners": 0
+   },
+   "stability": {
+    "diff": 0.0,
+    "by_year": {
+     "2021": 0.0,
+     "2022": 0.0,
+     "2023": 0.0
+    },
+    "by_coin": {
+     "ADAUSDT": 0.0,
+     "AVAXUSDT": 0.0,
+     "BNBUSDT": 0.0,
+     "DOGEUSDT": 0.0,
+     "SOLUSDT": 0.0,
+     "TRXUSDT": 0.0,
+     "XRPUSDT": 0.0
+    },
+    "years_better": 0,
+    "after_drop_best_trade": 0.0,
+    "after_drop_each_coin_min": 0.0
+   },
+   "verdict": {
+    "promising": false,
+    "checks": {
+     "1_net_or_risk": false,
+     "2_two_of_three_years": false,
+     "3_not_one_trade_or_coin": false,
+     "4_reproducible": true,
+     "5_no_leak": true
+    }
+   }
+  }
+ },
+ "seconds": 432
+}
