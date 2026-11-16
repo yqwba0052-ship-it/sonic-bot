@@ -602,3 +602,86 @@ def test_rounding_does_not_hide_a_different_exit():
     right = _norm(qty=1.01, exit_=(HOUR0 + 9 * H_MS, 90.0, "stop_loss"))
     rows, *_ = match([left], [right], end_ms=HOUR0 + 100 * H_MS)
     assert rows[0].category == "unexplained"
+
+
+# ---- Phase 2, Task 8: exits before entries in one 4h bar, and max_open
+
+
+def _server_risk():
+    import sys
+    sys.path.insert(0, str(Path(__file__).resolve().parents[2] / "server"))
+    from sonic import risk
+    return risk
+
+
+def _open_trade(raw=100.0, qty=0.3, margin=10.0):
+    return {"legs": [{"kind": "entry", "ms": 0, "raw": raw, "qty": qty}], "margin": margin}
+
+
+def _plan(**kw):
+    from sonic_research.jesse_audit.planner import plan_bar
+    risk = _server_risk()
+    args = {"limits": risk.Limits(), "filters": {s: _filters() for s in
+                                                 ("SOLUSDT", "XRPUSDT", "DOGEUSDT", "ADAUSDT")},
+            "realized": 0.0, "open_trades": {}, "exits": {}, "candidates": []}
+    args.update(kw)
+    return plan_bar(**args)
+
+
+def test_plan_counts_exit_pnl_before_sizing_entry():
+    risk = _server_risk()
+    opened = {"XRPUSDT": _open_trade(raw=100.0, qty=0.3, margin=10.0)}
+    got = _plan(open_trades=opened, exits={"XRPUSDT": 110.0},
+                candidates=[("SOLUSDT", 50.0, 1.0)])
+    pnl = costs(opened["XRPUSDT"]["legs"] + [
+        {"kind": "exit", "ms": 0, "raw": 110.0, "qty": 0.3}])["pnl"]
+    assert got.projected_realized == pytest.approx(pnl)
+    want = risk.size_position(risk.Limits(), 50.0, 1.0, 0.0, _filters(), 30.0 + pnl)
+    assert got.entries == {"SOLUSDT": (want.qty, 1.0)}
+
+
+def test_plan_frees_margin_of_exiting_coin():
+    risk = _server_risk()
+    limits = risk.Limits(leverage=1, risk_per_trade_pct=2.0)
+    opened = {"XRPUSDT": _open_trade(margin=25.0)}
+    kept = _plan(limits=limits, open_trades=opened, candidates=[("SOLUSDT", 50.0, 0.5)])
+    freed = _plan(limits=limits, open_trades=opened, exits={"XRPUSDT": 100.0},
+                  candidates=[("SOLUSDT", 50.0, 0.5)])
+    assert kept.entries.get("SOLUSDT", (0,))[0] < freed.entries["SOLUSDT"][0]
+
+
+def test_plan_stops_at_max_open_in_symbol_order():
+    risk = _server_risk()
+    opened = {"XRPUSDT": _open_trade(), "DOGEUSDT": _open_trade()}
+    got = _plan(limits=risk.Limits(max_open=3), open_trades=opened,
+                candidates=[("SOLUSDT", 50.0, 1.0), ("ADAUSDT", 50.0, 1.0)])
+    assert list(got.entries) == ["SOLUSDT"]
+
+
+def test_plan_skip_for_small_amount_does_not_use_a_slot():
+    risk = _server_risk()
+    tiny = risk.Filters(step_size="1", tick_size="0.01", min_qty=1, min_notional=5.0)
+    got = _plan(limits=risk.Limits(max_open=1),
+                filters={"SOLUSDT": tiny, "ADAUSDT": _filters()},
+                candidates=[("SOLUSDT", 50_000.0, 1.0), ("ADAUSDT", 50.0, 1.0)])
+    assert got.skipped == [("SOLUSDT", "amount_too_small")]
+    assert list(got.entries) == ["ADAUSDT"]
+
+
+def test_plan_open_coin_is_not_entered_again():
+    got = _plan(open_trades={"SOLUSDT": _open_trade()}, candidates=[("SOLUSDT", 50.0, 1.0)])
+    assert got.entries == {}
+
+
+def test_bridge_two_coins_respects_max_open():
+    pytest.importorskip("jesse")
+    from sonic_research.jesse_audit.bridge import run_bridge
+    risk = _server_risk()
+    minutes = _minutes_for(_closes("time"))
+    ledger = run_bridge({"SOLUSDT": minutes, "XRPUSDT": minutes, "BTCUSDT": minutes},
+                        ["XRPUSDT", "SOLUSDT"],
+                        {s: _filters() for s in ("SOLUSDT", "XRPUSDT", "BTCUSDT")},
+                        warmup_bars=1000,
+                        limits=risk.Limits(symbols=["SOLUSDT", "XRPUSDT"], max_open=1))
+    assert [t["symbol"] for t in ledger.trades] == ["SOLUSDT"]
+    assert ledger.plan_mismatch == []
