@@ -106,7 +106,22 @@ C:\Users\sa\tools\jesse-venv\Scripts\python -W ignore -m sonic_research.jesse_au
 - C: بيئة Jesse 780 MB + بيانات بحث صغيرة (≈ 220 MB). D: بيانات الدقائق الكبيرة.
 - المساحة المسجّلة: انظر القسم 10.
 
-## 12. آخر تحديث 2026-11-17: Hummingbot وتنفيذ الصفقات (اكتمل، والنتيجة: رفض)
+## 13. آخر تحديث 2026-11-17: مختبر الاستراتيجيات الكلاسيكية (اكتمل؛ لا استراتيجية مؤهلة)
+- الفرع: `research/classical-strategies` (من `research/hummingbot` عند `2168fc3`). لا دمج في main.
+- التصميم ومعايير التأهيل (قبل أي اختبار): `docs/superpowers/specs/2026-11-17-classical-strategies-design.md`.
+- **التقرير النهائي: `research/reports/classical_strategies_final.md`.**
+- **ما بُني:** 11 استراتيجية (+ نسختا مقارنة) مع البيع بقلب الأسعار، وقمم وقيعان مؤكدة، وشموع يابانية، ومحرك مخاطر 30$
+  (0.5%، الحد الأدنى لأوامر Binance)، و walk-forward بثلاث طيّات. 51 اختبارًا، منها عدم إعادة الرسم لكل قاعدة.
+- **النتيجة:**
+  - لا استراتيجية مؤهلة إجمالًا.
+  - 9 أزواج تأهلت في التدريب، و8 منها خسرت في 2024–2026 (مرة واحدة، مقفل): C −6.70$، و D −8.23$ مقابل Sonic +26.23$.
+  - الشموع تفيد فلترًا فقط.
+  - القاع المزدوج غير قابل للاختبار بهذا التصميم (العائد إلى المخاطرة < 1 دائمًا).
+- **التوصية:** إبقاء Sonic كما هو. لا اختبار ورقي.
+- **للتشغيل:** من مجلد `research\`، الأمر `..\server\.venv\Scripts\python -m pytest -q tests/test_classical.py`، ثم
+  `... -m sonic_research.classical.run train`. التحقق `holdout` **مقفل**.
+
+## 12. تحديث 2026-11-17: Hummingbot وتنفيذ الصفقات (اكتمل، والنتيجة: رفض)
 - الفرع: `research/hummingbot` (من `research/freqai` عند `8c8e6a8`). لا دمج في main.
 - التصميم ومعايير النجاح (قبل أي بيانات): `docs/superpowers/specs/2026-11-17-hummingbot-execution-design.md`.
 - **التقرير النهائي: `research/reports/hummingbot_final.md`.**
