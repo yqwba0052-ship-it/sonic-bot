@@ -17,7 +17,7 @@ from fastapi.responses import FileResponse, PlainTextResponse
 from fastapi.staticfiles import StaticFiles
 from pydantic import ValidationError
 
-from . import account, capital, kopyon, leader, ocr
+from . import account, capital, kopyon, leader, monitor, ocr
 from .engine import Engine
 from .risk import ALLOWED_SYMBOLS, Limits
 
@@ -54,6 +54,18 @@ def create_app(engine: Engine, token: str, background: bool = True) -> FastAPI:
     @app.get("/events", dependencies=secured)
     async def events(limit: int = Query(default=100, ge=1, le=500)) -> list[dict[str, Any]]:
         return engine.store.events(limit)
+
+    @app.get("/scans", dependencies=secured)
+    async def scans(limit: int = Query(default=60, ge=1, le=500)) -> dict[str, Any]:
+        """The scan log (one row per 4-hour bar) and bars that were missed or failed."""
+        return {"scans": monitor.scans(engine.store.db, limit),
+                "gaps": monitor.scan_gaps(engine.store.db, engine.last_closed_bar())}
+
+    @app.get("/equity", dependencies=secured)
+    async def equity(limit: int = Query(default=120, ge=1, le=1000)) -> dict[str, Any]:
+        """Daily balance snapshots and the peak / deepest drop tracked at every tick."""
+        return {"days": monitor.snapshots(engine.store.db, limit),
+                "peak": engine.store.get("equity_peak")}
 
     @app.put("/limits", dependencies=secured)
     async def put_limits(body: Annotated[dict[str, Any], Body()]) -> dict[str, Any]:

@@ -10,7 +10,8 @@
 # What it sets up:
 # - the bot in /opt/sonic as the unprivileged user "sonic", restarted by systemd if it stops;
 # - Caddy in front with automatic HTTPS on <ip>.sslip.io (the token never travels in clear text);
-# - a firewall that allows only SSH, HTTP (certificate check) and HTTPS.
+# - a firewall that allows only SSH, HTTP (certificate check) and HTTPS;
+# - a daily database backup in /opt/sonic/backups (deploy/install_backup.sh).
 # Running it again updates the bot to the latest code and keeps its data and token.
 set -euo pipefail
 
@@ -88,6 +89,8 @@ ufw --force enable >/dev/null
 systemctl daemon-reload
 systemctl enable --now sonic
 systemctl restart sonic caddy
+# Daily database backup (systemd timer, 02:30 UTC, keeps 14 days + 6 months; never stops the bot).
+bash "$APP_DIR/deploy/install_backup.sh"
 
 for _ in $(seq 1 30); do
   grep -q '^SONIC_TOKEN=' "$ENV_FILE" && break

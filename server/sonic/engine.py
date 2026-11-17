@@ -13,7 +13,7 @@ from typing import Any
 
 import httpx
 
-from . import account, awake, capital, chart, journal, kopyon, leader, risk, strategy
+from . import account, awake, capital, chart, journal, kopyon, leader, monitor, risk, strategy
 from .config import Settings
 from .exchange import Exchange
 from .risk import Limits
@@ -43,6 +43,10 @@ class Engine:
         self.lock = asyncio.Lock()
         # Learning from traders the owner added: separate tables, paper only (leader.py).
         self.lab = leader.Lab(store.db, self.now_ms)
+        # Audit tables (scan log, daily balance): written beside trading, never deciding it.
+        monitor.ensure(store.db)
+        self.scan: dict[str, Any] = {}
+        self.last_skip = ""
         if store.get("account_target") not in (None, leader.ACCOUNT_ID):
             # older versions could point the owner's own sync at a lead trader
             store.put("account_target", leader.ACCOUNT_ID)
@@ -209,10 +213,13 @@ class Engine:
 
     async def tick(self) -> None:
         async with self.lock:
+            due = self.last_closed_bar()
+            scan_due = due > int(self.store.get("last_bar_ms", 0))
             try:
                 await self._sync()
                 await self._follow_scaling()
                 await self._guard()
+                self._track_equity()
                 bar = self.last_closed_bar()
                 if bar > int(self.store.get("last_bar_ms", 0)):
                     await self._on_bar()
@@ -227,6 +234,9 @@ class Engine:
             except Exception as error:  # noqa: BLE001 - every failure must reach the halt counter
                 self.failures += 1
                 self.last_error = str(error)[:300]
+                if scan_due:  # the scan of this bar did not finish: say so in the scan log
+                    self._log_scan({**self.scan, "status": "error", "error": self.last_error},
+                                   due)
                 if self.failing_since_ms is None:
                     self.failing_since_ms = self.now_ms()
                     self.log("error", "tick_failed", self.last_error)
@@ -441,6 +451,8 @@ class Engine:
     async def _on_bar(self) -> None:
         """Runs once per closed 4-hour bar: exits first, then entries."""
         now = self.now_ms()
+        bar_ms = self.last_closed_bar()
+        self.scan = scan = {"status": "scanned", "strategy": strategy.NAME, "coins": {}}
         for trade in self.store.open_trades():
             bars = await self._bars(trade["symbol"])
             held_bars = (now - trade["opened_ms"]) // strategy.BAR_MS
@@ -457,8 +469,13 @@ class Engine:
         await self._sync()
         if not self.running or self.halted:
             self._record_scan("not_running", 0, 0)
+            scan.update(status="not_running", market="not_running",
+                        error=f"halted: {self.halted}" if self.halted else None)
+            self._log_scan(scan, bar_ms)
             return
-        btc_up = strategy.btc_uptrend(await self._bars("BTCUSDT"))
+        btc_bars = await self._bars("BTCUSDT")
+        btc_up = strategy.btc_uptrend(btc_bars)
+        self._describe_btc(scan, btc_bars, btc_up, bar_ms)
         signals = opened = 0
         open_trades = self.store.open_trades()
         used = {trade["symbol"] for trade in open_trades}
@@ -467,10 +484,15 @@ class Engine:
             if len(used) >= self.limits.max_open:
                 break
             if symbol in used:
+                self._note(scan, symbol, "open_trade")
                 continue
             bars = await self._bars(symbol)
             side = strategy.entry_signal(bars, btc_up)
-            if side is None or (side == "SELL" and not self.limits.allow_shorts):
+            self._note_signal(scan, symbol, bars, btc_up, bar_ms)
+            if side is None:
+                continue
+            if side == "SELL" and not self.limits.allow_shorts:
+                self._note(scan, symbol, "sell_signal_shorts_off")
                 continue
             signals += 1
             closes = [bar.c for bar in bars]
@@ -485,14 +507,98 @@ class Engine:
                 "half_at_r": float(strategy.HALF_AT_R),
                 "risk_pct": float(self.limits.risk_per_trade_pct),
             }
+            self.last_skip = ""
             added = await self._open(symbol, side, strategy.stop_distance(bars), margin, plan)
             if added:
                 used.add(symbol)
                 margin += added
                 opened += 1
+                self._note(scan, symbol, "opened")
+            else:
+                self._note(scan, symbol, f"not_opened: {self.last_skip or 'unknown'}")
             if self.halted:
                 break
         self._record_scan("btc_up" if btc_up else "btc_down", signals, opened)
+        for symbol in self.limits.symbols:  # coins never reached: the open-trade limit was full
+            if symbol not in scan["coins"]:
+                self._note(scan, symbol, "max_open_reached")
+        scan.update(market="btc_up" if btc_up else "btc_down", signals=signals, opened=opened,
+                    open_trades=len(used))
+        try:
+            scan["trading_budget"] = round(self.trading_budget(), 4)
+        except Exception:  # noqa: BLE001 - the log never stops trading
+            pass
+        self._log_scan(scan, bar_ms)
+
+    # ---------- audit records (never decide anything; failures are logged and ignored)
+
+    def _safe_log(self, level: str, code: str, detail: str) -> None:
+        try:
+            self.log(level, code, detail)
+        except Exception:  # noqa: BLE001 - even the event table may be unavailable
+            pass
+
+    def _note(self, scan: dict[str, Any], symbol: str, reason: str, **extra: Any) -> None:
+        scan["coins"][symbol] = {"result": reason, **extra}
+
+    def _note_signal(self, scan: dict[str, Any], symbol: str, bars: list[strategy.Bar],
+                     btc_up: bool, bar_ms: int) -> None:
+        try:
+            fresh = bool(bars) and bars[-1].t == bar_ms
+            self._note(scan, symbol, strategy.entry_reason(bars, btc_up), fresh=fresh,
+                       close=bars[-1].c if bars else None)
+        except Exception as error:  # noqa: BLE001
+            self._note(scan, symbol, "explain_failed", error=str(error)[:120])
+
+    def _describe_btc(self, scan: dict[str, Any], bars: list[strategy.Bar], btc_up: bool,
+                      bar_ms: int) -> None:
+        try:
+            closes = [bar.c for bar in bars]
+            level = float(strategy.ema(closes, strategy.REGIME_PERIOD)[-1])
+            scan.update(btc_close=closes[-1], btc_ema300=round(level, 4),
+                        btc_gap_pct=round((closes[-1] / level - 1) * 100, 3),
+                        data_ok=bars[-1].t == bar_ms, btc_up=bool(btc_up))
+        except Exception as error:  # noqa: BLE001
+            scan.update(data_ok=False, error=f"btc_describe: {str(error)[:120]}")
+
+    def _log_scan(self, scan: dict[str, Any], bar_ms: int) -> None:
+        try:
+            monitor.record_scan(self.store.db, bar_ms, self.now_ms(), scan)
+        except Exception as error:  # noqa: BLE001 - logging must never stop trading
+            self._safe_log("warning", "scan_log_failed", str(error)[:200])
+
+    def _track_equity(self) -> None:
+        """Peak and drawdown at every tick (open trades at market price), and one real
+        snapshot per UTC day. Nothing is back-filled; failures are logged and ignored."""
+        try:
+            now = self.now_ms()
+            since = self.budget_start_ms()
+            realized = self.budget_realized()
+            equity = self.limits.capital_usdt + realized + self.unrealized
+            peak = monitor.update_peak(self.store, now, equity)
+            day = datetime.fromtimestamp(now / 1000, UTC).strftime("%Y-%m-%d")
+            if not monitor.snapshot_due(self.store.db, day):
+                return
+            row = self.store.db.execute(
+                "SELECT COUNT(*) AS n, COALESCE(SUM(fees), 0) AS fees, "
+                "SUM(pnl IS NULL) AS unproven FROM trades "
+                "WHERE closed_ms IS NOT NULL AND closed_ms >= ?", (since,)).fetchone()
+            drawdown = (peak["peak"] - equity) / peak["peak"] * 100 if peak["peak"] > 0 else 0.0
+            open_value = sum(abs(v["qty"]) * v["mark"] for v in self.live.values())
+            monitor.write_snapshot(self.store.db, {
+                "day": day, "at_ms": now, "mode": self.settings.mode,
+                "capital": self.limits.capital_usdt, "wallet_balance": self.balance,
+                "realized": round(realized, 6), "unrealized": round(self.unrealized, 6),
+                "equity": round(equity, 6), "open_value": round(open_value, 6),
+                "fees": round(float(row["fees"]), 6), "peak": round(peak["peak"], 6),
+                "drawdown_pct": round(drawdown, 4),
+                "max_drawdown_pct": round(peak["max_dd_pct"], 4),
+                "open_count": len(self.store.open_trades()), "closed_count": int(row["n"]),
+                "unproven_count": int(row["unproven"] or 0),
+                "tracking_since_ms": int(peak["since_ms"]),
+            })
+        except Exception as error:  # noqa: BLE001 - monitoring must never stop trading
+            self._safe_log("warning", "equity_snapshot_failed", str(error)[:200])
 
     def _record_scan(self, market: str, signals: int, opened: int) -> None:
         self.store.put("last_scan", {
@@ -520,6 +626,7 @@ class Engine:
             self.limits, price, stop_dist, margin, filters, self.trading_budget()
         )
         if not size.qty:
+            self.last_skip = str(size.reason)
             self.log("warning", "trade_skipped", f"{symbol} {size.reason}")
             return 0.0
         await self.exchange.prepare(symbol, self.limits.leverage)
@@ -550,6 +657,7 @@ class Engine:
         try:
             await self.exchange.protect(symbol, side, stop, target, half if target else 0.0)
         except Exception as error:  # noqa: BLE001 - an unprotected position must not stay open
+            self.last_skip = "protection_failed"
             self.halt("protection_failed", str(error)[:300])
             self.pending_exit[symbol] = "protection_failed"
             signed = fill.qty if side == "BUY" else -fill.qty

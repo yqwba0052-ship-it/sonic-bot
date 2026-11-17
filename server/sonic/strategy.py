@@ -100,6 +100,25 @@ def entry_signal(bars: list[Bar], btc_up: bool) -> str | None:
     return None
 
 
+def entry_reason(bars: list[Bar], btc_up: bool) -> str:
+    """Why entry_signal said what it said, for the scan log only (it decides nothing).
+    "buy" / "sell" exactly when entry_signal returns BUY / SELL (checked by a test)."""
+    if len(bars) < SLOW * 3:
+        return "not_enough_bars"
+    now, before = _above(bars)
+    closes = [bar.c for bar in bars]
+    coin_up = closes[-1] > ema(closes, COIN_TREND_PERIOD)[-1]
+    if now and not before:
+        if not btc_up:
+            return "cross_up_btc_down"
+        return "buy" if coin_up else "cross_up_coin_below_ema200"
+    if not now and before:
+        if btc_up:
+            return "cross_down_btc_up"
+        return "sell" if not coin_up else "cross_down_coin_above_ema200"
+    return "no_cross_ema20_above" if now else "no_cross_ema20_below"
+
+
 def exit_due(bars: list[Bar], side: str) -> bool:
     """True when the trend turned against an open trade on the last closed bar."""
     now, _ = _above(bars)
