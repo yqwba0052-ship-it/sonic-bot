@@ -1,0 +1,2876 @@
+{
+ "since": "2026-11-09",
+ "until_ms": 1794905976189,
+ "symbols": [
+  "SOLUSDT",
+  "XRPUSDT",
+  "DOGEUSDT",
+  "ADAUSDT",
+  "SUIUSDT",
+  "TRXUSDT",
+  "BNBUSDT",
+  "AVAXUSDT"
+ ],
+ "summary": {
+  "bars": 50,
+  "btc_up_bars": 0,
+  "btc_gap_pct_range": [
+   -17.61,
+   -4.95
+  ],
+  "long_signals": [],
+  "ema_crosses_up_blocked": []
+ },
+ "rows": [
+  {
+   "bar_close_utc": "2026-11-09T04:00:00+00:00",
+   "btc_close": 74825.1,
+   "btc_ema300": 79529.64,
+   "btc_gap_pct": -5.92,
+   "btc_up": false,
+   "coins": {
+    "SOLUSDT": {
+     "signal": null,
+     "cross_up": false,
+     "fast_above_slow": false,
+     "coin_up": false
+    },
+    "XRPUSDT": {
+     "signal": null,
+     "cross_up": false,
+     "fast_above_slow": false,
+     "coin_up": false
+    },
+    "DOGEUSDT": {
+     "signal": null,
+     "cross_up": false,
+     "fast_above_slow": false,
+     "coin_up": false
+    },
+    "ADAUSDT": {
+     "signal": null,
+     "cross_up": false,
+     "fast_above_slow": false,
+     "coin_up": false
+    },
+    "SUIUSDT": {
+     "signal": null,
+     "cross_up": false,
+     "fast_above_slow": false,
+     "coin_up": false
+    },
+    "TRXUSDT": {
+     "signal": null,
+     "cross_up": false,
+     "fast_above_slow": false,
+     "coin_up": false
+    },
+    "BNBUSDT": {
+     "signal": null,
+     "cross_up": false,
+     "fast_above_slow": false,
+     "coin_up": false
+    },
+    "AVAXUSDT": {
+     "signal": null,
+     "cross_up": false,
+     "fast_above_slow": false,
+     "coin_up": false
+    }
+   }
+  },
+  {
+   "bar_close_utc": "2026-11-09T08:00:00+00:00",
+   "btc_close": 73844.1,
+   "btc_ema300": 79491.29,
+   "btc_gap_pct": -7.1,
+   "btc_up": false,
+   "coins": {
+    "SOLUSDT": {
+     "signal": null,
+     "cross_up": false,
+     "fast_above_slow": false,
+     "coin_up": false
+    },
+    "XRPUSDT": {
+     "signal": null,
+     "cross_up": false,
+     "fast_above_slow": false,
+     "coin_up": false
+    },
+    "DOGEUSDT": {
+     "signal": null,
+     "cross_up": false,
+     "fast_above_slow": false,
+     "coin_up": false
+    },
+    "ADAUSDT": {
+     "signal": null,
+     "cross_up": false,
+     "fast_above_slow": false,
+     "coin_up": false
+    },
+    "SUIUSDT": {
+     "signal": null,
+     "cross_up": false,
+     "fast_above_slow": false,
+     "coin_up": false
+    },
+    "TRXUSDT": {
+     "signal": null,
+     "cross_up": false,
+     "fast_above_slow": false,
+     "coin_up": false
+    },
+    "BNBUSDT": {
+     "signal": null,
+     "cross_up": false,
+     "fast_above_slow": false,
+     "coin_up": false
+    },
+    "AVAXUSDT": {
+     "signal": null,
+     "cross_up": false,
+     "fast_above_slow": false,
+     "coin_up": false
+    }
+   }
+  },
+  {
+   "bar_close_utc": "2026-11-09T12:00:00+00:00",
+   "btc_close": 74345.1,
+   "btc_ema300": 79456.93,
+   "btc_gap_pct": -6.43,
+   "btc_up": false,
+   "coins": {
+    "SOLUSDT": {
+     "signal": null,
+     "cross_up": false,
+     "fast_above_slow": false,
+     "coin_up": false
+    },
+    "XRPUSDT": {
+     "signal": null,
+     "cross_up": false,
+     "fast_above_slow": false,
+     "coin_up": false
+    },
+    "DOGEUSDT": {
+     "signal": null,
+     "cross_up": false,
+     "fast_above_slow": false,
+     "coin_up": false
+    },
+    "ADAUSDT": {
+     "signal": null,
+     "cross_up": false,
+     "fast_above_slow": false,
+     "coin_up": false
+    },
+    "SUIUSDT": {
+     "signal": null,
+     "cross_up": false,
+     "fast_above_slow": false,
+     "coin_up": false
+    },
+    "TRXUSDT": {
+     "signal": null,
+     "cross_up": false,
+     "fast_above_slow": false,
+     "coin_up": false
+    },
+    "BNBUSDT": {
+     "signal": null,
+     "cross_up": false,
+     "fast_above_slow": false,
+     "coin_up": false
+    },
+    "AVAXUSDT": {
+     "signal": null,
+     "cross_up": false,
+     "fast_above_slow": false,
+     "coin_up": false
+    }
+   }
+  },
+  {
+   "bar_close_utc": "2026-11-09T16:00:00+00:00",
+   "btc_close": 75500.0,
+   "btc_ema300": 79430.3,
+   "btc_gap_pct": -4.95,
+   "btc_up": false,
+   "coins": {
+    "SOLUSDT": {
+     "signal": null,
+     "cross_up": false,
+     "fast_above_slow": false,
+     "coin_up": false
+    },
+    "XRPUSDT": {
+     "signal": null,
+     "cross_up": false,
+     "fast_above_slow": false,
+     "coin_up": false
+    },
+    "DOGEUSDT": {
+     "signal": null,
+     "cross_up": false,
+     "fast_above_slow": false,
+     "coin_up": false
+    },
+    "ADAUSDT": {
+     "signal": null,
+     "cross_up": false,
+     "fast_above_slow": false,
+     "coin_up": false
+    },
+    "SUIUSDT": {
+     "signal": null,
+     "cross_up": false,
+     "fast_above_slow": false,
+     "coin_up": false
+    },
+    "TRXUSDT": {
+     "signal": null,
+     "cross_up": false,
+     "fast_above_slow": false,
+     "coin_up": false
+    },
+    "BNBUSDT": {
+     "signal": null,
+     "cross_up": false,
+     "fast_above_slow": false,
+     "coin_up": false
+    },
+    "AVAXUSDT": {
+     "signal": null,
+     "cross_up": false,
+     "fast_above_slow": false,
+     "coin_up": false
+    }
+   }
+  },
+  {
+   "bar_close_utc": "2026-11-09T20:00:00+00:00",
+   "btc_close": 74856.7,
+   "btc_ema300": 79400.29,
+   "btc_gap_pct": -5.72,
+   "btc_up": false,
+   "coins": {
+    "SOLUSDT": {
+     "signal": null,
+     "cross_up": false,
+     "fast_above_slow": false,
+     "coin_up": false
+    },
+    "XRPUSDT": {
+     "signal": null,
+     "cross_up": false,
+     "fast_above_slow": false,
+     "coin_up": false
+    },
+    "DOGEUSDT": {
+     "signal": null,
+     "cross_up": false,
+     "fast_above_slow": false,
+     "coin_up": false
+    },
+    "ADAUSDT": {
+     "signal": null,
+     "cross_up": false,
+     "fast_above_slow": false,
+     "coin_up": false
+    },
+    "SUIUSDT": {
+     "signal": null,
+     "cross_up": false,
+     "fast_above_slow": false,
+     "coin_up": false
+    },
+    "TRXUSDT": {
+     "signal": null,
+     "cross_up": false,
+     "fast_above_slow": false,
+     "coin_up": false
+    },
+    "BNBUSDT": {
+     "signal": null,
+     "cross_up": false,
+     "fast_above_slow": false,
+     "coin_up": false
+    },
+    "AVAXUSDT": {
+     "signal": null,
+     "cross_up": false,
+     "fast_above_slow": false,
+     "coin_up": false
+    }
+   }
+  },
+  {
+   "bar_close_utc": "2026-11-10T00:00:00+00:00",
+   "btc_close": 75327.0,
+   "btc_ema300": 79372.98,
+   "btc_gap_pct": -5.1,
+   "btc_up": false,
+   "coins": {
+    "SOLUSDT": {
+     "signal": null,
+     "cross_up": false,
+     "fast_above_slow": false,
+     "coin_up": false
+    },
+    "XRPUSDT": {
+     "signal": null,
+     "cross_up": false,
+     "fast_above_slow": false,
+     "coin_up": false
+    },
+    "DOGEUSDT": {
+     "signal": null,
+     "cross_up": false,
+     "fast_above_slow": false,
+     "coin_up": false
+    },
+    "ADAUSDT": {
+     "signal": null,
+     "cross_up": false,
+     "fast_above_slow": false,
+     "coin_up": false
+    },
+    "SUIUSDT": {
+     "signal": null,
+     "cross_up": false,
+     "fast_above_slow": false,
+     "coin_up": false
+    },
+    "TRXUSDT": {
+     "signal": null,
+     "cross_up": false,
+     "fast_above_slow": false,
+     "coin_up": false
+    },
+    "BNBUSDT": {
+     "signal": null,
+     "cross_up": false,
+     "fast_above_slow": false,
+     "coin_up": false
+    },
+    "AVAXUSDT": {
+     "signal": null,
+     "cross_up": false,
+     "fast_above_slow": false,
+     "coin_up": false
+    }
+   }
+  },
+  {
+   "bar_close_utc": "2026-11-10T04:00:00+00:00",
+   "btc_close": 74537.5,
+   "btc_ema300": 79340.29,
+   "btc_gap_pct": -6.05,
+   "btc_up": false,
+   "coins": {
+    "SOLUSDT": {
+     "signal": null,
+     "cross_up": false,
+     "fast_above_slow": false,
+     "coin_up": false
+    },
+    "XRPUSDT": {
+     "signal": null,
+     "cross_up": false,
+     "fast_above_slow": false,
+     "coin_up": false
+    },
+    "DOGEUSDT": {
+     "signal": null,
+     "cross_up": false,
+     "fast_above_slow": false,
+     "coin_up": false
+    },
+    "ADAUSDT": {
+     "signal": null,
+     "cross_up": false,
+     "fast_above_slow": false,
+     "coin_up": false
+    },
+    "SUIUSDT": {
+     "signal": null,
+     "cross_up": false,
+     "fast_above_slow": false,
+     "coin_up": false
+    },
+    "TRXUSDT": {
+     "signal": null,
+     "cross_up": false,
+     "fast_above_slow": false,
+     "coin_up": false
+    },
+    "BNBUSDT": {
+     "signal": null,
+     "cross_up": false,
+     "fast_above_slow": false,
+     "coin_up": false
+    },
+    "AVAXUSDT": {
+     "signal": null,
+     "cross_up": false,
+     "fast_above_slow": false,
+     "coin_up": false
+    }
+   }
+  },
+  {
+   "bar_close_utc": "2026-11-10T08:00:00+00:00",
+   "btc_close": 74805.4,
+   "btc_ema300": 79309.83,
+   "btc_gap_pct": -5.68,
+   "btc_up": false,
+   "coins": {
+    "SOLUSDT": {
+     "signal": null,
+     "cross_up": false,
+     "fast_above_slow": false,
+     "coin_up": false
+    },
+    "XRPUSDT": {
+     "signal": null,
+     "cross_up": false,
+     "fast_above_slow": false,
+     "coin_up": false
+    },
+    "DOGEUSDT": {
+     "signal": null,
+     "cross_up": false,
+     "fast_above_slow": false,
+     "coin_up": false
+    },
+    "ADAUSDT": {
+     "signal": null,
+     "cross_up": false,
+     "fast_above_slow": false,
+     "coin_up": false
+    },
+    "SUIUSDT": {
+     "signal": null,
+     "cross_up": false,
+     "fast_above_slow": false,
+     "coin_up": false
+    },
+    "TRXUSDT": {
+     "signal": null,
+     "cross_up": false,
+     "fast_above_slow": false,
+     "coin_up": false
+    },
+    "BNBUSDT": {
+     "signal": null,
+     "cross_up": false,
+     "fast_above_slow": false,
+     "coin_up": false
+    },
+    "AVAXUSDT": {
+     "signal": null,
+     "cross_up": false,
+     "fast_above_slow": false,
+     "coin_up": false
+    }
+   }
+  },
+  {
+   "bar_close_utc": "2026-11-10T12:00:00+00:00",
+   "btc_close": 74389.7,
+   "btc_ema300": 79276.34,
+   "btc_gap_pct": -6.16,
+   "btc_up": false,
+   "coins": {
+    "SOLUSDT": {
+     "signal": null,
+     "cross_up": false,
+     "fast_above_slow": false,
+     "coin_up": false
+    },
+    "XRPUSDT": {
+     "signal": null,
+     "cross_up": false,
+     "fast_above_slow": false,
+     "coin_up": false
+    },
+    "DOGEUSDT": {
+     "signal": null,
+     "cross_up": false,
+     "fast_above_slow": false,
+     "coin_up": false
+    },
+    "ADAUSDT": {
+     "signal": null,
+     "cross_up": false,
+     "fast_above_slow": false,
+     "coin_up": false
+    },
+    "SUIUSDT": {
+     "signal": null,
+     "cross_up": false,
+     "fast_above_slow": false,
+     "coin_up": false
+    },
+    "TRXUSDT": {
+     "signal": null,
+     "cross_up": false,
+     "fast_above_slow": false,
+     "coin_up": false
+    },
+    "BNBUSDT": {
+     "signal": null,
+     "cross_up": false,
+     "fast_above_slow": false,
+     "coin_up": false
+    },
+    "AVAXUSDT": {
+     "signal": null,
+     "cross_up": false,
+     "fast_above_slow": false,
+     "coin_up": false
+    }
+   }
+  },
+  {
+   "bar_close_utc": "2026-11-10T16:00:00+00:00",
+   "btc_close": 73180.0,
+   "btc_ema300": 79234.32,
+   "btc_gap_pct": -7.64,
+   "btc_up": false,
+   "coins": {
+    "SOLUSDT": {
+     "signal": null,
+     "cross_up": false,
+     "fast_above_slow": false,
+     "coin_up": false
+    },
+    "XRPUSDT": {
+     "signal": null,
+     "cross_up": false,
+     "fast_above_slow": false,
+     "coin_up": false
+    },
+    "DOGEUSDT": {
+     "signal": null,
+     "cross_up": false,
+     "fast_above_slow": false,
+     "coin_up": false
+    },
+    "ADAUSDT": {
+     "signal": null,
+     "cross_up": false,
+     "fast_above_slow": false,
+     "coin_up": false
+    },
+    "SUIUSDT": {
+     "signal": null,
+     "cross_up": false,
+     "fast_above_slow": false,
+     "coin_up": false
+    },
+    "TRXUSDT": {
+     "signal": null,
+     "cross_up": false,
+     "fast_above_slow": false,
+     "coin_up": false
+    },
+    "BNBUSDT": {
+     "signal": null,
+     "cross_up": false,
+     "fast_above_slow": false,
+     "coin_up": false
+    },
+    "AVAXUSDT": {
+     "signal": null,
+     "cross_up": false,
+     "fast_above_slow": false,
+     "coin_up": false
+    }
+   }
+  },
+  {
+   "bar_close_utc": "2026-11-10T20:00:00+00:00",
+   "btc_close": 73437.7,
+   "btc_ema300": 79196.11,
+   "btc_gap_pct": -7.27,
+   "btc_up": false,
+   "coins": {
+    "SOLUSDT": {
+     "signal": null,
+     "cross_up": false,
+     "fast_above_slow": false,
+     "coin_up": false
+    },
+    "XRPUSDT": {
+     "signal": null,
+     "cross_up": false,
+     "fast_above_slow": false,
+     "coin_up": false
+    },
+    "DOGEUSDT": {
+     "signal": null,
+     "cross_up": false,
+     "fast_above_slow": false,
+     "coin_up": false
+    },
+    "ADAUSDT": {
+     "signal": null,
+     "cross_up": false,
+     "fast_above_slow": false,
+     "coin_up": false
+    },
+    "SUIUSDT": {
+     "signal": null,
+     "cross_up": false,
+     "fast_above_slow": false,
+     "coin_up": false
+    },
+    "TRXUSDT": {
+     "signal": null,
+     "cross_up": false,
+     "fast_above_slow": false,
+     "coin_up": false
+    },
+    "BNBUSDT": {
+     "signal": null,
+     "cross_up": false,
+     "fast_above_slow": false,
+     "coin_up": false
+    },
+    "AVAXUSDT": {
+     "signal": null,
+     "cross_up": false,
+     "fast_above_slow": false,
+     "coin_up": false
+    }
+   }
+  },
+  {
+   "bar_close_utc": "2026-11-11T00:00:00+00:00",
+   "btc_close": 73762.9,
+   "btc_ema300": 79160.02,
+   "btc_gap_pct": -6.82,
+   "btc_up": false,
+   "coins": {
+    "SOLUSDT": {
+     "signal": null,
+     "cross_up": false,
+     "fast_above_slow": false,
+     "coin_up": false
+    },
+    "XRPUSDT": {
+     "signal": null,
+     "cross_up": false,
+     "fast_above_slow": false,
+     "coin_up": false
+    },
+    "DOGEUSDT": {
+     "signal": null,
+     "cross_up": false,
+     "fast_above_slow": false,
+     "coin_up": false
+    },
+    "ADAUSDT": {
+     "signal": null,
+     "cross_up": false,
+     "fast_above_slow": false,
+     "coin_up": false
+    },
+    "SUIUSDT": {
+     "signal": null,
+     "cross_up": false,
+     "fast_above_slow": false,
+     "coin_up": false
+    },
+    "TRXUSDT": {
+     "signal": null,
+     "cross_up": false,
+     "fast_above_slow": false,
+     "coin_up": false
+    },
+    "BNBUSDT": {
+     "signal": null,
+     "cross_up": false,
+     "fast_above_slow": false,
+     "coin_up": false
+    },
+    "AVAXUSDT": {
+     "signal": null,
+     "cross_up": false,
+     "fast_above_slow": false,
+     "coin_up": false
+    }
+   }
+  },
+  {
+   "bar_close_utc": "2026-11-11T04:00:00+00:00",
+   "btc_close": 73740.1,
+   "btc_ema300": 79123.27,
+   "btc_gap_pct": -6.8,
+   "btc_up": false,
+   "coins": {
+    "SOLUSDT": {
+     "signal": null,
+     "cross_up": false,
+     "fast_above_slow": false,
+     "coin_up": false
+    },
+    "XRPUSDT": {
+     "signal": null,
+     "cross_up": false,
+     "fast_above_slow": false,
+     "coin_up": false
+    },
+    "DOGEUSDT": {
+     "signal": null,
+     "cross_up": false,
+     "fast_above_slow": false,
+     "coin_up": false
+    },
+    "ADAUSDT": {
+     "signal": null,
+     "cross_up": false,
+     "fast_above_slow": false,
+     "coin_up": false
+    },
+    "SUIUSDT": {
+     "signal": null,
+     "cross_up": false,
+     "fast_above_slow": false,
+     "coin_up": false
+    },
+    "TRXUSDT": {
+     "signal": null,
+     "cross_up": false,
+     "fast_above_slow": false,
+     "coin_up": false
+    },
+    "BNBUSDT": {
+     "signal": null,
+     "cross_up": false,
+     "fast_above_slow": false,
+     "coin_up": false
+    },
+    "AVAXUSDT": {
+     "signal": null,
+     "cross_up": false,
+     "fast_above_slow": false,
+     "coin_up": false
+    }
+   }
+  },
+  {
+   "bar_close_utc": "2026-11-11T08:00:00+00:00",
+   "btc_close": 74064.7,
+   "btc_ema300": 79090.29,
+   "btc_gap_pct": -6.35,
+   "btc_up": false,
+   "coins": {
+    "SOLUSDT": {
+     "signal": null,
+     "cross_up": false,
+     "fast_above_slow": false,
+     "coin_up": false
+    },
+    "XRPUSDT": {
+     "signal": null,
+     "cross_up": false,
+     "fast_above_slow": false,
+     "coin_up": false
+    },
+    "DOGEUSDT": {
+     "signal": null,
+     "cross_up": false,
+     "fast_above_slow": false,
+     "coin_up": false
+    },
+    "ADAUSDT": {
+     "signal": null,
+     "cross_up": false,
+     "fast_above_slow": false,
+     "coin_up": false
+    },
+    "SUIUSDT": {
+     "signal": null,
+     "cross_up": false,
+     "fast_above_slow": false,
+     "coin_up": false
+    },
+    "TRXUSDT": {
+     "signal": null,
+     "cross_up": false,
+     "fast_above_slow": false,
+     "coin_up": false
+    },
+    "BNBUSDT": {
+     "signal": null,
+     "cross_up": false,
+     "fast_above_slow": false,
+     "coin_up": false
+    },
+    "AVAXUSDT": {
+     "signal": null,
+     "cross_up": false,
+     "fast_above_slow": false,
+     "coin_up": false
+    }
+   }
+  },
+  {
+   "bar_close_utc": "2026-11-11T12:00:00+00:00",
+   "btc_close": 73963.2,
+   "btc_ema300": 79056.47,
+   "btc_gap_pct": -6.44,
+   "btc_up": false,
+   "coins": {
+    "SOLUSDT": {
+     "signal": null,
+     "cross_up": false,
+     "fast_above_slow": false,
+     "coin_up": false
+    },
+    "XRPUSDT": {
+     "signal": null,
+     "cross_up": false,
+     "fast_above_slow": false,
+     "coin_up": false
+    },
+    "DOGEUSDT": {
+     "signal": null,
+     "cross_up": false,
+     "fast_above_slow": false,
+     "coin_up": false
+    },
+    "ADAUSDT": {
+     "signal": null,
+     "cross_up": false,
+     "fast_above_slow": false,
+     "coin_up": false
+    },
+    "SUIUSDT": {
+     "signal": null,
+     "cross_up": false,
+     "fast_above_slow": false,
+     "coin_up": false
+    },
+    "TRXUSDT": {
+     "signal": null,
+     "cross_up": false,
+     "fast_above_slow": false,
+     "coin_up": false
+    },
+    "BNBUSDT": {
+     "signal": null,
+     "cross_up": false,
+     "fast_above_slow": false,
+     "coin_up": false
+    },
+    "AVAXUSDT": {
+     "signal": null,
+     "cross_up": false,
+     "fast_above_slow": false,
+     "coin_up": false
+    }
+   }
+  },
+  {
+   "bar_close_utc": "2026-11-11T16:00:00+00:00",
+   "btc_close": 73953.5,
+   "btc_ema300": 79022.16,
+   "btc_gap_pct": -6.41,
+   "btc_up": false,
+   "coins": {
+    "SOLUSDT": {
+     "signal": null,
+     "cross_up": false,
+     "fast_above_slow": false,
+     "coin_up": false
+    },
+    "XRPUSDT": {
+     "signal": null,
+     "cross_up": false,
+     "fast_above_slow": false,
+     "coin_up": false
+    },
+    "DOGEUSDT": {
+     "signal": null,
+     "cross_up": false,
+     "fast_above_slow": false,
+     "coin_up": false
+    },
+    "ADAUSDT": {
+     "signal": null,
+     "cross_up": false,
+     "fast_above_slow": false,
+     "coin_up": false
+    },
+    "SUIUSDT": {
+     "signal": null,
+     "cross_up": false,
+     "fast_above_slow": false,
+     "coin_up": false
+    },
+    "TRXUSDT": {
+     "signal": null,
+     "cross_up": false,
+     "fast_above_slow": false,
+     "coin_up": false
+    },
+    "BNBUSDT": {
+     "signal": null,
+     "cross_up": false,
+     "fast_above_slow": false,
+     "coin_up": false
+    },
+    "AVAXUSDT": {
+     "signal": null,
+     "cross_up": false,
+     "fast_above_slow": false,
+     "coin_up": false
+    }
+   }
+  },
+  {
+   "bar_close_utc": "2026-11-11T20:00:00+00:00",
+   "btc_close": 74381.4,
+   "btc_ema300": 78991.6,
+   "btc_gap_pct": -5.84,
+   "btc_up": false,
+   "coins": {
+    "SOLUSDT": {
+     "signal": null,
+     "cross_up": false,
+     "fast_above_slow": false,
+     "coin_up": false
+    },
+    "XRPUSDT": {
+     "signal": null,
+     "cross_up": false,
+     "fast_above_slow": false,
+     "coin_up": false
+    },
+    "DOGEUSDT": {
+     "signal": null,
+     "cross_up": false,
+     "fast_above_slow": false,
+     "coin_up": false
+    },
+    "ADAUSDT": {
+     "signal": null,
+     "cross_up": false,
+     "fast_above_slow": false,
+     "coin_up": false
+    },
+    "SUIUSDT": {
+     "signal": null,
+     "cross_up": false,
+     "fast_above_slow": false,
+     "coin_up": false
+    },
+    "TRXUSDT": {
+     "signal": null,
+     "cross_up": false,
+     "fast_above_slow": false,
+     "coin_up": false
+    },
+    "BNBUSDT": {
+     "signal": null,
+     "cross_up": false,
+     "fast_above_slow": false,
+     "coin_up": false
+    },
+    "AVAXUSDT": {
+     "signal": null,
+     "cross_up": false,
+     "fast_above_slow": false,
+     "coin_up": false
+    }
+   }
+  },
+  {
+   "bar_close_utc": "2026-11-12T00:00:00+00:00",
+   "btc_close": 73980.0,
+   "btc_ema300": 78958.25,
+   "btc_gap_pct": -6.3,
+   "btc_up": false,
+   "coins": {
+    "SOLUSDT": {
+     "signal": null,
+     "cross_up": false,
+     "fast_above_slow": false,
+     "coin_up": false
+    },
+    "XRPUSDT": {
+     "signal": null,
+     "cross_up": false,
+     "fast_above_slow": false,
+     "coin_up": false
+    },
+    "DOGEUSDT": {
+     "signal": null,
+     "cross_up": false,
+     "fast_above_slow": false,
+     "coin_up": false
+    },
+    "ADAUSDT": {
+     "signal": null,
+     "cross_up": false,
+     "fast_above_slow": false,
+     "coin_up": false
+    },
+    "SUIUSDT": {
+     "signal": null,
+     "cross_up": false,
+     "fast_above_slow": false,
+     "coin_up": false
+    },
+    "TRXUSDT": {
+     "signal": null,
+     "cross_up": false,
+     "fast_above_slow": false,
+     "coin_up": false
+    },
+    "BNBUSDT": {
+     "signal": null,
+     "cross_up": false,
+     "fast_above_slow": false,
+     "coin_up": false
+    },
+    "AVAXUSDT": {
+     "signal": null,
+     "cross_up": false,
+     "fast_above_slow": false,
+     "coin_up": false
+    }
+   }
+  },
+  {
+   "bar_close_utc": "2026-11-12T04:00:00+00:00",
+   "btc_close": 73771.4,
+   "btc_ema300": 78924.2,
+   "btc_gap_pct": -6.53,
+   "btc_up": false,
+   "coins": {
+    "SOLUSDT": {
+     "signal": null,
+     "cross_up": false,
+     "fast_above_slow": false,
+     "coin_up": false
+    },
+    "XRPUSDT": {
+     "signal": null,
+     "cross_up": false,
+     "fast_above_slow": false,
+     "coin_up": false
+    },
+    "DOGEUSDT": {
+     "signal": null,
+     "cross_up": false,
+     "fast_above_slow": false,
+     "coin_up": false
+    },
+    "ADAUSDT": {
+     "signal": null,
+     "cross_up": false,
+     "fast_above_slow": false,
+     "coin_up": false
+    },
+    "SUIUSDT": {
+     "signal": null,
+     "cross_up": false,
+     "fast_above_slow": false,
+     "coin_up": false
+    },
+    "TRXUSDT": {
+     "signal": null,
+     "cross_up": false,
+     "fast_above_slow": false,
+     "coin_up": false
+    },
+    "BNBUSDT": {
+     "signal": null,
+     "cross_up": false,
+     "fast_above_slow": false,
+     "coin_up": false
+    },
+    "AVAXUSDT": {
+     "signal": null,
+     "cross_up": false,
+     "fast_above_slow": false,
+     "coin_up": false
+    }
+   }
+  },
+  {
+   "bar_close_utc": "2026-11-12T08:00:00+00:00",
+   "btc_close": 73619.1,
+   "btc_ema300": 78888.59,
+   "btc_gap_pct": -6.68,
+   "btc_up": false,
+   "coins": {
+    "SOLUSDT": {
+     "signal": null,
+     "cross_up": false,
+     "fast_above_slow": false,
+     "coin_up": false
+    },
+    "XRPUSDT": {
+     "signal": null,
+     "cross_up": false,
+     "fast_above_slow": false,
+     "coin_up": false
+    },
+    "DOGEUSDT": {
+     "signal": null,
+     "cross_up": false,
+     "fast_above_slow": false,
+     "coin_up": false
+    },
+    "ADAUSDT": {
+     "signal": null,
+     "cross_up": false,
+     "fast_above_slow": false,
+     "coin_up": false
+    },
+    "SUIUSDT": {
+     "signal": null,
+     "cross_up": false,
+     "fast_above_slow": false,
+     "coin_up": false
+    },
+    "TRXUSDT": {
+     "signal": null,
+     "cross_up": false,
+     "fast_above_slow": false,
+     "coin_up": false
+    },
+    "BNBUSDT": {
+     "signal": null,
+     "cross_up": false,
+     "fast_above_slow": false,
+     "coin_up": false
+    },
+    "AVAXUSDT": {
+     "signal": null,
+     "cross_up": false,
+     "fast_above_slow": false,
+     "coin_up": false
+    }
+   }
+  },
+  {
+   "bar_close_utc": "2026-11-12T12:00:00+00:00",
+   "btc_close": 72930.0,
+   "btc_ema300": 78848.92,
+   "btc_gap_pct": -7.51,
+   "btc_up": false,
+   "coins": {
+    "SOLUSDT": {
+     "signal": null,
+     "cross_up": false,
+     "fast_above_slow": false,
+     "coin_up": false
+    },
+    "XRPUSDT": {
+     "signal": null,
+     "cross_up": false,
+     "fast_above_slow": false,
+     "coin_up": false
+    },
+    "DOGEUSDT": {
+     "signal": null,
+     "cross_up": false,
+     "fast_above_slow": false,
+     "coin_up": false
+    },
+    "ADAUSDT": {
+     "signal": null,
+     "cross_up": false,
+     "fast_above_slow": false,
+     "coin_up": false
+    },
+    "SUIUSDT": {
+     "signal": null,
+     "cross_up": false,
+     "fast_above_slow": false,
+     "coin_up": false
+    },
+    "TRXUSDT": {
+     "signal": null,
+     "cross_up": false,
+     "fast_above_slow": false,
+     "coin_up": false
+    },
+    "BNBUSDT": {
+     "signal": null,
+     "cross_up": false,
+     "fast_above_slow": false,
+     "coin_up": false
+    },
+    "AVAXUSDT": {
+     "signal": null,
+     "cross_up": false,
+     "fast_above_slow": false,
+     "coin_up": false
+    }
+   }
+  },
+  {
+   "bar_close_utc": "2026-11-12T16:00:00+00:00",
+   "btc_close": 71677.4,
+   "btc_ema300": 78801.35,
+   "btc_gap_pct": -9.04,
+   "btc_up": false,
+   "coins": {
+    "SOLUSDT": {
+     "signal": null,
+     "cross_up": false,
+     "fast_above_slow": false,
+     "coin_up": false
+    },
+    "XRPUSDT": {
+     "signal": null,
+     "cross_up": false,
+     "fast_above_slow": false,
+     "coin_up": false
+    },
+    "DOGEUSDT": {
+     "signal": null,
+     "cross_up": false,
+     "fast_above_slow": false,
+     "coin_up": false
+    },
+    "ADAUSDT": {
+     "signal": null,
+     "cross_up": false,
+     "fast_above_slow": false,
+     "coin_up": false
+    },
+    "SUIUSDT": {
+     "signal": null,
+     "cross_up": false,
+     "fast_above_slow": false,
+     "coin_up": false
+    },
+    "TRXUSDT": {
+     "signal": null,
+     "cross_up": false,
+     "fast_above_slow": false,
+     "coin_up": false
+    },
+    "BNBUSDT": {
+     "signal": null,
+     "cross_up": false,
+     "fast_above_slow": false,
+     "coin_up": false
+    },
+    "AVAXUSDT": {
+     "signal": null,
+     "cross_up": false,
+     "fast_above_slow": false,
+     "coin_up": false
+    }
+   }
+  },
+  {
+   "bar_close_utc": "2026-11-12T20:00:00+00:00",
+   "btc_close": 71663.4,
+   "btc_ema300": 78753.95,
+   "btc_gap_pct": -9.0,
+   "btc_up": false,
+   "coins": {
+    "SOLUSDT": {
+     "signal": null,
+     "cross_up": false,
+     "fast_above_slow": false,
+     "coin_up": false
+    },
+    "XRPUSDT": {
+     "signal": null,
+     "cross_up": false,
+     "fast_above_slow": false,
+     "coin_up": false
+    },
+    "DOGEUSDT": {
+     "signal": null,
+     "cross_up": false,
+     "fast_above_slow": false,
+     "coin_up": false
+    },
+    "ADAUSDT": {
+     "signal": null,
+     "cross_up": false,
+     "fast_above_slow": false,
+     "coin_up": false
+    },
+    "SUIUSDT": {
+     "signal": null,
+     "cross_up": false,
+     "fast_above_slow": false,
+     "coin_up": false
+    },
+    "TRXUSDT": {
+     "signal": null,
+     "cross_up": false,
+     "fast_above_slow": false,
+     "coin_up": false
+    },
+    "BNBUSDT": {
+     "signal": null,
+     "cross_up": false,
+     "fast_above_slow": false,
+     "coin_up": false
+    },
+    "AVAXUSDT": {
+     "signal": null,
+     "cross_up": false,
+     "fast_above_slow": false,
+     "coin_up": false
+    }
+   }
+  },
+  {
+   "bar_close_utc": "2026-11-13T00:00:00+00:00",
+   "btc_close": 71423.3,
+   "btc_ema300": 78705.31,
+   "btc_gap_pct": -9.25,
+   "btc_up": false,
+   "coins": {
+    "SOLUSDT": {
+     "signal": null,
+     "cross_up": false,
+     "fast_above_slow": false,
+     "coin_up": false
+    },
+    "XRPUSDT": {
+     "signal": null,
+     "cross_up": false,
+     "fast_above_slow": false,
+     "coin_up": false
+    },
+    "DOGEUSDT": {
+     "signal": null,
+     "cross_up": false,
+     "fast_above_slow": false,
+     "coin_up": false
+    },
+    "ADAUSDT": {
+     "signal": null,
+     "cross_up": false,
+     "fast_above_slow": false,
+     "coin_up": false
+    },
+    "SUIUSDT": {
+     "signal": null,
+     "cross_up": false,
+     "fast_above_slow": false,
+     "coin_up": false
+    },
+    "TRXUSDT": {
+     "signal": null,
+     "cross_up": false,
+     "fast_above_slow": false,
+     "coin_up": false
+    },
+    "BNBUSDT": {
+     "signal": null,
+     "cross_up": false,
+     "fast_above_slow": false,
+     "coin_up": false
+    },
+    "AVAXUSDT": {
+     "signal": null,
+     "cross_up": false,
+     "fast_above_slow": false,
+     "coin_up": false
+    }
+   }
+  },
+  {
+   "bar_close_utc": "2026-11-13T04:00:00+00:00",
+   "btc_close": 68930.4,
+   "btc_ema300": 78640.77,
+   "btc_gap_pct": -12.35,
+   "btc_up": false,
+   "coins": {
+    "SOLUSDT": {
+     "signal": null,
+     "cross_up": false,
+     "fast_above_slow": false,
+     "coin_up": false
+    },
+    "XRPUSDT": {
+     "signal": null,
+     "cross_up": false,
+     "fast_above_slow": false,
+     "coin_up": false
+    },
+    "DOGEUSDT": {
+     "signal": null,
+     "cross_up": false,
+     "fast_above_slow": false,
+     "coin_up": false
+    },
+    "ADAUSDT": {
+     "signal": null,
+     "cross_up": false,
+     "fast_above_slow": false,
+     "coin_up": false
+    },
+    "SUIUSDT": {
+     "signal": null,
+     "cross_up": false,
+     "fast_above_slow": false,
+     "coin_up": false
+    },
+    "TRXUSDT": {
+     "signal": null,
+     "cross_up": false,
+     "fast_above_slow": false,
+     "coin_up": false
+    },
+    "BNBUSDT": {
+     "signal": null,
+     "cross_up": false,
+     "fast_above_slow": false,
+     "coin_up": false
+    },
+    "AVAXUSDT": {
+     "signal": null,
+     "cross_up": false,
+     "fast_above_slow": false,
+     "coin_up": false
+    }
+   }
+  },
+  {
+   "bar_close_utc": "2026-11-13T08:00:00+00:00",
+   "btc_close": 68555.0,
+   "btc_ema300": 78573.87,
+   "btc_gap_pct": -12.75,
+   "btc_up": false,
+   "coins": {
+    "SOLUSDT": {
+     "signal": null,
+     "cross_up": false,
+     "fast_above_slow": false,
+     "coin_up": false
+    },
+    "XRPUSDT": {
+     "signal": null,
+     "cross_up": false,
+     "fast_above_slow": false,
+     "coin_up": false
+    },
+    "DOGEUSDT": {
+     "signal": null,
+     "cross_up": false,
+     "fast_above_slow": false,
+     "coin_up": false
+    },
+    "ADAUSDT": {
+     "signal": null,
+     "cross_up": false,
+     "fast_above_slow": false,
+     "coin_up": false
+    },
+    "SUIUSDT": {
+     "signal": null,
+     "cross_up": false,
+     "fast_above_slow": false,
+     "coin_up": false
+    },
+    "TRXUSDT": {
+     "signal": null,
+     "cross_up": false,
+     "fast_above_slow": false,
+     "coin_up": false
+    },
+    "BNBUSDT": {
+     "signal": null,
+     "cross_up": false,
+     "fast_above_slow": false,
+     "coin_up": false
+    },
+    "AVAXUSDT": {
+     "signal": null,
+     "cross_up": false,
+     "fast_above_slow": false,
+     "coin_up": false
+    }
+   }
+  },
+  {
+   "bar_close_utc": "2026-11-13T12:00:00+00:00",
+   "btc_close": 69290.2,
+   "btc_ema300": 78512.03,
+   "btc_gap_pct": -11.75,
+   "btc_up": false,
+   "coins": {
+    "SOLUSDT": {
+     "signal": null,
+     "cross_up": false,
+     "fast_above_slow": false,
+     "coin_up": false
+    },
+    "XRPUSDT": {
+     "signal": null,
+     "cross_up": false,
+     "fast_above_slow": false,
+     "coin_up": false
+    },
+    "DOGEUSDT": {
+     "signal": null,
+     "cross_up": false,
+     "fast_above_slow": false,
+     "coin_up": false
+    },
+    "ADAUSDT": {
+     "signal": null,
+     "cross_up": false,
+     "fast_above_slow": false,
+     "coin_up": false
+    },
+    "SUIUSDT": {
+     "signal": null,
+     "cross_up": false,
+     "fast_above_slow": false,
+     "coin_up": false
+    },
+    "TRXUSDT": {
+     "signal": null,
+     "cross_up": false,
+     "fast_above_slow": false,
+     "coin_up": false
+    },
+    "BNBUSDT": {
+     "signal": null,
+     "cross_up": false,
+     "fast_above_slow": false,
+     "coin_up": false
+    },
+    "AVAXUSDT": {
+     "signal": null,
+     "cross_up": false,
+     "fast_above_slow": false,
+     "coin_up": false
+    }
+   }
+  },
+  {
+   "bar_close_utc": "2026-11-13T16:00:00+00:00",
+   "btc_close": 68873.2,
+   "btc_ema300": 78448.3,
+   "btc_gap_pct": -12.21,
+   "btc_up": false,
+   "coins": {
+    "SOLUSDT": {
+     "signal": null,
+     "cross_up": false,
+     "fast_above_slow": false,
+     "coin_up": false
+    },
+    "XRPUSDT": {
+     "signal": null,
+     "cross_up": false,
+     "fast_above_slow": false,
+     "coin_up": false
+    },
+    "DOGEUSDT": {
+     "signal": null,
+     "cross_up": false,
+     "fast_above_slow": false,
+     "coin_up": false
+    },
+    "ADAUSDT": {
+     "signal": null,
+     "cross_up": false,
+     "fast_above_slow": false,
+     "coin_up": false
+    },
+    "SUIUSDT": {
+     "signal": null,
+     "cross_up": false,
+     "fast_above_slow": false,
+     "coin_up": false
+    },
+    "TRXUSDT": {
+     "signal": null,
+     "cross_up": false,
+     "fast_above_slow": false,
+     "coin_up": false
+    },
+    "BNBUSDT": {
+     "signal": null,
+     "cross_up": false,
+     "fast_above_slow": false,
+     "coin_up": false
+    },
+    "AVAXUSDT": {
+     "signal": null,
+     "cross_up": false,
+     "fast_above_slow": false,
+     "coin_up": false
+    }
+   }
+  },
+  {
+   "bar_close_utc": "2026-11-13T20:00:00+00:00",
+   "btc_close": 69034.5,
+   "btc_ema300": 78385.4,
+   "btc_gap_pct": -11.93,
+   "btc_up": false,
+   "coins": {
+    "SOLUSDT": {
+     "signal": null,
+     "cross_up": false,
+     "fast_above_slow": false,
+     "coin_up": false
+    },
+    "XRPUSDT": {
+     "signal": null,
+     "cross_up": false,
+     "fast_above_slow": false,
+     "coin_up": false
+    },
+    "DOGEUSDT": {
+     "signal": null,
+     "cross_up": false,
+     "fast_above_slow": false,
+     "coin_up": false
+    },
+    "ADAUSDT": {
+     "signal": null,
+     "cross_up": false,
+     "fast_above_slow": false,
+     "coin_up": false
+    },
+    "SUIUSDT": {
+     "signal": null,
+     "cross_up": false,
+     "fast_above_slow": false,
+     "coin_up": false
+    },
+    "TRXUSDT": {
+     "signal": null,
+     "cross_up": false,
+     "fast_above_slow": false,
+     "coin_up": false
+    },
+    "BNBUSDT": {
+     "signal": null,
+     "cross_up": false,
+     "fast_above_slow": false,
+     "coin_up": false
+    },
+    "AVAXUSDT": {
+     "signal": null,
+     "cross_up": false,
+     "fast_above_slow": false,
+     "coin_up": false
+    }
+   }
+  },
+  {
+   "bar_close_utc": "2026-11-14T00:00:00+00:00",
+   "btc_close": 68279.8,
+   "btc_ema300": 78318.36,
+   "btc_gap_pct": -12.82,
+   "btc_up": false,
+   "coins": {
+    "SOLUSDT": {
+     "signal": null,
+     "cross_up": false,
+     "fast_above_slow": false,
+     "coin_up": false
+    },
+    "XRPUSDT": {
+     "signal": null,
+     "cross_up": false,
+     "fast_above_slow": false,
+     "coin_up": false
+    },
+    "DOGEUSDT": {
+     "signal": null,
+     "cross_up": false,
+     "fast_above_slow": false,
+     "coin_up": false
+    },
+    "ADAUSDT": {
+     "signal": null,
+     "cross_up": false,
+     "fast_above_slow": false,
+     "coin_up": false
+    },
+    "SUIUSDT": {
+     "signal": null,
+     "cross_up": false,
+     "fast_above_slow": false,
+     "coin_up": false
+    },
+    "TRXUSDT": {
+     "signal": null,
+     "cross_up": false,
+     "fast_above_slow": false,
+     "coin_up": false
+    },
+    "BNBUSDT": {
+     "signal": null,
+     "cross_up": false,
+     "fast_above_slow": false,
+     "coin_up": false
+    },
+    "AVAXUSDT": {
+     "signal": null,
+     "cross_up": false,
+     "fast_above_slow": false,
+     "coin_up": false
+    }
+   }
+  },
+  {
+   "bar_close_utc": "2026-11-14T04:00:00+00:00",
+   "btc_close": 66727.8,
+   "btc_ema300": 78240.96,
+   "btc_gap_pct": -14.72,
+   "btc_up": false,
+   "coins": {
+    "SOLUSDT": {
+     "signal": null,
+     "cross_up": false,
+     "fast_above_slow": false,
+     "coin_up": false
+    },
+    "XRPUSDT": {
+     "signal": null,
+     "cross_up": false,
+     "fast_above_slow": false,
+     "coin_up": false
+    },
+    "DOGEUSDT": {
+     "signal": null,
+     "cross_up": false,
+     "fast_above_slow": false,
+     "coin_up": false
+    },
+    "ADAUSDT": {
+     "signal": null,
+     "cross_up": false,
+     "fast_above_slow": false,
+     "coin_up": false
+    },
+    "SUIUSDT": {
+     "signal": null,
+     "cross_up": false,
+     "fast_above_slow": false,
+     "coin_up": false
+    },
+    "TRXUSDT": {
+     "signal": null,
+     "cross_up": false,
+     "fast_above_slow": false,
+     "coin_up": false
+    },
+    "BNBUSDT": {
+     "signal": null,
+     "cross_up": false,
+     "fast_above_slow": false,
+     "coin_up": false
+    },
+    "AVAXUSDT": {
+     "signal": null,
+     "cross_up": false,
+     "fast_above_slow": false,
+     "coin_up": false
+    }
+   }
+  },
+  {
+   "bar_close_utc": "2026-11-14T08:00:00+00:00",
+   "btc_close": 67132.2,
+   "btc_ema300": 78167.03,
+   "btc_gap_pct": -14.12,
+   "btc_up": false,
+   "coins": {
+    "SOLUSDT": {
+     "signal": null,
+     "cross_up": false,
+     "fast_above_slow": false,
+     "coin_up": false
+    },
+    "XRPUSDT": {
+     "signal": null,
+     "cross_up": false,
+     "fast_above_slow": false,
+     "coin_up": false
+    },
+    "DOGEUSDT": {
+     "signal": null,
+     "cross_up": false,
+     "fast_above_slow": false,
+     "coin_up": false
+    },
+    "ADAUSDT": {
+     "signal": null,
+     "cross_up": false,
+     "fast_above_slow": false,
+     "coin_up": false
+    },
+    "SUIUSDT": {
+     "signal": null,
+     "cross_up": false,
+     "fast_above_slow": false,
+     "coin_up": false
+    },
+    "TRXUSDT": {
+     "signal": null,
+     "cross_up": false,
+     "fast_above_slow": false,
+     "coin_up": false
+    },
+    "BNBUSDT": {
+     "signal": null,
+     "cross_up": false,
+     "fast_above_slow": false,
+     "coin_up": false
+    },
+    "AVAXUSDT": {
+     "signal": null,
+     "cross_up": false,
+     "fast_above_slow": false,
+     "coin_up": false
+    }
+   }
+  },
+  {
+   "bar_close_utc": "2026-11-14T12:00:00+00:00",
+   "btc_close": 67243.8,
+   "btc_ema300": 78094.62,
+   "btc_gap_pct": -13.89,
+   "btc_up": false,
+   "coins": {
+    "SOLUSDT": {
+     "signal": null,
+     "cross_up": false,
+     "fast_above_slow": false,
+     "coin_up": false
+    },
+    "XRPUSDT": {
+     "signal": null,
+     "cross_up": false,
+     "fast_above_slow": false,
+     "coin_up": false
+    },
+    "DOGEUSDT": {
+     "signal": null,
+     "cross_up": false,
+     "fast_above_slow": false,
+     "coin_up": false
+    },
+    "ADAUSDT": {
+     "signal": null,
+     "cross_up": false,
+     "fast_above_slow": false,
+     "coin_up": false
+    },
+    "SUIUSDT": {
+     "signal": null,
+     "cross_up": false,
+     "fast_above_slow": false,
+     "coin_up": false
+    },
+    "TRXUSDT": {
+     "signal": null,
+     "cross_up": false,
+     "fast_above_slow": false,
+     "coin_up": false
+    },
+    "BNBUSDT": {
+     "signal": null,
+     "cross_up": false,
+     "fast_above_slow": false,
+     "coin_up": false
+    },
+    "AVAXUSDT": {
+     "signal": null,
+     "cross_up": false,
+     "fast_above_slow": false,
+     "coin_up": false
+    }
+   }
+  },
+  {
+   "bar_close_utc": "2026-11-14T16:00:00+00:00",
+   "btc_close": 65718.5,
+   "btc_ema300": 78012.49,
+   "btc_gap_pct": -15.76,
+   "btc_up": false,
+   "coins": {
+    "SOLUSDT": {
+     "signal": null,
+     "cross_up": false,
+     "fast_above_slow": false,
+     "coin_up": false
+    },
+    "XRPUSDT": {
+     "signal": null,
+     "cross_up": false,
+     "fast_above_slow": false,
+     "coin_up": false
+    },
+    "DOGEUSDT": {
+     "signal": null,
+     "cross_up": false,
+     "fast_above_slow": false,
+     "coin_up": false
+    },
+    "ADAUSDT": {
+     "signal": null,
+     "cross_up": false,
+     "fast_above_slow": false,
+     "coin_up": false
+    },
+    "SUIUSDT": {
+     "signal": null,
+     "cross_up": false,
+     "fast_above_slow": false,
+     "coin_up": false
+    },
+    "TRXUSDT": {
+     "signal": null,
+     "cross_up": false,
+     "fast_above_slow": false,
+     "coin_up": false
+    },
+    "BNBUSDT": {
+     "signal": null,
+     "cross_up": false,
+     "fast_above_slow": false,
+     "coin_up": false
+    },
+    "AVAXUSDT": {
+     "signal": null,
+     "cross_up": false,
+     "fast_above_slow": false,
+     "coin_up": false
+    }
+   }
+  },
+  {
+   "bar_close_utc": "2026-11-14T20:00:00+00:00",
+   "btc_close": 65694.4,
+   "btc_ema300": 77929.42,
+   "btc_gap_pct": -15.7,
+   "btc_up": false,
+   "coins": {
+    "SOLUSDT": {
+     "signal": null,
+     "cross_up": false,
+     "fast_above_slow": false,
+     "coin_up": false
+    },
+    "XRPUSDT": {
+     "signal": null,
+     "cross_up": false,
+     "fast_above_slow": false,
+     "coin_up": false
+    },
+    "DOGEUSDT": {
+     "signal": null,
+     "cross_up": false,
+     "fast_above_slow": false,
+     "coin_up": false
+    },
+    "ADAUSDT": {
+     "signal": null,
+     "cross_up": false,
+     "fast_above_slow": false,
+     "coin_up": false
+    },
+    "SUIUSDT": {
+     "signal": null,
+     "cross_up": false,
+     "fast_above_slow": false,
+     "coin_up": false
+    },
+    "TRXUSDT": {
+     "signal": null,
+     "cross_up": false,
+     "fast_above_slow": false,
+     "coin_up": false
+    },
+    "BNBUSDT": {
+     "signal": null,
+     "cross_up": false,
+     "fast_above_slow": false,
+     "coin_up": false
+    },
+    "AVAXUSDT": {
+     "signal": null,
+     "cross_up": false,
+     "fast_above_slow": false,
+     "coin_up": false
+    }
+   }
+  },
+  {
+   "bar_close_utc": "2026-11-15T00:00:00+00:00",
+   "btc_close": 64130.5,
+   "btc_ema300": 77837.32,
+   "btc_gap_pct": -17.61,
+   "btc_up": false,
+   "coins": {
+    "SOLUSDT": {
+     "signal": null,
+     "cross_up": false,
+     "fast_above_slow": false,
+     "coin_up": false
+    },
+    "XRPUSDT": {
+     "signal": null,
+     "cross_up": false,
+     "fast_above_slow": false,
+     "coin_up": false
+    },
+    "DOGEUSDT": {
+     "signal": null,
+     "cross_up": false,
+     "fast_above_slow": false,
+     "coin_up": false
+    },
+    "ADAUSDT": {
+     "signal": null,
+     "cross_up": false,
+     "fast_above_slow": false,
+     "coin_up": false
+    },
+    "SUIUSDT": {
+     "signal": null,
+     "cross_up": false,
+     "fast_above_slow": false,
+     "coin_up": false
+    },
+    "TRXUSDT": {
+     "signal": null,
+     "cross_up": false,
+     "fast_above_slow": false,
+     "coin_up": false
+    },
+    "BNBUSDT": {
+     "signal": null,
+     "cross_up": false,
+     "fast_above_slow": false,
+     "coin_up": false
+    },
+    "AVAXUSDT": {
+     "signal": null,
+     "cross_up": false,
+     "fast_above_slow": false,
+     "coin_up": false
+    }
+   }
+  },
+  {
+   "bar_close_utc": "2026-11-15T04:00:00+00:00",
+   "btc_close": 64798.4,
+   "btc_ema300": 77748.96,
+   "btc_gap_pct": -16.66,
+   "btc_up": false,
+   "coins": {
+    "SOLUSDT": {
+     "signal": null,
+     "cross_up": false,
+     "fast_above_slow": false,
+     "coin_up": false
+    },
+    "XRPUSDT": {
+     "signal": null,
+     "cross_up": false,
+     "fast_above_slow": false,
+     "coin_up": false
+    },
+    "DOGEUSDT": {
+     "signal": null,
+     "cross_up": false,
+     "fast_above_slow": false,
+     "coin_up": false
+    },
+    "ADAUSDT": {
+     "signal": null,
+     "cross_up": false,
+     "fast_above_slow": false,
+     "coin_up": false
+    },
+    "SUIUSDT": {
+     "signal": null,
+     "cross_up": false,
+     "fast_above_slow": false,
+     "coin_up": false
+    },
+    "TRXUSDT": {
+     "signal": null,
+     "cross_up": false,
+     "fast_above_slow": false,
+     "coin_up": false
+    },
+    "BNBUSDT": {
+     "signal": null,
+     "cross_up": false,
+     "fast_above_slow": false,
+     "coin_up": false
+    },
+    "AVAXUSDT": {
+     "signal": null,
+     "cross_up": false,
+     "fast_above_slow": false,
+     "coin_up": false
+    }
+   }
+  },
+  {
+   "bar_close_utc": "2026-11-15T08:00:00+00:00",
+   "btc_close": 63986.4,
+   "btc_ema300": 77658.12,
+   "btc_gap_pct": -17.61,
+   "btc_up": false,
+   "coins": {
+    "SOLUSDT": {
+     "signal": null,
+     "cross_up": false,
+     "fast_above_slow": false,
+     "coin_up": false
+    },
+    "XRPUSDT": {
+     "signal": null,
+     "cross_up": false,
+     "fast_above_slow": false,
+     "coin_up": false
+    },
+    "DOGEUSDT": {
+     "signal": null,
+     "cross_up": false,
+     "fast_above_slow": false,
+     "coin_up": false
+    },
+    "ADAUSDT": {
+     "signal": null,
+     "cross_up": false,
+     "fast_above_slow": false,
+     "coin_up": false
+    },
+    "SUIUSDT": {
+     "signal": null,
+     "cross_up": false,
+     "fast_above_slow": false,
+     "coin_up": false
+    },
+    "TRXUSDT": {
+     "signal": null,
+     "cross_up": false,
+     "fast_above_slow": false,
+     "coin_up": false
+    },
+    "BNBUSDT": {
+     "signal": null,
+     "cross_up": false,
+     "fast_above_slow": false,
+     "coin_up": false
+    },
+    "AVAXUSDT": {
+     "signal": null,
+     "cross_up": false,
+     "fast_above_slow": false,
+     "coin_up": false
+    }
+   }
+  },
+  {
+   "bar_close_utc": "2026-11-15T12:00:00+00:00",
+   "btc_close": 65327.4,
+   "btc_ema300": 77575.96,
+   "btc_gap_pct": -15.79,
+   "btc_up": false,
+   "coins": {
+    "SOLUSDT": {
+     "signal": null,
+     "cross_up": false,
+     "fast_above_slow": false,
+     "coin_up": false
+    },
+    "XRPUSDT": {
+     "signal": null,
+     "cross_up": false,
+     "fast_above_slow": false,
+     "coin_up": false
+    },
+    "DOGEUSDT": {
+     "signal": null,
+     "cross_up": false,
+     "fast_above_slow": false,
+     "coin_up": false
+    },
+    "ADAUSDT": {
+     "signal": null,
+     "cross_up": false,
+     "fast_above_slow": false,
+     "coin_up": false
+    },
+    "SUIUSDT": {
+     "signal": null,
+     "cross_up": false,
+     "fast_above_slow": false,
+     "coin_up": false
+    },
+    "TRXUSDT": {
+     "signal": null,
+     "cross_up": false,
+     "fast_above_slow": false,
+     "coin_up": false
+    },
+    "BNBUSDT": {
+     "signal": null,
+     "cross_up": false,
+     "fast_above_slow": false,
+     "coin_up": false
+    },
+    "AVAXUSDT": {
+     "signal": null,
+     "cross_up": false,
+     "fast_above_slow": false,
+     "coin_up": false
+    }
+   }
+  },
+  {
+   "bar_close_utc": "2026-11-15T16:00:00+00:00",
+   "btc_close": 64719.9,
+   "btc_ema300": 77489.94,
+   "btc_gap_pct": -16.48,
+   "btc_up": false,
+   "coins": {
+    "SOLUSDT": {
+     "signal": null,
+     "cross_up": false,
+     "fast_above_slow": false,
+     "coin_up": false
+    },
+    "XRPUSDT": {
+     "signal": null,
+     "cross_up": false,
+     "fast_above_slow": false,
+     "coin_up": false
+    },
+    "DOGEUSDT": {
+     "signal": null,
+     "cross_up": false,
+     "fast_above_slow": false,
+     "coin_up": false
+    },
+    "ADAUSDT": {
+     "signal": null,
+     "cross_up": false,
+     "fast_above_slow": false,
+     "coin_up": false
+    },
+    "SUIUSDT": {
+     "signal": null,
+     "cross_up": false,
+     "fast_above_slow": false,
+     "coin_up": false
+    },
+    "TRXUSDT": {
+     "signal": null,
+     "cross_up": false,
+     "fast_above_slow": false,
+     "coin_up": false
+    },
+    "BNBUSDT": {
+     "signal": null,
+     "cross_up": false,
+     "fast_above_slow": false,
+     "coin_up": false
+    },
+    "AVAXUSDT": {
+     "signal": null,
+     "cross_up": false,
+     "fast_above_slow": false,
+     "coin_up": false
+    }
+   }
+  },
+  {
+   "bar_close_utc": "2026-11-15T20:00:00+00:00",
+   "btc_close": 64915.6,
+   "btc_ema300": 77405.32,
+   "btc_gap_pct": -16.14,
+   "btc_up": false,
+   "coins": {
+    "SOLUSDT": {
+     "signal": null,
+     "cross_up": false,
+     "fast_above_slow": false,
+     "coin_up": false
+    },
+    "XRPUSDT": {
+     "signal": null,
+     "cross_up": false,
+     "fast_above_slow": false,
+     "coin_up": false
+    },
+    "DOGEUSDT": {
+     "signal": null,
+     "cross_up": false,
+     "fast_above_slow": false,
+     "coin_up": false
+    },
+    "ADAUSDT": {
+     "signal": null,
+     "cross_up": false,
+     "fast_above_slow": false,
+     "coin_up": false
+    },
+    "SUIUSDT": {
+     "signal": null,
+     "cross_up": false,
+     "fast_above_slow": false,
+     "coin_up": false
+    },
+    "TRXUSDT": {
+     "signal": null,
+     "cross_up": false,
+     "fast_above_slow": false,
+     "coin_up": false
+    },
+    "BNBUSDT": {
+     "signal": null,
+     "cross_up": false,
+     "fast_above_slow": false,
+     "coin_up": false
+    },
+    "AVAXUSDT": {
+     "signal": null,
+     "cross_up": false,
+     "fast_above_slow": false,
+     "coin_up": false
+    }
+   }
+  },
+  {
+   "bar_close_utc": "2026-11-16T00:00:00+00:00",
+   "btc_close": 65309.8,
+   "btc_ema300": 77324.12,
+   "btc_gap_pct": -15.54,
+   "btc_up": false,
+   "coins": {
+    "SOLUSDT": {
+     "signal": null,
+     "cross_up": false,
+     "fast_above_slow": false,
+     "coin_up": false
+    },
+    "XRPUSDT": {
+     "signal": null,
+     "cross_up": false,
+     "fast_above_slow": false,
+     "coin_up": false
+    },
+    "DOGEUSDT": {
+     "signal": null,
+     "cross_up": false,
+     "fast_above_slow": false,
+     "coin_up": false
+    },
+    "ADAUSDT": {
+     "signal": null,
+     "cross_up": false,
+     "fast_above_slow": false,
+     "coin_up": false
+    },
+    "SUIUSDT": {
+     "signal": null,
+     "cross_up": false,
+     "fast_above_slow": false,
+     "coin_up": false
+    },
+    "TRXUSDT": {
+     "signal": null,
+     "cross_up": false,
+     "fast_above_slow": false,
+     "coin_up": false
+    },
+    "BNBUSDT": {
+     "signal": null,
+     "cross_up": false,
+     "fast_above_slow": false,
+     "coin_up": false
+    },
+    "AVAXUSDT": {
+     "signal": null,
+     "cross_up": false,
+     "fast_above_slow": false,
+     "coin_up": false
+    }
+   }
+  },
+  {
+   "bar_close_utc": "2026-11-16T04:00:00+00:00",
+   "btc_close": 65078.5,
+   "btc_ema300": 77240.01,
+   "btc_gap_pct": -15.75,
+   "btc_up": false,
+   "coins": {
+    "SOLUSDT": {
+     "signal": null,
+     "cross_up": false,
+     "fast_above_slow": false,
+     "coin_up": false
+    },
+    "XRPUSDT": {
+     "signal": null,
+     "cross_up": false,
+     "fast_above_slow": false,
+     "coin_up": false
+    },
+    "DOGEUSDT": {
+     "signal": null,
+     "cross_up": false,
+     "fast_above_slow": false,
+     "coin_up": false
+    },
+    "ADAUSDT": {
+     "signal": null,
+     "cross_up": false,
+     "fast_above_slow": false,
+     "coin_up": false
+    },
+    "SUIUSDT": {
+     "signal": null,
+     "cross_up": false,
+     "fast_above_slow": false,
+     "coin_up": false
+    },
+    "TRXUSDT": {
+     "signal": null,
+     "cross_up": false,
+     "fast_above_slow": false,
+     "coin_up": false
+    },
+    "BNBUSDT": {
+     "signal": null,
+     "cross_up": false,
+     "fast_above_slow": false,
+     "coin_up": false
+    },
+    "AVAXUSDT": {
+     "signal": null,
+     "cross_up": false,
+     "fast_above_slow": false,
+     "coin_up": false
+    }
+   }
+  },
+  {
+   "bar_close_utc": "2026-11-16T08:00:00+00:00",
+   "btc_close": 64954.6,
+   "btc_ema300": 77158.4,
+   "btc_gap_pct": -15.82,
+   "btc_up": false,
+   "coins": {
+    "SOLUSDT": {
+     "signal": null,
+     "cross_up": false,
+     "fast_above_slow": false,
+     "coin_up": false
+    },
+    "XRPUSDT": {
+     "signal": null,
+     "cross_up": false,
+     "fast_above_slow": false,
+     "coin_up": false
+    },
+    "DOGEUSDT": {
+     "signal": null,
+     "cross_up": false,
+     "fast_above_slow": false,
+     "coin_up": false
+    },
+    "ADAUSDT": {
+     "signal": null,
+     "cross_up": false,
+     "fast_above_slow": false,
+     "coin_up": false
+    },
+    "SUIUSDT": {
+     "signal": null,
+     "cross_up": false,
+     "fast_above_slow": false,
+     "coin_up": false
+    },
+    "TRXUSDT": {
+     "signal": null,
+     "cross_up": false,
+     "fast_above_slow": false,
+     "coin_up": false
+    },
+    "BNBUSDT": {
+     "signal": null,
+     "cross_up": false,
+     "fast_above_slow": false,
+     "coin_up": false
+    },
+    "AVAXUSDT": {
+     "signal": null,
+     "cross_up": false,
+     "fast_above_slow": false,
+     "coin_up": false
+    }
+   }
+  },
+  {
+   "bar_close_utc": "2026-11-16T12:00:00+00:00",
+   "btc_close": 64413.9,
+   "btc_ema300": 77073.01,
+   "btc_gap_pct": -16.42,
+   "btc_up": false,
+   "coins": {
+    "SOLUSDT": {
+     "signal": null,
+     "cross_up": false,
+     "fast_above_slow": false,
+     "coin_up": false
+    },
+    "XRPUSDT": {
+     "signal": null,
+     "cross_up": false,
+     "fast_above_slow": false,
+     "coin_up": false
+    },
+    "DOGEUSDT": {
+     "signal": null,
+     "cross_up": false,
+     "fast_above_slow": false,
+     "coin_up": false
+    },
+    "ADAUSDT": {
+     "signal": null,
+     "cross_up": false,
+     "fast_above_slow": false,
+     "coin_up": false
+    },
+    "SUIUSDT": {
+     "signal": null,
+     "cross_up": false,
+     "fast_above_slow": false,
+     "coin_up": false
+    },
+    "TRXUSDT": {
+     "signal": null,
+     "cross_up": false,
+     "fast_above_slow": false,
+     "coin_up": false
+    },
+    "BNBUSDT": {
+     "signal": null,
+     "cross_up": false,
+     "fast_above_slow": false,
+     "coin_up": false
+    },
+    "AVAXUSDT": {
+     "signal": null,
+     "cross_up": false,
+     "fast_above_slow": false,
+     "coin_up": false
+    }
+   }
+  },
+  {
+   "bar_close_utc": "2026-11-16T16:00:00+00:00",
+   "btc_close": 64440.8,
+   "btc_ema300": 76987.91,
+   "btc_gap_pct": -16.3,
+   "btc_up": false,
+   "coins": {
+    "SOLUSDT": {
+     "signal": null,
+     "cross_up": false,
+     "fast_above_slow": false,
+     "coin_up": false
+    },
+    "XRPUSDT": {
+     "signal": null,
+     "cross_up": false,
+     "fast_above_slow": false,
+     "coin_up": false
+    },
+    "DOGEUSDT": {
+     "signal": null,
+     "cross_up": false,
+     "fast_above_slow": false,
+     "coin_up": false
+    },
+    "ADAUSDT": {
+     "signal": null,
+     "cross_up": false,
+     "fast_above_slow": false,
+     "coin_up": false
+    },
+    "SUIUSDT": {
+     "signal": null,
+     "cross_up": false,
+     "fast_above_slow": false,
+     "coin_up": false
+    },
+    "TRXUSDT": {
+     "signal": null,
+     "cross_up": false,
+     "fast_above_slow": false,
+     "coin_up": false
+    },
+    "BNBUSDT": {
+     "signal": null,
+     "cross_up": false,
+     "fast_above_slow": false,
+     "coin_up": false
+    },
+    "AVAXUSDT": {
+     "signal": null,
+     "cross_up": false,
+     "fast_above_slow": false,
+     "coin_up": false
+    }
+   }
+  },
+  {
+   "bar_close_utc": "2026-11-16T20:00:00+00:00",
+   "btc_close": 65035.8,
+   "btc_ema300": 76910.24,
+   "btc_gap_pct": -15.44,
+   "btc_up": false,
+   "coins": {
+    "SOLUSDT": {
+     "signal": null,
+     "cross_up": false,
+     "fast_above_slow": false,
+     "coin_up": false
+    },
+    "XRPUSDT": {
+     "signal": null,
+     "cross_up": false,
+     "fast_above_slow": false,
+     "coin_up": false
+    },
+    "DOGEUSDT": {
+     "signal": null,
+     "cross_up": false,
+     "fast_above_slow": false,
+     "coin_up": false
+    },
+    "ADAUSDT": {
+     "signal": null,
+     "cross_up": false,
+     "fast_above_slow": false,
+     "coin_up": false
+    },
+    "SUIUSDT": {
+     "signal": null,
+     "cross_up": false,
+     "fast_above_slow": false,
+     "coin_up": false
+    },
+    "TRXUSDT": {
+     "signal": null,
+     "cross_up": false,
+     "fast_above_slow": false,
+     "coin_up": false
+    },
+    "BNBUSDT": {
+     "signal": null,
+     "cross_up": false,
+     "fast_above_slow": false,
+     "coin_up": false
+    },
+    "AVAXUSDT": {
+     "signal": null,
+     "cross_up": false,
+     "fast_above_slow": false,
+     "coin_up": false
+    }
+   }
+  },
+  {
+   "bar_close_utc": "2026-11-17T00:00:00+00:00",
+   "btc_close": 64856.0,
+   "btc_ema300": 76829.96,
+   "btc_gap_pct": -15.59,
+   "btc_up": false,
+   "coins": {
+    "SOLUSDT": {
+     "signal": null,
+     "cross_up": false,
+     "fast_above_slow": false,
+     "coin_up": false
+    },
+    "XRPUSDT": {
+     "signal": null,
+     "cross_up": false,
+     "fast_above_slow": false,
+     "coin_up": false
+    },
+    "DOGEUSDT": {
+     "signal": null,
+     "cross_up": false,
+     "fast_above_slow": false,
+     "coin_up": false
+    },
+    "ADAUSDT": {
+     "signal": null,
+     "cross_up": false,
+     "fast_above_slow": false,
+     "coin_up": false
+    },
+    "SUIUSDT": {
+     "signal": null,
+     "cross_up": false,
+     "fast_above_slow": false,
+     "coin_up": false
+    },
+    "TRXUSDT": {
+     "signal": null,
+     "cross_up": false,
+     "fast_above_slow": false,
+     "coin_up": false
+    },
+    "BNBUSDT": {
+     "signal": null,
+     "cross_up": false,
+     "fast_above_slow": false,
+     "coin_up": false
+    },
+    "AVAXUSDT": {
+     "signal": null,
+     "cross_up": false,
+     "fast_above_slow": false,
+     "coin_up": false
+    }
+   }
+  },
+  {
+   "bar_close_utc": "2026-11-17T04:00:00+00:00",
+   "btc_close": 65028.7,
+   "btc_ema300": 76750.28,
+   "btc_gap_pct": -15.27,
+   "btc_up": false,
+   "coins": {
+    "SOLUSDT": {
+     "signal": null,
+     "cross_up": false,
+     "fast_above_slow": false,
+     "coin_up": false
+    },
+    "XRPUSDT": {
+     "signal": null,
+     "cross_up": false,
+     "fast_above_slow": false,
+     "coin_up": false
+    },
+    "DOGEUSDT": {
+     "signal": null,
+     "cross_up": false,
+     "fast_above_slow": false,
+     "coin_up": false
+    },
+    "ADAUSDT": {
+     "signal": null,
+     "cross_up": false,
+     "fast_above_slow": false,
+     "coin_up": false
+    },
+    "SUIUSDT": {
+     "signal": null,
+     "cross_up": false,
+     "fast_above_slow": false,
+     "coin_up": false
+    },
+    "TRXUSDT": {
+     "signal": null,
+     "cross_up": false,
+     "fast_above_slow": false,
+     "coin_up": false
+    },
+    "BNBUSDT": {
+     "signal": null,
+     "cross_up": false,
+     "fast_above_slow": false,
+     "coin_up": false
+    },
+    "AVAXUSDT": {
+     "signal": null,
+     "cross_up": false,
+     "fast_above_slow": false,
+     "coin_up": false
+    }
+   }
+  },
+  {
+   "bar_close_utc": "2026-11-17T08:00:00+00:00",
+   "btc_close": 64705.1,
+   "btc_ema300": 76669.46,
+   "btc_gap_pct": -15.61,
+   "btc_up": false,
+   "coins": {
+    "SOLUSDT": {
+     "signal": null,
+     "cross_up": false,
+     "fast_above_slow": false,
+     "coin_up": false
+    },
+    "XRPUSDT": {
+     "signal": null,
+     "cross_up": false,
+     "fast_above_slow": false,
+     "coin_up": false
+    },
+    "DOGEUSDT": {
+     "signal": null,
+     "cross_up": false,
+     "fast_above_slow": false,
+     "coin_up": false
+    },
+    "ADAUSDT": {
+     "signal": null,
+     "cross_up": false,
+     "fast_above_slow": false,
+     "coin_up": false
+    },
+    "SUIUSDT": {
+     "signal": null,
+     "cross_up": false,
+     "fast_above_slow": false,
+     "coin_up": false
+    },
+    "TRXUSDT": {
+     "signal": null,
+     "cross_up": false,
+     "fast_above_slow": false,
+     "coin_up": false
+    },
+    "BNBUSDT": {
+     "signal": null,
+     "cross_up": false,
+     "fast_above_slow": false,
+     "coin_up": false
+    },
+    "AVAXUSDT": {
+     "signal": null,
+     "cross_up": false,
+     "fast_above_slow": false,
+     "coin_up": false
+    }
+   }
+  }
+ ]
+}

@@ -1,0 +1,121 @@
+diff --git a/server/sonic/exchange.py b/server/sonic/exchange.py
+index 3e10f61..e5a6179 100644
+--- a/server/sonic/exchange.py
++++ b/server/sonic/exchange.py
+@@ -26,6 +26,9 @@ DEMO_URL = "https://demo-fapi.binance.com"
+ FEE_RATE = 0.0005
+ SLIPPAGE = 0.0002
+ HOUR_MS = 3_600_000
++# GET /fapi/v1/userTrades: at most 7 days between startTime and endTime, at most 1000 rows.
++USER_TRADES_WINDOW_MS = 7 * 24 * HOUR_MS - 1
++USER_TRADES_PAGE = 1000
+ 
+ 
+ class ExchangeError(Exception):
+@@ -468,11 +471,34 @@ class BinanceDemo:
+             },
+         )
+ 
++    async def fills_since(self, symbol: str, since_ms: int) -> list[dict[str, Any]]:
++        """Every fill from since_ms to now. Binance answers at most 7 days and 1000 rows per
++        request, and a trade may stay open 40 days: read week by week, page by page."""
++        now = int(time.time() * 1000) + self.offset_ms
++        seen: dict[Any, dict[str, Any]] = {}  # by trade id, in Binance's (time) order
++        start = since_ms
++        while start <= now:
++            end = min(start + USER_TRADES_WINDOW_MS, now)
++            page = start
++            while True:
++                rows = await self.signed("GET", "/fapi/v1/userTrades", {
++                    "symbol": symbol, "startTime": page, "endTime": end,
++                    "limit": USER_TRADES_PAGE})
++                for row in rows:
++                    seen.setdefault(row.get("id", ("row", len(seen))), row)
++                if len(rows) < USER_TRADES_PAGE:
++                    break
++                # next page from the last row's time; rows sharing that time come back again
++                # and are merged by id. Always move forward so the loop ends.
++                page = max(int(rows[-1]["time"]), page + 1)
++                if page > end:
++                    break
++            start = end + 1
++        return list(seen.values())
++
+     async def closed_result(self, symbol: str, since_ms: int) -> Closed:
+         await self.cancel_protection(symbol)
+-        fills = await self.signed(
+-            "GET", "/fapi/v1/userTrades", {"symbol": symbol, "startTime": since_ms}
+-        )
++        fills = await self.fills_since(symbol, since_ms)
+         if not fills:
+             raise ExchangeError(f"no fills for {symbol}")
+         fees = sum(float(item["commission"]) for item in fills)
+diff --git a/server/tests/test_usertrades_window.py b/server/tests/test_usertrades_window.py
+new file mode 100644
+index 0000000..e9e1706
+--- /dev/null
++++ b/server/tests/test_usertrades_window.py
+@@ -0,0 +1,63 @@
++"""Binance's GET /fapi/v1/userTrades returns at most 7 days per request (startTime alone means
++startTime..startTime+7d) and 500 rows by default (1000 max). A Sonic trade can stay open up to
++240 bars (40 days), so the closing fills must be read window by window, page by page."""
++
++from __future__ import annotations
++
++import time
++from urllib.parse import parse_qs, urlsplit
++
++import httpx
++
++from sonic.exchange import DEMO_URL, BinanceDemo
++
++DAY = 24 * 3600 * 1000
++WEEK = 7 * DAY
++
++
++def fake_binance(fills: list[dict]) -> httpx.MockTransport:
++    """userTrades with Binance's documented limits; every other call answers 200 {}."""
++
++    def handler(request: httpx.Request) -> httpx.Response:
++        if request.url.path != "/fapi/v1/userTrades":
++            return httpx.Response(200, json={})
++        q = {k: v[0] for k, v in parse_qs(urlsplit(f"?{request.url.query.decode()}").query).items()}
++        now = int(time.time() * 1000)
++        start = int(q["startTime"]) if "startTime" in q else now - WEEK
++        end = int(q["endTime"]) if "endTime" in q else start + WEEK
++        if end - start > WEEK:
++            return httpx.Response(400, json={"code": -1127, "msg": "More than 7 days"})
++        limit = min(int(q.get("limit", 500)), 1000)
++        rows = sorted((f for f in fills if start <= f["time"] <= end),
++                      key=lambda f: (f["time"], f["id"]))
++        return httpx.Response(200, json=rows[:limit])
++
++    return httpx.MockTransport(handler)
++
++
++def fill(n: int, at_ms: int, price: float, pnl: float, fee: float = 0.01,
++         side: str = "BUY", order: int = 1) -> dict:
++    return {"id": n, "orderId": order, "side": side, "time": at_ms, "price": str(price),
++            "realizedPnl": str(pnl), "commission": str(fee)}
++
++
++async def test_a_trade_closed_after_thirty_days_reads_its_closing_fill() -> None:
++    now = int(time.time() * 1000)
++    opened = now - 30 * DAY
++    fills = [fill(1, opened, 100.0, 0.0), fill(2, now - DAY, 120.0, 20.0, side="SELL", order=2)]
++    client = httpx.AsyncClient(base_url=DEMO_URL, transport=fake_binance(fills))
++    result = await BinanceDemo(client, "k", "s").closed_result("SOLUSDT", opened)
++    assert result.exit_price == 120.0
++    assert abs(result.pnl - (20.0 - 0.02)) < 1e-9
++    assert abs(result.fees - 0.02) < 1e-9
++
++
++async def test_more_than_five_hundred_fills_in_one_week_are_all_counted() -> None:
++    now = int(time.time() * 1000)
++    opened = now - 3 * DAY
++    fills = [fill(i, opened + i * 1000, 100.0, 0.0) for i in range(1, 1201)]
++    fills.append(fill(5000, now - DAY, 90.0, -10.0, side="SELL", order=2))
++    client = httpx.AsyncClient(base_url=DEMO_URL, transport=fake_binance(fills))
++    result = await BinanceDemo(client, "k", "s").closed_result("SOLUSDT", opened)
++    assert result.exit_price == 90.0
++    assert abs(result.fees - 0.01 * 1201) < 1e-6

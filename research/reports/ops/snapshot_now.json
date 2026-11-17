@@ -1,0 +1,155 @@
+{
+ "service": "active",
+ "active_since": "Fri 2026-11-13 06:46:57 UTC",
+ "restarts": "0",
+ "deployed_commit": "5eee90f",
+ "live_switch_lines": "0",
+ "now_ms": 1794906964456,
+ "kv": {
+  "last_scan": {
+   "at_ms": 1794902412800,
+   "market": "btc_down",
+   "coins": 8,
+   "signals": 0,
+   "opened": 0
+  },
+  "last_bar_ms": 1794888000000,
+  "was_running": true,
+  "keep_awake": false,
+  "auto_resume": true,
+  "account_key": "<len 206>",
+  "account_synced_ms": 1794898120230,
+  "account_target": "my-account",
+  "history_6m": {
+   "status": "failed",
+   "id": "1173242270637457408",
+   "requested_ms": 1794487554629,
+   "from_ms": 1778762754629,
+   "error": "PermissionError"
+  },
+  "kopyon_key": "<len 76>",
+  "kopyon_usage": {
+   "2026-11-12": 16,
+   "2026-11-13": 143,
+   "2026-11-14": 144,
+   "2026-11-15": 144,
+   "2026-11-16": 144,
+   "2026-11-17": 56
+  },
+  "kopyon_state": {
+   "5141621486582775041": {
+    "collected": 155,
+    "backfilled": true,
+    "high_ms": 1794906271412,
+    "last_ms": 1794906841524,
+    "last_error": null,
+    "last_added": 1,
+    "last_seen": 1,
+    "not_closed": 0
+   }
+  }
+ },
+ "trades": {
+  "total": 0,
+  "open": [],
+  "closed_7d": {
+   "n": 0,
+   "pnl": null
+  },
+  "closed_30d": {
+   "n": 0,
+   "pnl": null
+  },
+  "last": []
+ },
+ "events_by_code": [
+  {
+   "level": "info",
+   "code": "kopyon_synced",
+   "n": 639,
+   "last_ms": 1794906842092
+  },
+  {
+   "level": "info",
+   "code": "account_synced",
+   "n": 23,
+   "last_ms": 1794898120234
+  },
+  {
+   "level": "info",
+   "code": "trader_studied",
+   "n": 3,
+   "last_ms": 1794841408045
+  },
+  {
+   "level": "info",
+   "code": "resumed_after_restart",
+   "n": 16,
+   "last_ms": 1794552421409
+  },
+  {
+   "level": "info",
+   "code": "kopyon_linked",
+   "n": 1,
+   "last_ms": 1794524313802
+  },
+  {
+   "level": "info",
+   "code": "account_linked",
+   "n": 1,
+   "last_ms": 1794463441110
+  },
+  {
+   "level": "info",
+   "code": "auto_resume_on",
+   "n": 1,
+   "last_ms": 1794264953307
+  },
+  {
+   "level": "info",
+   "code": "keep_awake_off",
+   "n": 1,
+   "last_ms": 1794264953300
+  },
+  {
+   "level": "info",
+   "code": "started",
+   "n": 1,
+   "last_ms": 1794264952835
+  }
+ ],
+ "problems": [],
+ "lab": {
+  "traders": [
+   {
+    "kind": "account",
+    "status": "watching",
+    "n": 1
+   },
+   {
+    "kind": "lead",
+    "status": "watching",
+    "n": 1
+   }
+  ],
+  "trader_trades": [
+   {
+    "trader_id": "5141621486582775041",
+    "n": 155,
+    "losses": 9,
+    "last_ms": 1794906271412
+   }
+  ],
+  "models": {
+   "n": 3,
+   "last_ms": 1794841389933
+  },
+  "trader_paper": {
+   "n": 4,
+   "open": 0,
+   "ret": 0.10927629898440844
+  },
+  "allocations": 0,
+  "live_trades": 0
+ }
+}
