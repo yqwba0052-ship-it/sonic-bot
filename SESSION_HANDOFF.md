@@ -106,7 +106,33 @@ C:\Users\sa\tools\jesse-venv\Scripts\python -W ignore -m sonic_research.jesse_au
 - C: بيئة Jesse 780 MB + بيانات بحث صغيرة (≈ 220 MB). D: بيانات الدقائق الكبيرة.
 - المساحة المسجّلة: انظر القسم 10.
 
-## 11. آخر تحديث 2026-11-17: مختبر FreqAI (اكتمل، والنتيجة: رفض)
+## 12. آخر تحديث 2026-11-17: Hummingbot وتنفيذ الصفقات (اكتمل، والنتيجة: رفض)
+- الفرع: `research/hummingbot` (من `research/freqai` عند `8c8e6a8`). لا دمج في main.
+- التصميم ومعايير النجاح (قبل أي بيانات): `docs/superpowers/specs/2026-11-17-hummingbot-execution-design.md`.
+- **التقرير النهائي: `research/reports/hummingbot_final.md`.**
+- **Hummingbot 2.17.0 لم يُثبَّت:** لا حزمة لـ Windows، والطريقة الرسمية Docker أو WSL2 التي تملأ قرص C. قُرئ كود محاكيه
+  الرسمي، وهو أبسط من المطلوب. **البديل:** محاكي تنفيذ بحثي على سجل صفقات Binance الفعلي (aggTrades)، أعاد صفقات
+  Jesse بالضبط: 82/82 و123/123.
+- **النتائج** (A-real = سوق بأسعار حقيقية؛ B = محدد maker؛ C = تكيّفي):
+  - التدريب: A-real +13.95$، B +20.74$، C +20.39$. لكن +6.44$ من صفقة SOL واحدة؛ ومن دونها B = +0.34$ و C = −0.01$.
+    الحكم: غير واعدة (الشرط 4).
+  - 2024–2026 (مرة واحدة، مقفل): A-real +26.48$، B +23.68$، C +23.70$. خسارة −2.9$ من صفقة TRX واحدة.
+  - **الانزلاق الحقيقي لأمر السوق:** 0.35 و1.06 نقطة أساس، أقل من افتراض Sonic (2). نتائج Sonic متحفظة قليلًا.
+  - **التوصية: رفض.** التنفيذ بالسوق كافٍ.
+- الكود: `research/sonic_research/execution_lab/` (agg_data، fills، sim، run، verdict، freeze). البيانات على
+  `D:\Sonic-Hummingbot`.
+- **للتشغيل والتحقق** (من مجلد `research\`؛ البيئة المعتادة):
+  ```
+  ..\server\.venv\Scripts\python -m pytest -q tests/test_execution_lab.py
+  ..\server\.venv\Scripts\python -m sonic_research.execution_lab.run <name> train
+  ..\server\.venv\Scripts\python -m sonic_research.execution_lab.verdict <name> <twin>
+  ```
+  التحقق `holdout` **مقفل** (`research/reports/execution_holdout.lock.json`)، فلا يُعاد تشغيله.
+- حالة الإغلاق: `D:\Sonic-Hummingbot\FINAL_SESSION_STATUS.md`.
+- **بهذا انتهت مراحل البحث الثلاث** (Jesse مُعتمد مدققًا؛ FreqAI مرفوض؛ Hummingbot مرفوض). Sonic الأساسي لم يتغير.
+  القرار التالي للمالك.
+
+## 11. تحديث 2026-11-17: مختبر FreqAI (اكتمل، والنتيجة: رفض)
 - الفرع: `research/freqai` (من `research/jesse` عند `7438022`). لا دمج في main.
 - التصميم ومعايير النجاح (مثبتة قبل التدريب): `docs/superpowers/specs/2026-11-17-freqai-design.md`.
 - **التقرير النهائي: `research/reports/freqai_final.md`.**

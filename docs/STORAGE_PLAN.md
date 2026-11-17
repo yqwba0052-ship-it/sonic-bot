@@ -74,3 +74,13 @@ D:\
   فالبيئة تحتاج إعادة إنشاء: `python -m venv` ثم `pip install -r D:\Sonic-FreqAI\logs\pip_freeze.txt` مع
   `TMP/TEMP` على الفلاشة و `--no-cache-dir`.
 - مصدر البيانات واحد: ملفات `research/data/klines` الموجودة، تُحوَّل بـ `freqai_lab/convert.py` دون تنزيل.
+
+## تحديث 2026-11-17: مختبر التنفيذ (Hummingbot)
+| المكان | المحتوى | الحجم |
+|---|---|---|
+| `D:\Sonic-Hummingbot\data\aggTrades\<SYMBOL>\` | سجل صفقات Binance اليومي لأيام دخول Sonic فقط (205 ملفات zip) | ≈ 812 MB |
+| `D:\Sonic-Hummingbot\reports` | نتائج كل تشغيل، والعتبة، والأحكام | < 1 MB |
+| `D:\Sonic-Hummingbot\progress.json`, `FINAL_SESSION_STATUS.md` | نقاط الاستئناف وحالة الإغلاق | — |
+- **لا بيئة جديدة:** المختبر يعمل ببيئة البحث المعتادة (`server\.venv`، numpy فقط). Hummingbot لم يُثبَّت، لأنه يحتاج
+  Docker أو WSL2 على C.
+- التنزيل يكتب ملفًا مؤقتًا `.part` ثم يعيد تسميته، فالملف المنقطع لا يُعتبر مكتملًا.

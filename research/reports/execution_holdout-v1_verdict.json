@@ -1,0 +1,180 @@
+{
+ "name": "holdout-v1",
+ "reproducible_from_training": true,
+ "cases": {
+  "B": {
+   "verdict": {
+    "promising": false,
+    "checks": {
+     "1_net_or_risk": false,
+     "2_strict_fills": true,
+     "3_few_missed": true,
+     "4_stop_unchanged": false,
+     "5_two_of_three_years": false,
+     "6_reproducible": true,
+     "7_worth_it": false
+    },
+    "diff": -2.797299631782792,
+    "stops_in_base": 105,
+    "stops_new_in_case": 1,
+    "stops_same_minute_and_type": 92
+   },
+   "concentration": {
+    "diff": -2.797299631782792,
+    "top_trade_effect": 0.014986896,
+    "top_trade": [
+     "TRXUSDT",
+     1786190400000
+    ],
+    "diff_without_top": -2.812286527782792
+   },
+   "worst5": [
+    [
+     -2.912816416954003,
+     "TRXUSDT",
+     "2025-06-29",
+     "not_filled",
+     "trade_exit_time"
+    ],
+    [
+     -0.22797785393000014,
+     "SOLUSDT",
+     "2026-09-18",
+     "breakeven",
+     "trade_exit_signal"
+    ],
+    [
+     -0.04107557920000065,
+     "SOLUSDT",
+     "2025-08-22",
+     "not_filled",
+     "breakeven"
+    ],
+    [
+     -0.033475935529999834,
+     "ADAUSDT",
+     "2025-05-08",
+     "not_filled",
+     "breakeven"
+    ],
+    [
+     -0.023455913400000302,
+     "ADAUSDT",
+     "2024-10-31",
+     "not_filled",
+     "breakeven"
+    ]
+   ],
+   "best3": [
+    [
+     0.013413157736203721,
+     "TRXUSDT",
+     "2026-07-21",
+     "not_filled",
+     "breakeven"
+    ],
+    [
+     0.014104367999995995,
+     "TRXUSDT",
+     "2026-05-01",
+     "breakeven",
+     "breakeven"
+    ],
+    [
+     0.014986896,
+     "TRXUSDT",
+     "2026-08-08",
+     "breakeven",
+     "breakeven"
+    ]
+   ]
+  },
+  "C": {
+   "verdict": {
+    "promising": false,
+    "checks": {
+     "1_net_or_risk": false,
+     "2_strict_fills": true,
+     "3_few_missed": true,
+     "4_stop_unchanged": false,
+     "5_two_of_three_years": false,
+     "6_reproducible": true,
+     "7_worth_it": false
+    },
+    "diff": -2.7831235838387975,
+    "stops_in_base": 105,
+    "stops_new_in_case": 2,
+    "stops_same_minute_and_type": 98
+   },
+   "concentration": {
+    "diff": -2.783123583838799,
+    "top_trade_effect": 0.014986896,
+    "top_trade": [
+     "TRXUSDT",
+     1786190400000
+    ],
+    "diff_without_top": -2.798110479838799
+   },
+   "worst5": [
+    [
+     -2.8946198835590025,
+     "TRXUSDT",
+     "2025-06-29",
+     "breakeven",
+     "trade_exit_time"
+    ],
+    [
+     -0.22797785393000014,
+     "SOLUSDT",
+     "2026-09-18",
+     "breakeven",
+     "trade_exit_signal"
+    ],
+    [
+     -3.1197400000598785e-05,
+     "ADAUSDT",
+     "2024-10-31",
+     "breakeven",
+     "breakeven"
+    ],
+    [
+     0.0,
+     "ADAUSDT",
+     "2024-02-02",
+     "breakeven",
+     "breakeven"
+    ],
+    [
+     0.0,
+     "ADAUSDT",
+     "2024-08-21",
+     "breakeven",
+     "breakeven"
+    ]
+   ],
+   "best3": [
+    [
+     0.013361711866999852,
+     "TRXUSDT",
+     "2026-09-08",
+     "breakeven",
+     "breakeven"
+    ],
+    [
+     0.014104367999995995,
+     "TRXUSDT",
+     "2026-05-01",
+     "breakeven",
+     "breakeven"
+    ],
+    [
+     0.014986896,
+     "TRXUSDT",
+     "2026-08-08",
+     "breakeven",
+     "breakeven"
+    ]
+   ]
+  }
+ }
+}
