@@ -158,6 +158,16 @@ def metrics(rows: list[dict], base: dict[tuple, dict] | None = None) -> dict:
     return out
 
 
+THETA = REPORTS / "execution_theta.json"  # committed: the C threshold from training only
+HOLDOUT_LOCK = REPORTS / "execution_holdout.lock.json"
+
+
+def load_theta(path: Path) -> float:
+    if not Path(path).exists():
+        raise SystemExit(f"theta file missing ({path}): it must come from the training run")
+    return float(json.loads(Path(path).read_text(encoding="utf-8"))["theta_atr_pct"])
+
+
 def result_hash(out: dict) -> str:
     """Hash of the results only (the run's name and duration do not count)."""
     body = {k: v for k, v in out.items() if k not in ("name", "seconds", "result_sha256")}
@@ -165,6 +175,14 @@ def result_hash(out: dict) -> str:
 
 
 def main(name: str, window: str) -> dict:
+    if window == "holdout":  # one-time 2024-2026 check: frozen method, then locked
+        if HOLDOUT_LOCK.exists():
+            raise SystemExit(f"hold-out already run ({HOLDOUT_LOCK}); results stay as they are")
+        from ..jesse_audit import data_1m as jesse_data
+        from ..jesse_audit import holdout as jesse_holdout
+        from .freeze import check_frozen
+        check_frozen()
+        jesse_data.guard_training = jesse_holdout.window_guard("2026-10")
     started = time.time()
     trades = sonic_trades(window)
     symbols = sorted({t["symbol"] for t in trades})
@@ -183,13 +201,11 @@ def main(name: str, window: str) -> dict:
         ctx["fours"][t["symbol"]], t["legs"][0]["ms"]) for t in trades}
     ctx["atr"] = {(t["symbol"], t["legs"][0]["ms"]): atr_pct(ctx["fours"][t["symbol"]],
                                                              t["legs"][0]["ms"]) for t in trades}
-    theta_path = LAB / "reports" / "theta.json"
-    if window == "train" and not theta_path.exists():  # fixed once, from prices only
-        theta_path.write_text(json.dumps({"theta_atr_pct": statistics.median(
+    if window == "train" and not THETA.exists():  # fixed once, from training prices only
+        THETA.write_text(json.dumps({"theta_atr_pct": statistics.median(
             ctx["atr"].values()), "from": "median ATR% of the 82 training signals"}),
             encoding="utf-8")
-    ctx["theta"] = json.loads(theta_path.read_text(encoding="utf-8"))["theta_atr_pct"] \
-        if theta_path.exists() else statistics.median(ctx["atr"].values())
+    ctx["theta"] = load_theta(THETA)
     ctx["prints"] = {}
     for t in trades:
         s, sig = t["symbol"], int(t["legs"][0]["ms"])
@@ -200,8 +216,8 @@ def main(name: str, window: str) -> dict:
     check = []
     for r in cases["A"]:
         j = jesse[(r["symbol"], r["signal_ms"])]
-        jl = [(leg["kind"], round(leg["raw"], 10)) for leg in j["legs"][1:]]
-        rl = [(leg["kind"], round(leg["raw"], 10)) for leg in r["legs"]]
+        jl = [(leg["kind"], int(leg["ms"]), round(leg["raw"], 10)) for leg in j["legs"][1:]]
+        rl = [(leg["kind"], int(leg["ms"]), round(leg["raw"], 10)) for leg in r["legs"]]
         check.append({"symbol": r["symbol"], "signal_ms": r["signal_ms"],
                       "same_legs": jl == rl, "same_reason": j["reason"] == r["reason"],
                       "pnl_diff": r["pnl"] - j["pnl"], "jesse": jl, "sim": rl,
@@ -223,6 +239,11 @@ def main(name: str, window: str) -> dict:
     (LAB / "reports").mkdir(parents=True, exist_ok=True)
     (LAB / "reports" / f"{name}.json").write_text(text, encoding="utf-8")
     (REPORTS / f"execution_{name}.json").write_text(text, encoding="utf-8")
+    if window == "holdout":
+        HOLDOUT_LOCK.write_text(json.dumps({"at": datetime.now(UTC).isoformat(timespec="seconds"),
+                                            "result": f"execution_{name}.json",
+                                            "result_sha256": out["result_sha256"]}, indent=1),
+                                encoding="utf-8")
     return out
 
 

@@ -21,8 +21,12 @@ def verdict(base_m: dict, base_rows: list[dict], case_m: dict, case_rows: list[d
              and case_m["net"] >= 0.9 * base_m["net"])
     winners = sum(1 for r in base_rows if r["pnl"] > 0)
     stops = [r for r in base_rows if r["reason"] in ("stop_loss", "breakeven")]
-    same_stop = all(case[_key(r)]["reason"] == r["reason"]
-                    and case[_key(r)].get("exit_ms") == r.get("exit_ms") for r in stops)
+    base_keys = {_key(r) for r in stops}
+    new_stops = [r for r in case_rows if r["reason"] in ("stop_loss", "breakeven")
+                 and _key(r) not in base_keys]  # stops that exist only in the case
+    same_stop = not new_stops and all(
+        case[_key(r)]["reason"] == r["reason"]
+        and case[_key(r)].get("exit_ms") == r.get("exit_ms") for r in stops)
     years = sorted(set(base_m["by_year"]) | set(case_m["by_year"]))
     better_years = sum(1 for y in years
                        if case_m["by_year"].get(y, 0) - base_m["by_year"].get(y, 0) > 1e-12)
@@ -36,7 +40,7 @@ def verdict(base_m: dict, base_rows: list[dict], case_m: dict, case_rows: list[d
         "7_worth_it": diff >= 1.0,
     }
     return {"promising": all(checks.values()), "checks": checks, "diff": diff,
-            "stops_in_base": len(stops),
+            "stops_in_base": len(stops), "stops_new_in_case": len(new_stops),
             "stops_same_minute_and_type": sum(
                 1 for r in stops if case[_key(r)]["reason"] == r["reason"]
                 and case[_key(r)].get("exit_ms") == r.get("exit_ms"))}

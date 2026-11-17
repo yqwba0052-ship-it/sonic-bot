@@ -199,3 +199,53 @@ def test_result_hash_ignores_run_name_and_duration():
     b = {"name": "y", "seconds": 9, "metrics": {"A": 1.0}}
     assert result_hash(a) == result_hash(b)
     assert result_hash(a) != result_hash(dict(a, metrics={"A": 2.0}))
+
+
+# ---- review fixes
+
+
+def test_theta_must_come_from_training(tmp_path):
+    from sonic_research.execution_lab.run import load_theta
+    with pytest.raises(SystemExit, match="theta"):
+        load_theta(tmp_path / "missing.json")
+    p = tmp_path / "t.json"
+    p.write_text('{"theta_atr_pct": 0.02}', encoding="utf-8")
+    assert load_theta(p) == 0.02
+
+
+def test_rule4_counts_trades_that_become_stops_only_in_the_case():
+    from sonic_research.execution_lab.verdict import verdict
+    base_rows = [_row("A", 1, 1.0, "trade_exit_signal", 5)]
+    case_rows = [_row("A", 1, 1.2, "stop_loss", 4)]
+    base_m = {"net": 10.0, "max_dd_pct": 5.0, "by_year": {"2021": 1, "2022": 1, "2023": 8}}
+    case_m = {"net": 12.0, "max_dd_pct": 5.0, "by_year": {"2021": 2, "2022": 2, "2023": 8},
+              "missed_winners": 0}
+    v = verdict(base_m, base_rows, case_m, case_rows, True)
+    assert v["checks"]["4_stop_unchanged"] is False and v["stops_new_in_case"] == 1
+
+
+# ---- hold-out freeze and lock
+
+
+def test_execution_freeze_detects_change_and_writes_once(tmp_path):
+    from sonic_research.execution_lab import freeze
+    body = freeze.build()
+    assert "research/sonic_research/execution_lab/fills.py" in body["files"]
+    assert body["settings"]["wait_min"] == 60 and body["settings"]["latency_ms"] == 2000
+    changed = dict(body, files=dict(body["files"], **{
+        "research/sonic_research/execution_lab/fills.py": "0" * 64}))
+    assert freeze.differences(changed) == ["research/sonic_research/execution_lab/fills.py"]
+    target = tmp_path / "m.json"
+    freeze.write(target)
+    with pytest.raises(SystemExit, match="already frozen"):
+        freeze.write(target)
+    assert freeze.check_frozen(target)["settings"]["wait_min"] == 60
+
+
+def test_holdout_run_refuses_after_lock(tmp_path, monkeypatch):
+    from sonic_research.execution_lab import run
+    lock = tmp_path / "lock.json"
+    lock.write_text("{}", encoding="utf-8")
+    monkeypatch.setattr(run, "HOLDOUT_LOCK", lock)
+    with pytest.raises(SystemExit, match="already run"):
+        run.main("x", "holdout")

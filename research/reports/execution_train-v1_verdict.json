@@ -21,6 +21,7 @@
     },
     "diff": 6.788004428033863,
     "stops_in_base": 76,
+    "stops_new_in_case": 1,
     "stops_same_minute_and_type": 61
    },
    "concentration": {
@@ -47,6 +48,7 @@
     },
     "diff": 6.439420004881862,
     "stops_in_base": 76,
+    "stops_new_in_case": 1,
     "stops_same_minute_and_type": 70
    },
    "concentration": {
