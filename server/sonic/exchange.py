@@ -26,6 +26,9 @@ DEMO_URL = "https://demo-fapi.binance.com"
 FEE_RATE = 0.0005
 SLIPPAGE = 0.0002
 HOUR_MS = 3_600_000
+# GET /fapi/v1/userTrades: at most 7 days between startTime and endTime, at most 1000 rows.
+USER_TRADES_WINDOW_MS = 7 * 24 * HOUR_MS - 1
+USER_TRADES_PAGE = 1000
 
 
 class ExchangeError(Exception):
@@ -49,9 +52,14 @@ class Fill:
 
 @dataclass(frozen=True)
 class Closed:
-    exit_price: float
-    pnl: float
+    """How a position ended. When the exchange history cannot prove the close (no closing
+    fill found), `verified` is False and exit_price/pnl are None: never a guessed price."""
+
+    exit_price: float | None
+    pnl: float | None
     fees: float
+    scaled: bool = False  # part of the position was closed earlier (the half take-profit)
+    verified: bool = True
 
 
 class Exchange(Protocol):
@@ -76,7 +84,9 @@ class Exchange(Protocol):
     ) -> None: ...
     async def move_stop(self, symbol: str, side: str, stop: float) -> None: ...
     async def close_market(self, symbol: str, qty: float, client_id: str) -> None: ...
-    async def closed_result(self, symbol: str, since_ms: int) -> Closed: ...
+    async def closed_result(
+        self, symbol: str, since_ms: int, side: str | None = None
+    ) -> Closed: ...
 
 
 def parse_filters(info: dict[str, Any], symbol: str) -> Filters:
@@ -240,7 +250,8 @@ class PaperExchange:
         self.state["balance"] += gross - fee
         fees = pos["fees"] + fee
         total = gross + pos.get("realized", 0.0)
-        self.state["closed"][symbol] = {"exit": price, "pnl": total - fees, "fees": fees}
+        self.state["closed"][symbol] = {"exit": price, "pnl": total - fees, "fees": fees,
+                                        "scaled": "realized" in pos}
         self._save()
 
     async def _replay_missed(self, symbol: str, pos: dict[str, Any]) -> bool:
@@ -291,11 +302,13 @@ class PaperExchange:
         if symbol in self.state["open"]:
             self._settle(symbol, await self.market.price(symbol))
 
-    async def closed_result(self, symbol: str, since_ms: int) -> Closed:
+    async def closed_result(
+        self, symbol: str, since_ms: int, side: str | None = None
+    ) -> Closed:
         data = self.state["closed"].get(symbol)
         if data is None:
             raise ExchangeError(f"no closed result for {symbol}")
-        return Closed(data["exit"], data["pnl"], data["fees"])
+        return Closed(data["exit"], data["pnl"], data["fees"], bool(data.get("scaled")))
 
 
 class BinanceDemo:
@@ -468,13 +481,55 @@ class BinanceDemo:
             },
         )
 
-    async def closed_result(self, symbol: str, since_ms: int) -> Closed:
+    async def fills_since(self, symbol: str, since_ms: int) -> list[dict[str, Any]]:
+        """Every fill from since_ms to now. Binance answers at most 7 days and 1000 rows per
+        request, and a trade may stay open 40 days: read week by week, page by page."""
+        now = int(time.time() * 1000) + self.offset_ms
+        seen: dict[Any, dict[str, Any]] = {}  # by trade id, in Binance's (time) order
+        start = since_ms
+        while start <= now:
+            end = min(start + USER_TRADES_WINDOW_MS, now)
+            page = start
+            while True:
+                rows = await self.signed("GET", "/fapi/v1/userTrades", {
+                    "symbol": symbol, "startTime": page, "endTime": end,
+                    "limit": USER_TRADES_PAGE})
+                for row in rows:
+                    seen.setdefault(row.get("id", ("row", len(seen))), row)
+                if len(rows) < USER_TRADES_PAGE:
+                    break
+                # next page from the last row's time; rows sharing that time come back again
+                # and are merged by id. Always move forward so the loop ends.
+                page = max(int(rows[-1]["time"]), page + 1)
+                if page > end:
+                    break
+            start = end + 1
+        return list(seen.values())
+
+    async def closed_result(
+        self, symbol: str, since_ms: int, side: str | None = None
+    ) -> Closed:
+        """Result of the position opened at since_ms on `side`, from Binance's own fills.
+        Only fills from the first opening fill on count (an earlier trade's close is not this
+        trade's). With no closing fill the result is unproven: exit and profit stay empty."""
         await self.cancel_protection(symbol)
-        fills = await self.signed(
-            "GET", "/fapi/v1/userTrades", {"symbol": symbol, "startTime": since_ms}
-        )
+        fills = await self.fills_since(symbol, since_ms)
         if not fills:
             raise ExchangeError(f"no fills for {symbol}")
+        entry_side = side or fills[0]["side"]
+        first = next((i for i, item in enumerate(fills) if item["side"] == entry_side), None)
+        if first is None:
+            raise ExchangeError(f"no opening fill for {symbol}")
+        fills = fills[first:]
         fees = sum(float(item["commission"]) for item in fills)
-        gross = sum(float(item["realizedPnl"]) for item in fills)
-        return Closed(float(fills[-1]["price"]), gross - fees, fees)
+        closing = [item for item in fills if item["side"] != entry_side]
+        if not closing:
+            return Closed(None, None, fees, False, verified=False)
+        gross = sum(float(item["realizedPnl"]) for item in closing)
+        orders = list(dict.fromkeys(item["orderId"] for item in closing))
+        last = [item for item in closing if item["orderId"] == orders[-1]]
+        qty = sum(abs(float(item.get("qty", 0) or 0)) for item in last)
+        exit_price = (sum(abs(float(item.get("qty", 0) or 0)) * float(item["price"])
+                          for item in last) / qty) if qty else float(last[-1]["price"])
+        # Two closing orders mean the half take-profit filled before the rest closed.
+        return Closed(exit_price, gross - fees, fees, len(orders) > 1)

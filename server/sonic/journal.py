@@ -22,6 +22,7 @@ REASONS = {
     "daily_loss_limit": "daily loss limit",
     "budget_used": "amount used up",
     "protection_failed": "stop could not be placed",
+    "insufficient_data": "exchange history does not show the close (result unproven)",
 }
 
 HEADER = """# Sonic trading journal {month}
@@ -38,6 +39,11 @@ to the entry; the rest exits on the reverse cross or after {days} days. Goal set
 
 def month_of(ms: int) -> str:
     return datetime.fromtimestamp(ms / 1000, UTC).strftime("%Y-%m")
+
+
+def _num(value: float | None, spec: str) -> str:
+    """A number, or a dash when the exchange data could not prove it."""
+    return "—" if value is None else format(value, spec)
 
 
 def write_trade(folder: Path, trade: dict[str, Any]) -> Path:
@@ -67,7 +73,7 @@ def write_trade(folder: Path, trade: dict[str, Any]) -> Path:
     reason = trade.get("exit_reason") or ""
     line = (
         f"| {closed} | {trade['symbol']} | {trade['side']} | {trade['entry_price']:.6g} | "
-        f"{(trade.get('exit_price') or 0):.6g} | {(trade.get('pnl') or 0):+.2f} | "
+        f"{_num(trade.get('exit_price'), '.6g')} | {_num(trade.get('pnl'), '+.2f')} | "
         f"{'' if r is None else f'{r:+.2f}'} | {REASONS.get(reason, reason)} | {opened} |\n"
     )
     with path.open("a", encoding="utf-8") as handle:

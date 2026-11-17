@@ -60,7 +60,7 @@ class FakeExchange:
         self.calls.append(("close", symbol, qty))
         self.positions_.pop(symbol, None)
 
-    async def closed_result(self, symbol: str, since_ms: int) -> Closed:
+    async def closed_result(self, symbol: str, since_ms: int, side: str | None = None) -> Closed:
         return Closed(90.0, -2.5, 0.05)
 
 

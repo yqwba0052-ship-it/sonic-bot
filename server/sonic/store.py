@@ -102,8 +102,8 @@ class Store:
         self,
         trade_id: int,
         closed_ms: int,
-        exit_price: float,
-        pnl: float,
+        exit_price: float | None,
+        pnl: float | None,
         fees: float,
         exit_reason: str = "",
     ) -> None:

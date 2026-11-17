@@ -245,14 +245,25 @@ class Engine:
         tracked = {trade["symbol"]: trade for trade in self.store.open_trades()}
         for symbol, trade in tracked.items():
             if symbol not in positions:
-                result = await self.exchange.closed_result(symbol, trade["opened_ms"])
+                result = await self.exchange.closed_result(
+                    symbol, trade["opened_ms"], trade["side"])
+                scaled = bool(trade["scaled"]) or result.scaled
+                if scaled and not trade["scaled"]:
+                    # The half filled and the rest closed before _follow_scaling saw it.
+                    self.store.mark_scaled(trade["id"], trade["entry_price"])
+                    self.log("info", "trade_scaled", symbol)
                 reason = self.pending_exit.pop(symbol, "") or (
-                    "breakeven" if trade["scaled"] else "stop_loss"
+                    "breakeven" if scaled else "stop_loss"
                 )
+                if not result.verified:
+                    # The exchange history does not show the close: record that, never a price.
+                    reason = "insufficient_data"
+                    self.log("warning", "trade_result_unproven", symbol)
                 self.store.close_trade(
                     trade["id"], self.now_ms(), result.exit_price, result.pnl, result.fees, reason
                 )
-                self.log("info", "trade_closed", f"{symbol} {result.pnl:+.2f}")
+                shown = "?" if result.pnl is None else f"{result.pnl:+.2f}"
+                self.log("info", "trade_closed", f"{symbol} {shown}")
                 if self.journal_dir is not None:
                     journal.write_trade(self.journal_dir, self.store.trade(trade["id"]))
         for symbol in positions:
@@ -665,7 +676,9 @@ class Engine:
         trades = self.store.closed_between(
             int(start.timestamp() * 1000), int(end.timestamp() * 1000)
         )
-        wins = sum(1 for t in trades if (t["pnl"] or 0) > 0)
+        unproven = [t for t in trades if t["pnl"] is None]
+        trades = [t for t in trades if t["pnl"] is not None]  # only results the data proves
+        wins = sum(1 for t in trades if t["pnl"] > 0)
         win_rate = wins / len(trades) if trades else None
         low, high = GOAL_WIN_RATE
         verdict = (
@@ -688,6 +701,7 @@ class Engine:
             "pnl": round(sum(t["pnl"] or 0 for t in trades), 2),
             "avg_r": (sum(t["r"] or 0 for t in trades) / len(trades)) if trades else None,
             "by_exit": by_reason,
+            "unproven": len(unproven),
             "strategy": strategy.NAME,
             "mode": self.settings.mode,
         }

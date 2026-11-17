@@ -320,13 +320,14 @@ class Capital:
                 self.db.execute("SELECT model_id FROM allocations ORDER BY approved_ms")]
 
     # ---------- running live (Binance Demo, or real when the server allows it)
-    def _close(self, trade: dict[str, Any], price: float, pnl: float, fees: float,
-               reason: str) -> None:
+    def _close(self, trade: dict[str, Any], price: float | None, pnl: float | None,
+               fees: float, reason: str) -> None:
         self.db.execute("UPDATE live_trades SET closed_ms = ?, exit_price = ?, pnl = ?, fees = ?, "
                         "reason = ? WHERE id = ?",
                         (self.now_ms(), price, pnl, fees, reason, trade["id"]))
+        # An unproven result adds nothing it cannot prove (the trade row says insufficient_data).
         self.db.execute("UPDATE allocations SET realized = realized + ? WHERE model_id = ?",
-                        (pnl, trade["model_id"]))
+                        (pnl or 0.0, trade["model_id"]))
         self.db.commit()
 
     def lost_today(self, model_id: int) -> float:
@@ -366,8 +367,11 @@ class Capital:
             symbol = trade["symbol"]
             position = positions.get(symbol)
             if position is None:  # stop or target filled on the exchange
-                result = await client.closed_result(symbol, trade["opened_ms"])
-                self._close(trade, result.exit_price, result.pnl, result.fees, "exchange")
+                result = await client.closed_result(symbol, trade["opened_ms"], trade["side"])
+                if not result.verified:
+                    log("warning", "strategy_result_unproven", f"{symbol} model {model_id}")
+                self._close(trade, result.exit_price, result.pnl, result.fees,
+                            "exchange" if result.verified else "insufficient_data")
                 continue
             if row["close_requested"] or self.now_ms() >= trade["until_ms"]:
                 await client.close_market(symbol, position.qty, f"sl{uuid.uuid4().hex[:20]}")
