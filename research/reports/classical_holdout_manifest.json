@@ -1,0 +1,26 @@
+{
+ "choices_match_training": true,
+ "data_problems": [],
+ "files": {
+  "docs/superpowers/specs/2026-11-17-classical-strategies-design.md": "ab0d20bca670db86541f721fd14e120c2efa1929b575ecf6b5584369f3dbcaa6",
+  "research/reports/classical_choices.json": "a723a6a37f8818c37bd5dbd5799a1b5727917d4bcb85bf556d76e64867eaba10",
+  "research/reports/classical_train.json": "0f5df91b8823a636549140eedefe646cceeeaaccc6f546d74a086bd77f4d15e7",
+  "research/reports/jesse_filters_full.json": "238331b9c8464ea3a5147273aa8df7fa7aed592b8e97dd358fced6dc788d4528",
+  "research/reports/jesse_holdout.json": "766987b5341e8e0a3f63cea18fb8ea65890d8f1075e480cb6a1fc07c02eea586",
+  "research/sonic_research/classical/__init__.py": "d77cf4cf3a12f459991d5956d557ca9225380a860b65a6375d0d32f3e6574be9",
+  "research/sonic_research/classical/core.py": "8dbbb152edfbc1f5b82151d630ce44e344476d9333587f2b26c40f18457af33f",
+  "research/sonic_research/classical/engine.py": "915d8622583abaae0a98d0b1b0b2761a19e2d6f39d4bb0111181411993454d15",
+  "research/sonic_research/classical/evaluate.py": "cfab0d2b87fbb3453e7cb362664f34652819716716113a587f2f9f9f9209b4e1",
+  "research/sonic_research/classical/freeze.py": "7985ac7bb674a8515a3c5048d54ecee9576517bd8fb9f3ec9d0140734ffe6d51",
+  "research/sonic_research/classical/run.py": "1860a015d30799c153dfa697f6369b2b38b61b960763d6ae2802e31e0f12fb5d",
+  "research/sonic_research/classical/strategies.py": "6ddc2245b83d784cc5ebe9954871746194d1a7ae37d04dcd24a4cd0eae98739c",
+  "research/sonic_research/data.py": "39ffe5b86c4c3e486ab5a06a6f04ddead9f0ddafedb7fb6c82011ccc0cd5dae4",
+  "research/sonic_research/jesse_audit/filters.py": "81f327418eab4a8a75ce27fa4059454a466c9a9113731b541a43dcaf2634f1f3",
+  "server/sonic/risk.py": "0b832497fbe5f8396dfd9907f4241d50dff3f40407f1021a3e2c9b14c7bdf659"
+ },
+ "sha256": "eaf6a9c510c11a9983ba03e60dc12bfbe1783dbd0c6e0e3c1108cccd64087a7c",
+ "window": [
+  "2024-01",
+  "2026-10"
+ ]
+}
