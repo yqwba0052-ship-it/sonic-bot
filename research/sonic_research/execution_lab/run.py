@@ -158,6 +158,12 @@ def metrics(rows: list[dict], base: dict[tuple, dict] | None = None) -> dict:
     return out
 
 
+def result_hash(out: dict) -> str:
+    """Hash of the results only (the run's name and duration do not count)."""
+    body = {k: v for k, v in out.items() if k not in ("name", "seconds", "result_sha256")}
+    return hashlib.sha256(json.dumps(body, default=float, sort_keys=True).encode()).hexdigest()
+
+
 def main(name: str, window: str) -> dict:
     started = time.time()
     trades = sonic_trades(window)
@@ -212,10 +218,7 @@ def main(name: str, window: str) -> dict:
            "metrics": {c: metrics(rows, base if c in ("B", "C") else None)
                        for c, rows in cases.items()},
            "rows": cases, "seconds": round(time.time() - started)}
-    text = json.dumps(out, indent=1, default=float, sort_keys=True)
-    out["result_sha256"] = hashlib.sha256(json.dumps(
-        {k: v for k, v in out.items() if k != "seconds"}, default=float,
-        sort_keys=True).encode()).hexdigest()
+    out["result_sha256"] = result_hash(out)
     text = json.dumps(out, indent=1, default=float, sort_keys=True)
     (LAB / "reports").mkdir(parents=True, exist_ok=True)
     (LAB / "reports" / f"{name}.json").write_text(text, encoding="utf-8")

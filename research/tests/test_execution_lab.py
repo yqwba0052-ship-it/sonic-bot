@@ -157,3 +157,45 @@ def test_target_in_the_fill_minute_is_not_counted_when_filled_mid_minute():
     legs, _ = exit_path(m, T + 30_000, 100.0, 1.0, 4.0, _filters(), T + 4 * MIN,
                         no_target_before=T + 30_000)
     assert [leg["kind"] for leg in legs] == ["exit"]  # no half: it may have come before us
+
+
+# ---- pre-registered verdict, applied literally
+
+
+def _row(s, ms, pnl, reason="breakeven", exit_ms=1, missed=False):
+    return {"symbol": s, "signal_ms": ms, "pnl": pnl, "reason": reason, "exit_ms": exit_ms,
+            "missed": missed, "legs": [] if missed else [1]}
+
+
+def test_verdict_rules_as_written():
+    from sonic_research.execution_lab.verdict import verdict
+    base_rows = [_row("A", 1, 1.0), _row("B", 2, 1.0, "stop_loss", 5)]
+    base_m = {"net": 10.0, "max_dd_pct": 5.0, "by_year": {"2021": 1, "2022": 1, "2023": 8}}
+    case_rows = [_row("A", 1, 1.1), _row("B", 2, 1.0, "stop_loss", 5)]
+    case_m = {"net": 11.0, "max_dd_pct": 5.0, "by_year": {"2021": 1.1, "2022": 1.1, "2023": 8.8},
+              "missed_winners": 0}
+    v = verdict(base_m, base_rows, case_m, case_rows, reproducible=True)
+    assert v["promising"] is True
+    moved = [_row("A", 1, 1.1), _row("B", 2, 1.0, "stop_loss", 6)]  # stop in another minute
+    assert verdict(base_m, base_rows, case_m, moved, True)["checks"]["4_stop_unchanged"] is False
+    small = dict(case_m, net=10.6)  # +6%, but only +0.6$ < 1$
+    assert verdict(base_m, base_rows, small, case_rows, True)["checks"]["7_worth_it"] is False
+    many = dict(case_m, missed_winners=1)  # 1 of 2 winners missed = 50%
+    assert verdict(base_m, base_rows, many, case_rows, True)["checks"]["3_few_missed"] is False
+
+
+def test_concentration_shows_the_biggest_single_trade():
+    from sonic_research.execution_lab.verdict import concentration
+    base = [_row("A", 1, 0.0), _row("B", 2, 0.0)]
+    case = [_row("A", 1, 6.0), _row("B", 2, 0.3)]
+    c = concentration(base, case)
+    assert c["diff"] == pytest.approx(6.3) and c["top_trade_effect"] == pytest.approx(6.0)
+    assert c["diff_without_top"] == pytest.approx(0.3)
+
+
+def test_result_hash_ignores_run_name_and_duration():
+    from sonic_research.execution_lab.run import result_hash
+    a = {"name": "x", "seconds": 5, "metrics": {"A": 1.0}}
+    b = {"name": "y", "seconds": 9, "metrics": {"A": 1.0}}
+    assert result_hash(a) == result_hash(b)
+    assert result_hash(a) != result_hash(dict(a, metrics={"A": 2.0}))

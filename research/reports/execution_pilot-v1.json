@@ -1,0 +1,1646 @@
+{
+ "latency_ms": 2000,
+ "metrics": {
+  "A": {
+   "avg_fee": 0.0037212261797500003,
+   "avg_slippage_bps": 1.9999999999998215,
+   "avg_wait_s": 0.0,
+   "by_year": {
+    "2023": 0.5741780687886022
+   },
+   "filled": 12,
+   "max_dd_pct": 1.85,
+   "net": 0.5741780687886022,
+   "not_filled": 0,
+   "open_at_end": 0,
+   "partial": 0,
+   "profit_factor": 1.8622923951143142,
+   "signals": 12,
+   "stop_exits": 11,
+   "total_fee": 0.044654714157,
+   "win_rate_pct": 83.3
+  },
+  "A_real": {
+   "avg_fee": 0.00372062125,
+   "avg_slippage_bps": 0.5079561159981321,
+   "avg_wait_s": 3.38625,
+   "by_year": {
+    "2023": 0.7100726662700036
+   },
+   "filled": 12,
+   "max_dd_pct": 1.39,
+   "net": 0.7100726662700035,
+   "not_filled": 0,
+   "open_at_end": 0,
+   "partial": 0,
+   "profit_factor": 2.3400054670429244,
+   "signals": 12,
+   "stop_exits": 10,
+   "total_fee": 0.044647455,
+   "win_rate_pct": 83.3
+  },
+  "B": {
+   "avg_fee": 0.0014881928333333333,
+   "avg_slippage_bps": -1.240819250768546e-13,
+   "avg_wait_s": 58.55108333333334,
+   "avoided_losers": 0,
+   "by_year": {
+    "2023": 0.6009593313360008
+   },
+   "filled": 12,
+   "max_dd_pct": 1.81,
+   "missed_winners": 0,
+   "net": 0.6009593313360009,
+   "not_filled": 0,
+   "open_at_end": 0,
+   "partial": 0,
+   "profit_factor": 1.9073119922389572,
+   "signals": 12,
+   "stop_exits": 11,
+   "stop_exits_same_minute_as_base": 5,
+   "total_fee": 0.017858314,
+   "win_rate_pct": 83.3
+  },
+  "C": {
+   "avg_fee": 0.0022931230833333335,
+   "avg_slippage_bps": 0.6194176579724565,
+   "avg_wait_s": 10.489749999999999,
+   "avoided_losers": 0,
+   "by_year": {
+    "2023": 0.5925566618370018
+   },
+   "filled": 12,
+   "max_dd_pct": 1.83,
+   "missed_winners": 0,
+   "net": 0.5925566618370018,
+   "not_filled": 0,
+   "open_at_end": 0,
+   "partial": 0,
+   "profit_factor": 1.8940114971599324,
+   "signals": 12,
+   "stop_exits": 11,
+   "stop_exits_same_minute_as_base": 8,
+   "total_fee": 0.027517477000000002,
+   "win_rate_pct": 83.3
+  }
+ },
+ "name": "pilot-v1",
+ "result_sha256": "1859f2b3fdda41729ff23a8e89f61f023fc5825cddff0d41b8a0e0b90f065e1a",
+ "rows": {
+  "A": [
+   {
+    "atr_pct": 0.016900072814696732,
+    "case": "A",
+    "close": 0.05482,
+    "entry_eff": 0.054830964,
+    "exit_ms": 1673427300000,
+    "fee": 0.003728505552,
+    "filled": 136.0,
+    "legs": [
+     {
+      "kind": "half",
+      "ms": 1673415060000,
+      "qty": 68.0,
+      "raw": 0.05529
+     },
+     {
+      "kind": "exit",
+      "ms": 1673427300000,
+      "qty": 68.0,
+      "raw": 0.054830964
+     }
+    ],
+    "maker_share": 0.0,
+    "missed": false,
+    "partial": false,
+    "pnl": 0.022244933384154886,
+    "qty_signal": 136.0,
+    "reason": "breakeven",
+    "signal_ms": 1673395200000,
+    "slippage_bps": 2.0000000000004,
+    "symbol": "TRXUSDT",
+    "wait_ms": 0
+   },
+   {
+    "atr_pct": 0.02738061290757937,
+    "case": "A",
+    "close": 23.86,
+    "entry_eff": 23.864772,
+    "exit_ms": 1676590500000,
+    "fee": 0.0025058010599999995,
+    "filled": 0.21,
+    "legs": [
+     {
+      "kind": "exit",
+      "ms": 1676590500000,
+      "qty": 0.21,
+      "raw": 22.23
+     }
+    ],
+    "maker_share": 0.0,
+    "missed": false,
+    "partial": false,
+    "pnl": -0.3490752642299991,
+    "qty_signal": 0.21,
+    "reason": "stop_loss",
+    "signal_ms": 1676563200000,
+    "slippage_bps": 1.9999999999996272,
+    "symbol": "SOLUSDT",
+    "wait_ms": 0
+   },
+   {
+    "atr_pct": 0.02712618944919688,
+    "case": "A",
+    "close": 0.06711,
+    "entry_eff": 0.067123422,
+    "exit_ms": 1679105340000,
+    "fee": 0.0025171283250000004,
+    "filled": 75.0,
+    "legs": [
+     {
+      "kind": "half",
+      "ms": 1679101560000,
+      "qty": 37.0,
+      "raw": 0.06803
+     },
+     {
+      "kind": "exit",
+      "ms": 1679105340000,
+      "qty": 38.0,
+      "raw": 0.067123422
+     }
+    ],
+    "maker_share": 0.0,
+    "missed": false,
+    "partial": false,
+    "pnl": 0.027479304429803567,
+    "qty_signal": 75.0,
+    "reason": "breakeven",
+    "signal_ms": 1678867200000,
+    "slippage_bps": 1.9999999999998577,
+    "symbol": "TRXUSDT",
+    "wait_ms": 0
+   },
+   {
+    "atr_pct": 0.039777227586699396,
+    "case": "A",
+    "close": 22.664,
+    "entry_eff": 22.6685328,
+    "exit_ms": 1679334720000,
+    "fee": 0.0026068812720000003,
+    "filled": 0.23,
+    "legs": [
+     {
+      "kind": "half",
+      "ms": 1679299080000,
+      "qty": 0.11,
+      "raw": 23.11
+     },
+     {
+      "kind": "exit",
+      "ms": 1679334720000,
+      "qty": 0.12000000000000001,
+      "raw": 22.6685328
+     }
+    ],
+    "maker_share": 0.0,
+    "missed": false,
+    "partial": false,
+    "pnl": 0.04227141020519325,
+    "qty_signal": 0.23,
+    "reason": "breakeven",
+    "signal_ms": 1679112000000,
+    "slippage_bps": 1.9999999999999034,
+    "symbol": "SOLUSDT",
+    "wait_ms": 0
+   },
+   {
+    "atr_pct": 0.014008326692381416,
+    "case": "A",
+    "close": 0.06612,
+    "entry_eff": 0.06613322399999999,
+    "exit_ms": 1680363840000,
+    "fee": 0.004397859396,
+    "filled": 133.0,
+    "legs": [
+     {
+      "kind": "half",
+      "ms": 1680345840000,
+      "qty": 66.0,
+      "raw": 0.06659
+     },
+     {
+      "kind": "exit",
+      "ms": 1680363840000,
+      "qty": 67.0,
+      "raw": 0.06613322399999999
+     }
+    ],
+    "maker_share": 0.0,
+    "missed": false,
+    "partial": false,
+    "pnl": 0.019572132985001555,
+    "qty_signal": 133.0,
+    "reason": "breakeven",
+    "signal_ms": 1680278400000,
+    "slippage_bps": 1.9999999999988267,
+    "symbol": "TRXUSDT",
+    "wait_ms": 0
+   },
+   {
+    "atr_pct": 0.018445914453917498,
+    "case": "A",
+    "close": 22.233,
+    "entry_eff": 22.2374466,
+    "exit_ms": 1681892580000,
+    "fee": 0.0033356169899999995,
+    "filled": 0.3,
+    "legs": [
+     {
+      "kind": "half",
+      "ms": 1681219560000,
+      "qty": 0.15,
+      "raw": 22.44
+     },
+     {
+      "kind": "exit",
+      "ms": 1681892580000,
+      "qty": 0.15,
+      "raw": 22.2374466
+     }
+    ],
+    "maker_share": 0.0,
+    "missed": false,
+    "partial": false,
+    "pnl": 0.0223569312786996,
+    "qty_signal": 0.3,
+    "reason": "breakeven",
+    "signal_ms": 1681214400000,
+    "slippage_bps": 1.9999999999990365,
+    "symbol": "SOLUSDT",
+    "wait_ms": 0
+   },
+   {
+    "atr_pct": 0.013762272145170937,
+    "case": "A",
+    "close": 0.06682,
+    "entry_eff": 0.066833364,
+    "exit_ms": 1682006640000,
+    "fee": 0.004444418706,
+    "filled": 133.0,
+    "legs": [
+     {
+      "kind": "exit",
+      "ms": 1682006640000,
+      "qty": 133.0,
+      "raw": 0.06453
+     }
+    ],
+    "maker_share": 0.0,
+    "missed": false,
+    "partial": false,
+    "pnl": -0.3167987154569994,
+    "qty_signal": 133.0,
+    "reason": "stop_loss",
+    "signal_ms": 1681473600000,
+    "slippage_bps": 2.0000000000002722,
+    "symbol": "TRXUSDT",
+    "wait_ms": 0
+   },
+   {
+    "atr_pct": 0.011113801958192964,
+    "case": "A",
+    "close": 0.06639,
+    "entry_eff": 0.06640327800000001,
+    "exit_ms": 1682272440000,
+    "fee": 0.005445068796000001,
+    "filled": 164.0,
+    "legs": [
+     {
+      "kind": "half",
+      "ms": 1682268420000,
+      "qty": 82.0,
+      "raw": 0.06677
+     },
+     {
+      "kind": "exit",
+      "ms": 1682272440000,
+      "qty": 82.0,
+      "raw": 0.06640327800000001
+     }
+    ],
+    "maker_share": 0.0,
+    "missed": false,
+    "partial": false,
+    "pnl": 0.016983081067679387,
+    "qty_signal": 164.0,
+    "reason": "breakeven",
+    "signal_ms": 1682265600000,
+    "slippage_bps": 2.000000000000821,
+    "symbol": "TRXUSDT",
+    "wait_ms": 0
+   },
+   {
+    "atr_pct": 0.009954999080256252,
+    "case": "A",
+    "close": 0.06651,
+    "entry_eff": 0.06652330199999999,
+    "exit_ms": 1686168000000,
+    "fee": 0.006086882133,
+    "filled": 183.0,
+    "legs": [
+     {
+      "kind": "half",
+      "ms": 1682733900000,
+      "qty": 91.0,
+      "raw": 0.06685
+     },
+     {
+      "kind": "exit",
+      "ms": 1686168000000,
+      "qty": 92.0,
+      "raw": 0.07733
+     }
+    ],
+    "maker_share": 0.0,
+    "missed": false,
+    "partial": false,
+    "pnl": 1.0086217746380024,
+    "qty_signal": 183.0,
+    "reason": "trade_exit_time",
+    "signal_ms": 1682712000000,
+    "slippage_bps": 1.9999999999989204,
+    "symbol": "TRXUSDT",
+    "wait_ms": 0
+   },
+   {
+    "atr_pct": 0.02626896232641366,
+    "case": "A",
+    "close": 23.292,
+    "entry_eff": 23.296658400000002,
+    "exit_ms": 1682782500000,
+    "fee": 0.0025626324240000005,
+    "filled": 0.22,
+    "legs": [
+     {
+      "kind": "half",
+      "ms": 1682772780000,
+      "qty": 0.11,
+      "raw": 23.6
+     },
+     {
+      "kind": "exit",
+      "ms": 1682782500000,
+      "qty": 0.11,
+      "raw": 23.296658400000002
+     }
+    ],
+    "maker_share": 0.0,
+    "missed": false,
+    "partial": false,
+    "pnl": 0.027194416742442558,
+    "qty_signal": 0.22,
+    "reason": "breakeven",
+    "signal_ms": 1682740800000,
+    "slippage_bps": 2.000000000000122,
+    "symbol": "SOLUSDT",
+    "wait_ms": 0
+   },
+   {
+    "atr_pct": 0.013886130317407158,
+    "case": "A",
+    "close": 0.07299,
+    "entry_eff": 0.073004598,
+    "exit_ms": 1687684980000,
+    "fee": 0.004453280478,
+    "filled": 122.0,
+    "legs": [
+     {
+      "kind": "half",
+      "ms": 1687679340000,
+      "qty": 61.0,
+      "raw": 0.07351
+     },
+     {
+      "kind": "exit",
+      "ms": 1687684980000,
+      "qty": 61.0,
+      "raw": 0.073004598
+     }
+    ],
+    "maker_share": 0.0,
+    "missed": false,
+    "partial": false,
+    "pnl": 0.020120961926448633,
+    "qty_signal": 122.0,
+    "reason": "breakeven",
+    "signal_ms": 1687665600000,
+    "slippage_bps": 2.0000000000006235,
+    "symbol": "TRXUSDT",
+    "wait_ms": 0
+   },
+   {
+    "atr_pct": 0.03258414072087464,
+    "case": "A",
+    "close": 17.725,
+    "entry_eff": 17.728545,
+    "exit_ms": 1688132820000,
+    "fee": 0.002570639025,
+    "filled": 0.29,
+    "legs": [
+     {
+      "kind": "half",
+      "ms": 1688078220000,
+      "qty": 0.14,
+      "raw": 18.01
+     },
+     {
+      "kind": "exit",
+      "ms": 1688132820000,
+      "qty": 0.14999999999999997,
+      "raw": 17.728545
+     }
+    ],
+    "maker_share": 0.0,
+    "missed": false,
+    "partial": false,
+    "pnl": 0.033207101818174926,
+    "qty_signal": 0.29,
+    "reason": "breakeven",
+    "signal_ms": 1688068800000,
+    "slippage_bps": 1.9999999999994476,
+    "symbol": "SOLUSDT",
+    "wait_ms": 0
+   }
+  ],
+  "A_real": [
+   {
+    "atr_pct": 0.016900072814696732,
+    "case": "A_real",
+    "close": 0.05482,
+    "entry_eff": 0.05482,
+    "exit_ms": 1673427300000,
+    "fee": 0.00372776,
+    "filled": 136.0,
+    "legs": [
+     {
+      "kind": "half",
+      "ms": 1673415060000,
+      "qty": 68.0,
+      "raw": 0.05528
+     },
+     {
+      "kind": "exit",
+      "ms": 1673427300000,
+      "qty": 68.0,
+      "raw": 0.05482
+     }
+    ],
+    "maker_share": 0.0,
+    "missed": false,
+    "partial": false,
+    "pnl": 0.022312228680000306,
+    "qty_signal": 136.0,
+    "reason": "breakeven",
+    "signal_ms": 1673395200000,
+    "slippage_bps": 0.0,
+    "symbol": "TRXUSDT",
+    "wait_ms": 3581
+   },
+   {
+    "atr_pct": 0.02738061290757937,
+    "case": "A_real",
+    "close": 23.86,
+    "entry_eff": 23.865,
+    "exit_ms": 1676590500000,
+    "fee": 0.0025058249999999997,
+    "filled": 0.21,
+    "legs": [
+     {
+      "kind": "exit",
+      "ms": 1676590500000,
+      "qty": 0.21,
+      "raw": 22.23
+     }
+    ],
+    "maker_share": 0.0,
+    "missed": false,
+    "partial": false,
+    "pnl": -0.34912316816999917,
+    "qty_signal": 0.21,
+    "reason": "stop_loss",
+    "signal_ms": 1676563200000,
+    "slippage_bps": 2.095557418272844,
+    "symbol": "SOLUSDT",
+    "wait_ms": 4505
+   },
+   {
+    "atr_pct": 0.02712618944919688,
+    "case": "A_real",
+    "close": 0.06711,
+    "entry_eff": 0.06709,
+    "exit_ms": 1679118300000,
+    "fee": 0.002515875,
+    "filled": 75.0,
+    "legs": [
+     {
+      "kind": "half",
+      "ms": 1679097840000,
+      "qty": 37.0,
+      "raw": 0.068
+     },
+     {
+      "kind": "exit",
+      "ms": 1679118300000,
+      "qty": 38.0,
+      "raw": 0.06709
+     }
+    ],
+    "maker_share": 0.0,
+    "missed": false,
+    "partial": false,
+    "pnl": 0.027608837542000157,
+    "qty_signal": 75.0,
+    "reason": "breakeven",
+    "signal_ms": 1678867200000,
+    "slippage_bps": -2.980181791090169,
+    "symbol": "TRXUSDT",
+    "wait_ms": 4994
+   },
+   {
+    "atr_pct": 0.039777227586699396,
+    "case": "A_real",
+    "close": 22.664,
+    "entry_eff": 22.683,
+    "exit_ms": 1679329320000,
+    "fee": 0.002608545,
+    "filled": 0.23,
+    "legs": [
+     {
+      "kind": "half",
+      "ms": 1679299080000,
+      "qty": 0.11,
+      "raw": 23.13
+     },
+     {
+      "kind": "exit",
+      "ms": 1679329320000,
+      "qty": 0.12000000000000001,
+      "raw": 22.683
+     }
+    ],
+    "maker_share": 0.0,
+    "missed": false,
+    "partial": false,
+    "pnl": 0.04287559962600034,
+    "qty_signal": 0.23,
+    "reason": "breakeven",
+    "signal_ms": 1679112000000,
+    "slippage_bps": 8.383339216377669,
+    "symbol": "SOLUSDT",
+    "wait_ms": 2435
+   },
+   {
+    "atr_pct": 0.014008326692381416,
+    "case": "A_real",
+    "close": 0.06612,
+    "entry_eff": 0.06613,
+    "exit_ms": 1680363840000,
+    "fee": 0.0043976449999999995,
+    "filled": 133.0,
+    "legs": [
+     {
+      "kind": "half",
+      "ms": 1680345840000,
+      "qty": 66.0,
+      "raw": 0.06659
+     },
+     {
+      "kind": "exit",
+      "ms": 1680363840000,
+      "qty": 67.0,
+      "raw": 0.06613
+     }
+    ],
+    "maker_share": 0.0,
+    "missed": false,
+    "partial": false,
+    "pnl": 0.019785282564999913,
+    "qty_signal": 133.0,
+    "reason": "breakeven",
+    "signal_ms": 1680278400000,
+    "slippage_bps": 1.5124016938893108,
+    "symbol": "TRXUSDT",
+    "wait_ms": 4722
+   },
+   {
+    "atr_pct": 0.018445914453917498,
+    "case": "A_real",
+    "close": 22.233,
+    "entry_eff": 22.231,
+    "exit_ms": 1681892580000,
+    "fee": 0.00333465,
+    "filled": 0.3,
+    "legs": [
+     {
+      "kind": "half",
+      "ms": 1681219500000,
+      "qty": 0.15,
+      "raw": 22.43
+     },
+     {
+      "kind": "exit",
+      "ms": 1681892580000,
+      "qty": 0.15,
+      "raw": 22.231
+     }
+    ],
+    "maker_share": 0.0,
+    "missed": false,
+    "partial": false,
+    "pnl": 0.021826614914999664,
+    "qty_signal": 0.3,
+    "reason": "breakeven",
+    "signal_ms": 1681214400000,
+    "slippage_bps": -0.8995637115993754,
+    "symbol": "SOLUSDT",
+    "wait_ms": 2133
+   },
+   {
+    "atr_pct": 0.013762272145170937,
+    "case": "A_real",
+    "close": 0.06682,
+    "entry_eff": 0.06679,
+    "exit_ms": 1682049600000,
+    "fee": 0.004441535,
+    "filled": 133.0,
+    "legs": [
+     {
+      "kind": "exit",
+      "ms": 1682049600000,
+      "qty": 133.0,
+      "raw": 0.06551
+     }
+    ],
+    "maker_share": 0.0,
+    "missed": false,
+    "partial": false,
+    "pnl": -0.18077964471700056,
+    "qty_signal": 133.0,
+    "reason": "trade_exit_signal",
+    "signal_ms": 1681473600000,
+    "slippage_bps": -4.489673750374475,
+    "symbol": "TRXUSDT",
+    "wait_ms": 3063
+   },
+   {
+    "atr_pct": 0.011113801958192964,
+    "case": "A_real",
+    "close": 0.06639,
+    "entry_eff": 0.0664,
+    "exit_ms": 1682272440000,
+    "fee": 0.0054448,
+    "filled": 164.0,
+    "legs": [
+     {
+      "kind": "half",
+      "ms": 1682268420000,
+      "qty": 82.0,
+      "raw": 0.06676
+     },
+     {
+      "kind": "exit",
+      "ms": 1682272440000,
+      "qty": 82.0,
+      "raw": 0.0664
+     }
+    ],
+    "maker_share": 0.0,
+    "missed": false,
+    "partial": false,
+    "pnl": 0.016432907912000045,
+    "qty_signal": 164.0,
+    "reason": "breakeven",
+    "signal_ms": 1682265600000,
+    "slippage_bps": 1.5062509414062544,
+    "symbol": "TRXUSDT",
+    "wait_ms": 5986
+   },
+   {
+    "atr_pct": 0.009954999080256252,
+    "case": "A_real",
+    "close": 0.06651,
+    "entry_eff": 0.06652,
+    "exit_ms": 1686168000000,
+    "fee": 0.006086579999999999,
+    "filled": 183.0,
+    "legs": [
+     {
+      "kind": "half",
+      "ms": 1682733900000,
+      "qty": 91.0,
+      "raw": 0.06685
+     },
+     {
+      "kind": "exit",
+      "ms": 1686168000000,
+      "qty": 92.0,
+      "raw": 0.07733
+     }
+    ],
+    "maker_share": 0.0,
+    "missed": false,
+    "partial": false,
+    "pnl": 1.0092263427710018,
+    "qty_signal": 183.0,
+    "reason": "trade_exit_time",
+    "signal_ms": 1682712000000,
+    "slippage_bps": 1.5035333032620843,
+    "symbol": "TRXUSDT",
+    "wait_ms": 2235
+   },
+   {
+    "atr_pct": 0.02626896232641366,
+    "case": "A_real",
+    "close": 23.292,
+    "entry_eff": 23.29,
+    "exit_ms": 1682782500000,
+    "fee": 0.0025619,
+    "filled": 0.22,
+    "legs": [
+     {
+      "kind": "half",
+      "ms": 1682772780000,
+      "qty": 0.11,
+      "raw": 23.59
+     },
+     {
+      "kind": "exit",
+      "ms": 1682782500000,
+      "qty": 0.11,
+      "raw": 23.29
+     }
+    ],
+    "maker_share": 0.0,
+    "missed": false,
+    "partial": false,
+    "pnl": 0.02682885568000012,
+    "qty_signal": 0.22,
+    "reason": "breakeven",
+    "signal_ms": 1682740800000,
+    "slippage_bps": -0.8586639189431754,
+    "symbol": "SOLUSDT",
+    "wait_ms": 2699
+   },
+   {
+    "atr_pct": 0.013886130317407158,
+    "case": "A_real",
+    "close": 0.07299,
+    "entry_eff": 0.07298,
+    "exit_ms": 1687684980000,
+    "fee": 0.004451780000000001,
+    "filled": 122.0,
+    "legs": [
+     {
+      "kind": "half",
+      "ms": 1687679340000,
+      "qty": 61.0,
+      "raw": 0.07348
+     },
+     {
+      "kind": "exit",
+      "ms": 1687684980000,
+      "qty": 61.0,
+      "raw": 0.07298
+     }
+    ],
+    "maker_share": 0.0,
+    "missed": false,
+    "partial": false,
+    "pnl": 0.019795271406000858,
+    "qty_signal": 122.0,
+    "reason": "breakeven",
+    "signal_ms": 1687665600000,
+    "slippage_bps": -1.3700506918750683,
+    "symbol": "TRXUSDT",
+    "wait_ms": 2209
+   },
+   {
+    "atr_pct": 0.03258414072087464,
+    "case": "A_real",
+    "close": 17.725,
+    "entry_eff": 17.728,
+    "exit_ms": 1688132820000,
+    "fee": 0.00257056,
+    "filled": 0.29,
+    "legs": [
+     {
+      "kind": "half",
+      "ms": 1688078220000,
+      "qty": 0.14,
+      "raw": 18.01
+     },
+     {
+      "kind": "exit",
+      "ms": 1688132820000,
+      "qty": 0.14999999999999997,
+      "raw": 17.728
+     }
+    ],
+    "maker_share": 0.0,
+    "missed": false,
+    "partial": false,
+    "pnl": 0.03328353806000006,
+    "qty_signal": 0.29,
+    "reason": "breakeven",
+    "signal_ms": 1688068800000,
+    "slippage_bps": 1.692524682651686,
+    "symbol": "SOLUSDT",
+    "wait_ms": 2073
+   }
+  ],
+  "B": [
+   {
+    "atr_pct": 0.016900072814696732,
+    "case": "B",
+    "close": 0.05482,
+    "entry_eff": 0.05482,
+    "exit_ms": 1673427300000,
+    "fee": 0.001491104,
+    "filled": 136.0,
+    "legs": [
+     {
+      "kind": "half",
+      "ms": 1673415060000,
+      "qty": 68.0,
+      "raw": 0.05528
+     },
+     {
+      "kind": "exit",
+      "ms": 1673427300000,
+      "qty": 68.0,
+      "raw": 0.05482
+     }
+    ],
+    "maker_share": 1.0,
+    "missed": false,
+    "partial": false,
+    "pnl": 0.024548884680000306,
+    "qty_signal": 136.0,
+    "reason": "breakeven",
+    "signal_ms": 1673395200000,
+    "slippage_bps": 0.0,
+    "symbol": "TRXUSDT",
+    "wait_ms": 2035
+   },
+   {
+    "atr_pct": 0.02738061290757937,
+    "case": "B",
+    "close": 23.86,
+    "entry_eff": 23.859999999999996,
+    "exit_ms": 1676590560000,
+    "fee": 0.00100212,
+    "filled": 0.21,
+    "legs": [
+     {
+      "kind": "exit",
+      "ms": 1676590560000,
+      "qty": 0.21,
+      "raw": 22.22
+     }
+    ],
+    "maker_share": 1.0,
+    "missed": false,
+    "partial": false,
+    "pnl": -0.34866799337999926,
+    "qty_signal": 0.21,
+    "reason": "stop_loss",
+    "signal_ms": 1676563200000,
+    "slippage_bps": -1.4889831009222552e-12,
+    "symbol": "SOLUSDT",
+    "wait_ms": 5222
+   },
+   {
+    "atr_pct": 0.02712618944919688,
+    "case": "B",
+    "close": 0.06711,
+    "entry_eff": 0.06711,
+    "exit_ms": 1679105400000,
+    "fee": 0.0010066500000000002,
+    "filled": 75.0,
+    "legs": [
+     {
+      "kind": "half",
+      "ms": 1679101560000,
+      "qty": 37.0,
+      "raw": 0.06802
+     },
+     {
+      "kind": "exit",
+      "ms": 1679105400000,
+      "qty": 38.0,
+      "raw": 0.06711
+     }
+    ],
+    "maker_share": 1.0,
+    "missed": false,
+    "partial": false,
+    "pnl": 0.029117012691999802,
+    "qty_signal": 75.0,
+    "reason": "breakeven",
+    "signal_ms": 1678867200000,
+    "slippage_bps": 0.0,
+    "symbol": "TRXUSDT",
+    "wait_ms": 4963
+   },
+   {
+    "atr_pct": 0.039777227586699396,
+    "case": "B",
+    "close": 22.664,
+    "entry_eff": 22.664,
+    "exit_ms": 1679334720000,
+    "fee": 0.0010425440000000003,
+    "filled": 0.23,
+    "legs": [
+     {
+      "kind": "half",
+      "ms": 1679299080000,
+      "qty": 0.11,
+      "raw": 23.11
+     },
+     {
+      "kind": "exit",
+      "ms": 1679334720000,
+      "qty": 0.12000000000000001,
+      "raw": 22.664
+     }
+    ],
+    "maker_share": 1.0,
+    "missed": false,
+    "partial": false,
+    "pnl": 0.04433473617799966,
+    "qty_signal": 0.23,
+    "reason": "breakeven",
+    "signal_ms": 1679112000000,
+    "slippage_bps": 0.0,
+    "symbol": "SOLUSDT",
+    "wait_ms": 577349
+   },
+   {
+    "atr_pct": 0.014008326692381416,
+    "case": "B",
+    "close": 0.06612,
+    "entry_eff": 0.06612,
+    "exit_ms": 1680363960000,
+    "fee": 0.0017587920000000001,
+    "filled": 133.0,
+    "legs": [
+     {
+      "kind": "half",
+      "ms": 1680345840000,
+      "qty": 66.0,
+      "raw": 0.06658
+     },
+     {
+      "kind": "exit",
+      "ms": 1680363960000,
+      "qty": 67.0,
+      "raw": 0.06612
+     }
+    ],
+    "maker_share": 1.0,
+    "missed": false,
+    "partial": false,
+    "pnl": 0.022425066432000703,
+    "qty_signal": 133.0,
+    "reason": "breakeven",
+    "signal_ms": 1680278400000,
+    "slippage_bps": 0.0,
+    "symbol": "TRXUSDT",
+    "wait_ms": 12632
+   },
+   {
+    "atr_pct": 0.018445914453917498,
+    "case": "B",
+    "close": 22.233,
+    "entry_eff": 22.233,
+    "exit_ms": 1681892580000,
+    "fee": 0.00133398,
+    "filled": 0.3,
+    "legs": [
+     {
+      "kind": "half",
+      "ms": 1681219500000,
+      "qty": 0.15,
+      "raw": 22.43
+     },
+     {
+      "kind": "exit",
+      "ms": 1681892580000,
+      "qty": 0.15,
+      "raw": 22.233
+     }
+    ],
+    "maker_share": 1.0,
+    "missed": false,
+    "partial": false,
+    "pnl": 0.023527074945000198,
+    "qty_signal": 0.3,
+    "reason": "breakeven",
+    "signal_ms": 1681214400000,
+    "slippage_bps": 0.0,
+    "symbol": "SOLUSDT",
+    "wait_ms": 2021
+   },
+   {
+    "atr_pct": 0.013762272145170937,
+    "case": "B",
+    "close": 0.06682,
+    "entry_eff": 0.06682,
+    "exit_ms": 1682006640000,
+    "fee": 0.0017774120000000001,
+    "filled": 133.0,
+    "legs": [
+     {
+      "kind": "exit",
+      "ms": 1682006640000,
+      "qty": 133.0,
+      "raw": 0.06452
+     }
+    ],
+    "maker_share": 1.0,
+    "missed": false,
+    "partial": false,
+    "pnl": -0.3136833658840006,
+    "qty_signal": 133.0,
+    "reason": "stop_loss",
+    "signal_ms": 1681473600000,
+    "slippage_bps": 0.0,
+    "symbol": "TRXUSDT",
+    "wait_ms": 2072
+   },
+   {
+    "atr_pct": 0.011113801958192964,
+    "case": "B",
+    "close": 0.06639,
+    "entry_eff": 0.06639,
+    "exit_ms": 1682272500000,
+    "fee": 0.0021775920000000003,
+    "filled": 164.0,
+    "legs": [
+     {
+      "kind": "half",
+      "ms": 1682268360000,
+      "qty": 82.0,
+      "raw": 0.06675
+     },
+     {
+      "kind": "exit",
+      "ms": 1682272500000,
+      "qty": 82.0,
+      "raw": 0.06639
+     }
+    ],
+    "maker_share": 1.0,
+    "missed": false,
+    "partial": false,
+    "pnl": 0.01970126374799987,
+    "qty_signal": 164.0,
+    "reason": "breakeven",
+    "signal_ms": 1682265600000,
+    "slippage_bps": 0.0,
+    "symbol": "TRXUSDT",
+    "wait_ms": 75317
+   },
+   {
+    "atr_pct": 0.009954999080256252,
+    "case": "B",
+    "close": 0.06651,
+    "entry_eff": 0.06651,
+    "exit_ms": 1686168000000,
+    "fee": 0.002434266,
+    "filled": 183.0,
+    "legs": [
+     {
+      "kind": "half",
+      "ms": 1682733900000,
+      "qty": 91.0,
+      "raw": 0.06684
+     },
+     {
+      "kind": "exit",
+      "ms": 1686168000000,
+      "qty": 92.0,
+      "raw": 0.07733
+     }
+    ],
+    "maker_share": 1.0,
+    "missed": false,
+    "partial": false,
+    "pnl": 1.0137992936800002,
+    "qty_signal": 183.0,
+    "reason": "trade_exit_time",
+    "signal_ms": 1682712000000,
+    "slippage_bps": 0.0,
+    "symbol": "TRXUSDT",
+    "wait_ms": 12783
+   },
+   {
+    "atr_pct": 0.02626896232641366,
+    "case": "B",
+    "close": 23.292,
+    "entry_eff": 23.292,
+    "exit_ms": 1682782500000,
+    "fee": 0.001024848,
+    "filled": 0.22,
+    "legs": [
+     {
+      "kind": "half",
+      "ms": 1682772780000,
+      "qty": 0.11,
+      "raw": 23.59
+     },
+     {
+      "kind": "exit",
+      "ms": 1682782500000,
+      "qty": 0.11,
+      "raw": 23.292
+     }
+    ],
+    "maker_share": 1.0,
+    "missed": false,
+    "partial": false,
+    "pnl": 0.028145753701999728,
+    "qty_signal": 0.22,
+    "reason": "breakeven",
+    "signal_ms": 1682740800000,
+    "slippage_bps": 0.0,
+    "symbol": "SOLUSDT",
+    "wait_ms": 2196
+   },
+   {
+    "atr_pct": 0.013886130317407158,
+    "case": "B",
+    "close": 0.07299,
+    "entry_eff": 0.07299,
+    "exit_ms": 1687684980000,
+    "fee": 0.0017809560000000002,
+    "filled": 122.0,
+    "legs": [
+     {
+      "kind": "half",
+      "ms": 1687679340000,
+      "qty": 61.0,
+      "raw": 0.07349
+     },
+     {
+      "kind": "exit",
+      "ms": 1687684980000,
+      "qty": 61.0,
+      "raw": 0.07299
+     }
+    ],
+    "maker_share": 1.0,
+    "missed": false,
+    "partial": false,
+    "pnl": 0.02246524152800014,
+    "qty_signal": 122.0,
+    "reason": "breakeven",
+    "signal_ms": 1687665600000,
+    "slippage_bps": 0.0,
+    "symbol": "TRXUSDT",
+    "wait_ms": 2199
+   },
+   {
+    "atr_pct": 0.03258414072087464,
+    "case": "B",
+    "close": 17.725,
+    "entry_eff": 17.725,
+    "exit_ms": 1688132820000,
+    "fee": 0.00102805,
+    "filled": 0.29,
+    "legs": [
+     {
+      "kind": "half",
+      "ms": 1688078220000,
+      "qty": 0.14,
+      "raw": 18.01
+     },
+     {
+      "kind": "exit",
+      "ms": 1688132820000,
+      "qty": 0.14999999999999997,
+      "raw": 17.725
+     }
+    ],
+    "maker_share": 1.0,
+    "missed": false,
+    "partial": false,
+    "pnl": 0.035246363015000066,
+    "qty_signal": 0.29,
+    "reason": "breakeven",
+    "signal_ms": 1688068800000,
+    "slippage_bps": 0.0,
+    "symbol": "SOLUSDT",
+    "wait_ms": 3824
+   }
+  ],
+  "C": [
+   {
+    "atr_pct": 0.016900072814696732,
+    "case": "C",
+    "close": 0.05482,
+    "entry_eff": 0.05482,
+    "exit_ms": 1673427300000,
+    "fee": 0.001491104,
+    "filled": 136.0,
+    "legs": [
+     {
+      "kind": "half",
+      "ms": 1673415060000,
+      "qty": 68.0,
+      "raw": 0.05528
+     },
+     {
+      "kind": "exit",
+      "ms": 1673427300000,
+      "qty": 68.0,
+      "raw": 0.05482
+     }
+    ],
+    "maker_share": 1.0,
+    "missed": false,
+    "partial": false,
+    "pnl": 0.024548884680000306,
+    "qty_signal": 136.0,
+    "reason": "breakeven",
+    "signal_ms": 1673395200000,
+    "slippage_bps": 0.0,
+    "symbol": "TRXUSDT",
+    "wait_ms": 2035
+   },
+   {
+    "atr_pct": 0.02738061290757937,
+    "case": "C",
+    "close": 23.86,
+    "entry_eff": 23.865,
+    "exit_ms": 1676590500000,
+    "fee": 0.0025058249999999997,
+    "filled": 0.21,
+    "legs": [
+     {
+      "kind": "exit",
+      "ms": 1676590500000,
+      "qty": 0.21,
+      "raw": 22.23
+     }
+    ],
+    "maker_share": 0.0,
+    "missed": false,
+    "partial": false,
+    "pnl": -0.34912316816999917,
+    "qty_signal": 0.21,
+    "reason": "stop_loss",
+    "signal_ms": 1676563200000,
+    "slippage_bps": 2.095557418272844,
+    "symbol": "SOLUSDT",
+    "wait_ms": 4505
+   },
+   {
+    "atr_pct": 0.02712618944919688,
+    "case": "C",
+    "close": 0.06711,
+    "entry_eff": 0.06709,
+    "exit_ms": 1679118300000,
+    "fee": 0.002515875,
+    "filled": 75.0,
+    "legs": [
+     {
+      "kind": "half",
+      "ms": 1679097840000,
+      "qty": 37.0,
+      "raw": 0.068
+     },
+     {
+      "kind": "exit",
+      "ms": 1679118300000,
+      "qty": 38.0,
+      "raw": 0.06709
+     }
+    ],
+    "maker_share": 0.0,
+    "missed": false,
+    "partial": false,
+    "pnl": 0.027608837542000157,
+    "qty_signal": 75.0,
+    "reason": "breakeven",
+    "signal_ms": 1678867200000,
+    "slippage_bps": -2.980181791090169,
+    "symbol": "TRXUSDT",
+    "wait_ms": 4994
+   },
+   {
+    "atr_pct": 0.039777227586699396,
+    "case": "C",
+    "close": 22.664,
+    "entry_eff": 22.683,
+    "exit_ms": 1679329320000,
+    "fee": 0.002608545,
+    "filled": 0.23,
+    "legs": [
+     {
+      "kind": "half",
+      "ms": 1679299080000,
+      "qty": 0.11,
+      "raw": 23.13
+     },
+     {
+      "kind": "exit",
+      "ms": 1679329320000,
+      "qty": 0.12000000000000001,
+      "raw": 22.683
+     }
+    ],
+    "maker_share": 0.0,
+    "missed": false,
+    "partial": false,
+    "pnl": 0.04287559962600034,
+    "qty_signal": 0.23,
+    "reason": "breakeven",
+    "signal_ms": 1679112000000,
+    "slippage_bps": 8.383339216377669,
+    "symbol": "SOLUSDT",
+    "wait_ms": 2435
+   },
+   {
+    "atr_pct": 0.014008326692381416,
+    "case": "C",
+    "close": 0.06612,
+    "entry_eff": 0.06612,
+    "exit_ms": 1680363960000,
+    "fee": 0.0017587920000000001,
+    "filled": 133.0,
+    "legs": [
+     {
+      "kind": "half",
+      "ms": 1680345840000,
+      "qty": 66.0,
+      "raw": 0.06658
+     },
+     {
+      "kind": "exit",
+      "ms": 1680363960000,
+      "qty": 67.0,
+      "raw": 0.06612
+     }
+    ],
+    "maker_share": 1.0,
+    "missed": false,
+    "partial": false,
+    "pnl": 0.022425066432000703,
+    "qty_signal": 133.0,
+    "reason": "breakeven",
+    "signal_ms": 1680278400000,
+    "slippage_bps": 0.0,
+    "symbol": "TRXUSDT",
+    "wait_ms": 12632
+   },
+   {
+    "atr_pct": 0.018445914453917498,
+    "case": "C",
+    "close": 22.233,
+    "entry_eff": 22.231,
+    "exit_ms": 1681892580000,
+    "fee": 0.00333465,
+    "filled": 0.3,
+    "legs": [
+     {
+      "kind": "half",
+      "ms": 1681219500000,
+      "qty": 0.15,
+      "raw": 22.43
+     },
+     {
+      "kind": "exit",
+      "ms": 1681892580000,
+      "qty": 0.15,
+      "raw": 22.231
+     }
+    ],
+    "maker_share": 0.0,
+    "missed": false,
+    "partial": false,
+    "pnl": 0.021826614914999664,
+    "qty_signal": 0.3,
+    "reason": "breakeven",
+    "signal_ms": 1681214400000,
+    "slippage_bps": -0.8995637115993754,
+    "symbol": "SOLUSDT",
+    "wait_ms": 2133
+   },
+   {
+    "atr_pct": 0.013762272145170937,
+    "case": "C",
+    "close": 0.06682,
+    "entry_eff": 0.06682,
+    "exit_ms": 1682006640000,
+    "fee": 0.0017774120000000001,
+    "filled": 133.0,
+    "legs": [
+     {
+      "kind": "exit",
+      "ms": 1682006640000,
+      "qty": 133.0,
+      "raw": 0.06452
+     }
+    ],
+    "maker_share": 1.0,
+    "missed": false,
+    "partial": false,
+    "pnl": -0.3136833658840006,
+    "qty_signal": 133.0,
+    "reason": "stop_loss",
+    "signal_ms": 1681473600000,
+    "slippage_bps": 0.0,
+    "symbol": "TRXUSDT",
+    "wait_ms": 2072
+   },
+   {
+    "atr_pct": 0.011113801958192964,
+    "case": "C",
+    "close": 0.06639,
+    "entry_eff": 0.06639,
+    "exit_ms": 1682272500000,
+    "fee": 0.0021775920000000003,
+    "filled": 164.0,
+    "legs": [
+     {
+      "kind": "half",
+      "ms": 1682268360000,
+      "qty": 82.0,
+      "raw": 0.06675
+     },
+     {
+      "kind": "exit",
+      "ms": 1682272500000,
+      "qty": 82.0,
+      "raw": 0.06639
+     }
+    ],
+    "maker_share": 1.0,
+    "missed": false,
+    "partial": false,
+    "pnl": 0.01970126374799987,
+    "qty_signal": 164.0,
+    "reason": "breakeven",
+    "signal_ms": 1682265600000,
+    "slippage_bps": 0.0,
+    "symbol": "TRXUSDT",
+    "wait_ms": 75317
+   },
+   {
+    "atr_pct": 0.009954999080256252,
+    "case": "C",
+    "close": 0.06651,
+    "entry_eff": 0.06651,
+    "exit_ms": 1686168000000,
+    "fee": 0.002434266,
+    "filled": 183.0,
+    "legs": [
+     {
+      "kind": "half",
+      "ms": 1682733900000,
+      "qty": 91.0,
+      "raw": 0.06684
+     },
+     {
+      "kind": "exit",
+      "ms": 1686168000000,
+      "qty": 92.0,
+      "raw": 0.07733
+     }
+    ],
+    "maker_share": 1.0,
+    "missed": false,
+    "partial": false,
+    "pnl": 1.0137992936800002,
+    "qty_signal": 183.0,
+    "reason": "trade_exit_time",
+    "signal_ms": 1682712000000,
+    "slippage_bps": 0.0,
+    "symbol": "TRXUSDT",
+    "wait_ms": 12783
+   },
+   {
+    "atr_pct": 0.02626896232641366,
+    "case": "C",
+    "close": 23.292,
+    "entry_eff": 23.29,
+    "exit_ms": 1682782500000,
+    "fee": 0.0025619,
+    "filled": 0.22,
+    "legs": [
+     {
+      "kind": "half",
+      "ms": 1682772780000,
+      "qty": 0.11,
+      "raw": 23.59
+     },
+     {
+      "kind": "exit",
+      "ms": 1682782500000,
+      "qty": 0.11,
+      "raw": 23.29
+     }
+    ],
+    "maker_share": 0.0,
+    "missed": false,
+    "partial": false,
+    "pnl": 0.02682885568000012,
+    "qty_signal": 0.22,
+    "reason": "breakeven",
+    "signal_ms": 1682740800000,
+    "slippage_bps": -0.8586639189431754,
+    "symbol": "SOLUSDT",
+    "wait_ms": 2699
+   },
+   {
+    "atr_pct": 0.013886130317407158,
+    "case": "C",
+    "close": 0.07299,
+    "entry_eff": 0.07299,
+    "exit_ms": 1687684980000,
+    "fee": 0.0017809560000000002,
+    "filled": 122.0,
+    "legs": [
+     {
+      "kind": "half",
+      "ms": 1687679340000,
+      "qty": 61.0,
+      "raw": 0.07349
+     },
+     {
+      "kind": "exit",
+      "ms": 1687684980000,
+      "qty": 61.0,
+      "raw": 0.07299
+     }
+    ],
+    "maker_share": 1.0,
+    "missed": false,
+    "partial": false,
+    "pnl": 0.02246524152800014,
+    "qty_signal": 122.0,
+    "reason": "breakeven",
+    "signal_ms": 1687665600000,
+    "slippage_bps": 0.0,
+    "symbol": "TRXUSDT",
+    "wait_ms": 2199
+   },
+   {
+    "atr_pct": 0.03258414072087464,
+    "case": "C",
+    "close": 17.725,
+    "entry_eff": 17.728,
+    "exit_ms": 1688132820000,
+    "fee": 0.00257056,
+    "filled": 0.29,
+    "legs": [
+     {
+      "kind": "half",
+      "ms": 1688078220000,
+      "qty": 0.14,
+      "raw": 18.01
+     },
+     {
+      "kind": "exit",
+      "ms": 1688132820000,
+      "qty": 0.14999999999999997,
+      "raw": 17.728
+     }
+    ],
+    "maker_share": 0.0,
+    "missed": false,
+    "partial": false,
+    "pnl": 0.03328353806000006,
+    "qty_signal": 0.29,
+    "reason": "breakeven",
+    "signal_ms": 1688068800000,
+    "slippage_bps": 1.692524682651686,
+    "symbol": "SOLUSDT",
+    "wait_ms": 2073
+   }
+  ]
+ },
+ "seconds": 8,
+ "theta_atr_pct": 0.017672993634307115,
+ "trades": 12,
+ "validation_A_vs_jesse": {
+  "max_abs_pnl_diff": 5.551115123125783e-17,
+  "mismatches": [],
+  "same": 12,
+  "total": 12
+ },
+ "wait_min": 60,
+ "window": "pilot"
+}

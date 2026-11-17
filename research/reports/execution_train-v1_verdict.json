@@ -1,0 +1,63 @@
+{
+ "name": "train-v1",
+ "twin": "train-v1b",
+ "reproducible": true,
+ "sha256": [
+  "c143a20dc2b01317c2ec9fdba606d748779d3d5a0868dfcbea302572121a3a6c",
+  "c143a20dc2b01317c2ec9fdba606d748779d3d5a0868dfcbea302572121a3a6c"
+ ],
+ "cases": {
+  "B": {
+   "verdict": {
+    "promising": false,
+    "checks": {
+     "1_net_or_risk": true,
+     "2_strict_fills": true,
+     "3_few_missed": true,
+     "4_stop_unchanged": false,
+     "5_two_of_three_years": true,
+     "6_reproducible": true,
+     "7_worth_it": true
+    },
+    "diff": 6.788004428033863,
+    "stops_in_base": 76,
+    "stops_same_minute_and_type": 61
+   },
+   "concentration": {
+    "diff": 6.788004428033863,
+    "top_trade_effect": 6.444573221634,
+    "top_trade": [
+     "SOLUSDT",
+     1697443200000
+    ],
+    "diff_without_top": 0.34343120639986324
+   }
+  },
+  "C": {
+   "verdict": {
+    "promising": false,
+    "checks": {
+     "1_net_or_risk": true,
+     "2_strict_fills": true,
+     "3_few_missed": true,
+     "4_stop_unchanged": false,
+     "5_two_of_three_years": true,
+     "6_reproducible": true,
+     "7_worth_it": true
+    },
+    "diff": 6.439420004881862,
+    "stops_in_base": 76,
+    "stops_same_minute_and_type": 70
+   },
+   "concentration": {
+    "diff": 6.439420004881862,
+    "top_trade_effect": 6.444573221634,
+    "top_trade": [
+     "SOLUSDT",
+     1697443200000
+    ],
+    "diff_without_top": -0.005153216752137979
+   }
+  }
+ }
+}
