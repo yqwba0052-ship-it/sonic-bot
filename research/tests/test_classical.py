@@ -199,3 +199,54 @@ def test_half_percent_risk_with_a_wide_stop_cannot_be_represented():
     from sonic_research.classical.engine import portfolio
     res = portfolio([_cand("SOLUSDT", 0, 5, 1.0, stop=95.0)], {"SOLUSDT": _filters()})
     assert res["trades"] == [] and res["skipped"][0]["why"] == "not_representable"
+
+
+# ---- evaluation: metrics, walk-forward choice, qualification
+
+
+def _tr(pnl, day, coin="SOLUSDT", strategy="x"):
+    t = T0 + day * 86_400_000
+    return {"coin": coin, "strategy": strategy, "entry_t": t, "exit_t": t + H4, "pnl": pnl,
+            "qty": 1.0, "entry_raw": 100.0, "stop": 98.0}
+
+
+def test_metrics_net_pf_drawdown_and_best_trade_removal():
+    from sonic_research.classical.evaluate import metrics
+    m = metrics([_tr(3.0, 0), _tr(-1.5, 1), _tr(1.0, 40)])
+    assert m["trades"] == 3 and m["net"] == pytest.approx(2.5)
+    assert m["profit_factor"] == pytest.approx(4.0 / 1.5)
+    assert m["max_dd_pct"] == pytest.approx(100 * 1.5 / 33.0, rel=1e-6)
+    assert m["net_without_best"] == pytest.approx(-0.5)
+    assert m["trading_days"] == 3 and set(m["by_year"]) == {"2022"}
+
+
+def test_qualification_rules_as_written():
+    from sonic_research.classical.evaluate import qualifies
+    good = {"trades": 12, "net": 3.0, "profit_factor": 1.5, "net_cost2": 1.0,
+            "net_without_best": 0.5, "max_dd_pct": 10.0, "folds_positive": 2}
+    assert qualifies(good)["ok"] is True
+    for key, bad in (("trades", 9), ("net", -0.1), ("profit_factor", 1.2), ("net_cost2", 0.0),
+                     ("net_without_best", -0.01), ("max_dd_pct", 21.0), ("folds_positive", 1)):
+        assert qualifies(dict(good, **{key: bad}))["ok"] is False, key
+
+
+def test_pooled_qualification_rules_as_written():
+    from sonic_research.classical.evaluate import qualifies_pooled
+    good = {"trades": 30, "net": 1.0, "profit_factor": 1.2, "net_cost2": 0.1,
+            "net_without_best": 0.1}
+    assert qualifies_pooled(good)["ok"] is True
+    assert qualifies_pooled(dict(good, trades=29))["ok"] is False
+
+
+def test_choose_combo_needs_five_trades_and_best_net():
+    from sonic_research.classical.evaluate import choose
+    results = {"a": {"trades": 4, "net": 9.0}, "b": {"trades": 6, "net": 1.0},
+               "c": {"trades": 8, "net": 2.0}}
+    assert choose(results) == "c"
+    assert choose({"a": {"trades": 4, "net": 9.0}}) is None
+
+
+def test_folds_select_before_they_test():
+    from sonic_research.classical.evaluate import FOLDS
+    for sel, test in FOLDS:
+        assert sel[1] == test[0] and sel[0] < sel[1] < test[1]
