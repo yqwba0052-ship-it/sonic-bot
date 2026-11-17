@@ -1,0 +1,34 @@
+{
+ "files": {
+  "docs/superpowers/specs/2026-11-17-hummingbot-execution-design.md": "96d87536c593deba041f9b393508c0c2e091a9dd0ff174139756d54cf6fbc356",
+  "research/reports/execution_theta.json": "a97a266a5e6b569703108bc038b300d70409df07bb24d2f2c4195a36f6b976d3",
+  "research/reports/jesse_filters_full.json": "238331b9c8464ea3a5147273aa8df7fa7aed592b8e97dd358fced6dc788d4528",
+  "research/sonic_research/data.py": "39ffe5b86c4c3e486ab5a06a6f04ddead9f0ddafedb7fb6c82011ccc0cd5dae4",
+  "research/sonic_research/execution_lab/__init__.py": "91580524c76b5ddf6f9086139838909e9f34715909188429d1e0380c6e11e0b6",
+  "research/sonic_research/execution_lab/agg_data.py": "a802d36806a742741194ca792e9cd0753938aa8972afa06a989eb6e2fdde7cce",
+  "research/sonic_research/execution_lab/fills.py": "3155509fdd78fc556586f4916f1a34f336d5a5b03237f72319be18332556adc7",
+  "research/sonic_research/execution_lab/freeze.py": "9785cc434430f157089ce47b017e06b2253b0e3e2691e7a7881fbdc28a7c1f51",
+  "research/sonic_research/execution_lab/run.py": "9f40427a81823a0d2352b071105dce2d38cd240984785a4268293f97b6884c0d",
+  "research/sonic_research/execution_lab/sim.py": "58dc96851e4732c8d3dd469ec56704a4ae63035e8961767726524da5124dce93",
+  "research/sonic_research/execution_lab/verdict.py": "c8606e9e40453e2def950e562a61cb0acbaa7b1afa1a0ae39c5048598e5c5208",
+  "research/sonic_research/jesse_audit/costs.py": "e9d07f131d13f157d1cf41364ec194187e81f3cbc45a934172ca05a5073be4cc",
+  "research/sonic_research/jesse_audit/data_1m.py": "5b3fad31f20ee7bcf924581d570a16942800c57352d70657e56c4e396842b960",
+  "research/sonic_research/jesse_audit/explain.py": "21440bb4f9953adce51d5074f4c486777a7d3d841b47605eb0db321314c87894",
+  "research/sonic_research/jesse_audit/holdout.py": "a98419579cde19b7ac3d30aeffc492b351265e570b29cd155e4fc17e7c6617f1",
+  "server/sonic/risk.py": "0b832497fbe5f8396dfd9907f4241d50dff3f40407f1021a3e2c9b14c7bdf659",
+  "server/sonic/strategy.py": "ee85eb07050872966c549b9865c76b5904736de5e4e5ea3a0a69a01f7f018af3"
+ },
+ "settings": {
+  "latency_ms": 2000,
+  "maker": 0.0002,
+  "slippage": 0.0002,
+  "taker": 0.0005,
+  "theta_atr_pct": 0.02042559009634813,
+  "wait_min": 60,
+  "window": [
+   "2024-01",
+   "2026-10"
+  ]
+ },
+ "sha256": "0a35942a064f4c42459ba2921304337af278ef22e5eda43bee4065ca74992906"
+}
