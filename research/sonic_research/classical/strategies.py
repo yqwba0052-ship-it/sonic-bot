@@ -29,6 +29,7 @@ class Signal:
     target: float | None
     invalid: float | None
     reason: str
+    htf: bool = False  # last completed day above its daily EMA50 (higher-timeframe agreement)
 
 
 class Ctx:
@@ -81,7 +82,7 @@ def _sig(ctx: Ctx, name: str, i: int, stop: float, target: float | None, invalid
         return None
     return Signal(name, s.side, i, int(s.t[i]), entry, float(stop),
                   None if target is None else float(target),
-                  None if invalid is None else float(invalid), reason)
+                  None if invalid is None else float(invalid), reason, bool(ctx.htf[i]))
 
 
 def _confirm(ctx: Ctx, i: int) -> set[str]:
