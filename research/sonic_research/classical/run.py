@@ -226,6 +226,8 @@ def holdout() -> dict:
         raise SystemExit(f"hold-out already run ({LOCK}); results stay as they are")
     from .freeze import check_frozen
     check_frozen()
+    LOCK.write_text(json.dumps({"at": datetime.now(UTC).isoformat(timespec="seconds"),
+                                "status": "started"}, indent=1), encoding="utf-8")
     t0 = time.time()
     choices = json.loads(CHOICES.read_text(encoding="utf-8"))
     filters = load_filters(REPORTS / "jesse_filters_full.json")
@@ -265,7 +267,8 @@ def holdout() -> dict:
     _save("classical_holdout", out)
     digest = hashlib.sha256((REPORTS / "classical_holdout.json").read_bytes()).hexdigest()
     LOCK.write_text(json.dumps({"at": datetime.now(UTC).isoformat(timespec="seconds"),
-                                "result_sha256": digest}, indent=1), encoding="utf-8")
+                                "status": "done", "result_sha256": digest}, indent=1),
+                    encoding="utf-8")
     return out
 
 

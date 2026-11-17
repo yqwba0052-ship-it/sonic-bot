@@ -250,3 +250,53 @@ def test_folds_select_before_they_test():
     from sonic_research.classical.evaluate import FOLDS
     for sel, test in FOLDS:
         assert sel[1] == test[0] and sel[0] < sel[1] < test[1]
+
+
+# ---- review fixes
+
+
+def test_channel_width_rule_uses_absolute_price_for_shorts():
+    from sonic_research.classical.strategies import wide_enough
+    assert wide_enough(2.0, 100.0) is True and wide_enough(1.0, 100.0) is False
+    assert wide_enough(1.0, -100.0) is False  # inverted (short) series: same rule
+    assert wide_enough(2.0, -100.0) is True
+
+
+def test_flag_consolidation_is_5_to_15_bars():
+    from sonic_research.classical.strategies import FLAG_BARS
+    assert FLAG_BARS == (5, 15)
+
+
+def test_no_signal_on_the_bar_after_a_hole_in_the_data():
+    from sonic_research.classical.strategies import signals
+    s = _walk(1500, seed=3)
+    hole = 900
+    s.t[hole:] = s.t[hole:] + H4  # one 4h bar missing before bar 900
+    for name in ALL_RULES:
+        assert all(x.i not in (hole, hole + 1) for x in signals(s, name)), name
+
+
+# ---- hold-out freeze
+
+
+def test_holdout_data_check_refuses_missing_or_empty_months(tmp_path):
+    from sonic_research.classical.freeze import data_problems
+    for m in ("2026-09", "2026-10"):
+        (tmp_path / f"SOLUSDT-4h-{m}.zip").write_bytes(b"x")
+    (tmp_path / "SOLUSDT-4h-2026-10.zip").write_bytes(b"")
+    got = data_problems(["SOLUSDT"], ["2026-08", "2026-09", "2026-10"], tmp_path)
+    assert got == ["SOLUSDT-4h-2026-08 missing", "SOLUSDT-4h-2026-10 empty"]
+
+
+def test_classical_freeze_detects_change_and_writes_once(tmp_path):
+    from sonic_research.classical import freeze
+    body = freeze.build()
+    assert "research/sonic_research/classical/strategies.py" in body["files"]
+    assert "research/reports/classical_choices.json" in body["files"]
+    path = "research/sonic_research/classical/engine.py"
+    changed = dict(body, files=dict(body["files"], **{path: "0" * 64}))
+    assert path in freeze.differences(changed)
+    target = tmp_path / "m.json"
+    freeze.write(target)
+    with pytest.raises(SystemExit, match="already frozen"):
+        freeze.write(target)

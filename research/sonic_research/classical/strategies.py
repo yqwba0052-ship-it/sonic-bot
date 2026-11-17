@@ -73,6 +73,14 @@ def daily_trend(s: Series) -> np.ndarray:
     return out
 
 
+def wide_enough(width: float, price: float) -> bool:
+    """Channel width rule: at least 2% of the price (absolute: also right for inverted series)."""
+    return width >= 0.02 * abs(price)
+
+
+FLAG_BARS = (5, 15)  # consolidation length after the pole (design)
+
+
 def _sig(ctx: Ctx, name: str, i: int, stop: float, target: float | None, invalid: float | None,
          reason: str) -> Signal | None:
     s, entry = ctx.s, float(ctx.s.c[i])
@@ -164,7 +172,7 @@ def channel(ctx: Ctx, i: int) -> Signal | None:
     top = max(tops, key=lambda h: h[1] - line_at(p1, p2, h[0]))
     width = top[1] - line_at(p1, p2, top[0])
     lv, a, s = line_at(p1, p2, i), ctx.atr[i], ctx.s
-    if width < 0.02 * s.c[i] or not (s.low[i] <= lv + 0.3 * a and s.c[i] > lv):
+    if not wide_enough(width, s.c[i]) or not (s.low[i] <= lv + 0.3 * a and s.c[i] > lv):
         return None
     return _sig(ctx, "channel", i, lv - 0.5 * a, lv + width, lv, f"channel width {width:.6g}")
 
@@ -233,7 +241,8 @@ def triangle(ctx: Ctx, i: int) -> Signal | None:
 
 def flag(ctx: Ctx, i: int) -> Signal | None:
     s = ctx.s
-    for j in range(i - 5, max(i - 16, 11), -1):  # consolidation j+1..i-1 (4..14 bars)
+    lo, hi = FLAG_BARS
+    for j in range(i - 1 - lo, max(i - 2 - hi, 11), -1):  # consolidation j+1..i-1: 5..15 bars
         pole = float(s.c[j] - s.low[j - 10:j + 1].min())
         if pole < 3 * ctx.atr[j]:
             continue
