@@ -214,3 +214,32 @@ def test_paper_mode_never_builds_an_order_client() -> None:
     assert 'if settings.mode == "demo"' in source and "PaperExchange(" in source
     assert "SONIC_LIVE_TRADING" not in source
     assert capital.live_allowed() is False  # the live switch is off in this environment
+
+
+async def test_an_error_before_the_scan_does_not_reuse_the_previous_bars_data() -> None:
+    engine, exchange, _, clock = build()
+    await engine.start()
+    await engine.tick()  # bar N scanned, coins noted
+    plain = exchange.positions
+
+    async def broken():
+        raise RuntimeError("sync down")
+
+    exchange.positions = broken
+    clock.now += BAR_MS // 1000
+    await engine.tick()
+    row = monitor.scans(engine.store.db)[0]
+    assert row["bar_ms"] == engine.last_closed_bar() and row["status"] == "error"
+    assert row["coins"] == {} and row["btc_close"] is None
+    exchange.positions = plain
+
+
+async def test_a_new_amount_restarts_the_peak() -> None:
+    engine, _, _, _ = build()
+    await engine.tick()  # tracking runs while the bot is stopped too
+    first = engine.store.get("equity_peak")
+    await engine.set_limits(engine.limits.model_copy(update={"capital_usdt": 20.0}))
+    await engine.tick()
+    second = engine.store.get("equity_peak")
+    assert second["basis"][0] == 20.0 and second["max_dd_pct"] == 0.0
+    assert second["since_ms"] >= first["since_ms"]

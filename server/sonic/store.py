@@ -98,6 +98,11 @@ class Store:
         )
         self.db.commit()
 
+    def set_scaled(self, trade_id: int) -> None:
+        """The half was taken; the stored stop is left as it was."""
+        self.db.execute("UPDATE trades SET scaled = 1 WHERE id = ?", (trade_id,))
+        self.db.commit()
+
     def close_trade(
         self,
         trade_id: int,

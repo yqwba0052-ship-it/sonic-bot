@@ -214,8 +214,11 @@ class Engine:
     async def tick(self) -> None:
         async with self.lock:
             due = self.last_closed_bar()
-            scan_due = due > int(self.store.get("last_bar_ms", 0))
+            scan_due = scanned = False
             try:
+                scan_due = due > int(self.store.get("last_bar_ms", 0))
+                if scan_due:
+                    self.scan = {"status": "scanned", "strategy": strategy.NAME, "coins": {}}
                 await self._sync()
                 await self._follow_scaling()
                 await self._guard()
@@ -223,6 +226,7 @@ class Engine:
                 bar = self.last_closed_bar()
                 if bar > int(self.store.get("last_bar_ms", 0)):
                     await self._on_bar()
+                    scanned = True
                     self.store.put("last_bar_ms", bar)
                     await self._lab_tick()
                 if self.failing_since_ms is not None:
@@ -234,7 +238,7 @@ class Engine:
             except Exception as error:  # noqa: BLE001 - every failure must reach the halt counter
                 self.failures += 1
                 self.last_error = str(error)[:300]
-                if scan_due:  # the scan of this bar did not finish: say so in the scan log
+                if scan_due and not scanned:  # this bar's scan did not finish: log it
                     self._log_scan({**self.scan, "status": "error", "error": self.last_error},
                                    due)
                 if self.failing_since_ms is None:
@@ -258,12 +262,15 @@ class Engine:
                 result = await self.exchange.closed_result(
                     symbol, trade["opened_ms"], trade["side"])
                 scaled = bool(trade["scaled"]) or result.scaled
+                at_entry = bool(trade["scaled"])  # the bot moved the stop to the entry itself
                 if scaled and not trade["scaled"]:
-                    # The half filled and the rest closed before _follow_scaling saw it.
-                    self.store.mark_scaled(trade["id"], trade["entry_price"])
+                    # The half filled and the rest closed before _follow_scaling saw it. Keep the
+                    # stored stop as it was; only say the half was taken.
+                    self.store.set_scaled(trade["id"])
                     self.log("info", "trade_scaled", symbol)
+                    at_entry = self._closed_near_entry(trade, result.exit_price)
                 reason = self.pending_exit.pop(symbol, "") or (
-                    "breakeven" if scaled else "stop_loss"
+                    "breakeven" if scaled and at_entry else "stop_loss"
                 )
                 if not result.verified:
                     # The exchange history does not show the close: record that, never a price.
@@ -272,6 +279,10 @@ class Engine:
                 self.store.close_trade(
                     trade["id"], self.now_ms(), result.exit_price, result.pnl, result.fees, reason
                 )
+                if not result.verified:
+                    # A loss the data cannot show would escape the budget and daily-loss guards:
+                    # no new entries until the owner has looked (open trades keep their stops).
+                    self.halt("result_unproven", symbol)
                 shown = "?" if result.pnl is None else f"{result.pnl:+.2f}"
                 self.log("info", "trade_closed", f"{symbol} {shown}")
                 if self.journal_dir is not None:
@@ -519,9 +530,10 @@ class Engine:
             if self.halted:
                 break
         self._record_scan("btc_up" if btc_up else "btc_down", signals, opened)
-        for symbol in self.limits.symbols:  # coins never reached: the open-trade limit was full
+        for symbol in self.limits.symbols:  # coins never reached in this scan
             if symbol not in scan["coins"]:
-                self._note(scan, symbol, "max_open_reached")
+                self._note(scan, symbol, f"not_checked_halted: {self.halted}" if self.halted
+                           else "max_open_reached")
         scan.update(market="btc_up" if btc_up else "btc_down", signals=signals, opened=opened,
                     open_trades=len(used))
         try:
@@ -537,6 +549,15 @@ class Engine:
             self.log(level, code, detail)
         except Exception:  # noqa: BLE001 - even the event table may be unavailable
             pass
+
+    @staticmethod
+    def _closed_near_entry(trade: dict[str, Any], exit_price: float | None) -> bool:
+        """The rest closed at (or better than) the entry, not at the original stop. Stops are
+        ATR-wide (several %), so 0.5% around the entry separates the two cases."""
+        if exit_price is None or not trade["entry_price"]:
+            return False
+        direction = 1 if trade["side"] == "BUY" else -1
+        return direction * (exit_price / trade["entry_price"] - 1) >= -0.005
 
     def _note(self, scan: dict[str, Any], symbol: str, reason: str, **extra: Any) -> None:
         scan["coins"][symbol] = {"result": reason, **extra}
@@ -575,7 +596,8 @@ class Engine:
             since = self.budget_start_ms()
             realized = self.budget_realized()
             equity = self.limits.capital_usdt + realized + self.unrealized
-            peak = monitor.update_peak(self.store, now, equity)
+            basis = [self.limits.capital_usdt, since]  # a new amount starts a new peak
+            peak = monitor.update_peak(self.store, now, equity, basis)
             day = datetime.fromtimestamp(now / 1000, UTC).strftime("%Y-%m-%d")
             if not monitor.snapshot_due(self.store.db, day):
                 return

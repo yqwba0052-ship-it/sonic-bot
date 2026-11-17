@@ -1,6 +1,5 @@
 [Unit]
 Description=Sonic daily database backup (consistent online copy, bot keeps running)
-After=network-online.target
 
 [Service]
 Type=oneshot
@@ -8,6 +7,5 @@ User=sonic
 Group=sonic
 UMask=0077
 Nice=10
-IOSchedulingClass=idle
 NoNewPrivileges=true
 ExecStart=/opt/sonic/venv/bin/python /opt/sonic/app/deploy/backup_db.py --db /opt/sonic/app/server/sonic.db --dir /opt/sonic/backups

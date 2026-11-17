@@ -114,12 +114,15 @@ def scan_gaps(db: sqlite3.Connection, until_bar_ms: int) -> dict[str, Any]:
             "missed": [b for b in expected if b not in seen], "errors": errors}
 
 
-def update_peak(store: Any, now_ms: int, equity: float) -> dict[str, Any]:
+def update_peak(store: Any, now_ms: int, equity: float,
+                basis: list[Any] | None = None) -> dict[str, Any]:
     """Track the highest equity and the deepest fall from it, at every tick (open trades at
-    market price). Written only when something changes."""
+    market price). Written only when something changes. When the owner saves a new amount
+    (basis changes), tracking restarts: a lowered amount is not a drawdown."""
     state = store.get("equity_peak") or {}
-    if not state:
-        state = {"since_ms": now_ms, "peak": equity, "peak_ms": now_ms, "max_dd_pct": 0.0}
+    if not state or (basis is not None and state.get("basis") not in (None, basis)):
+        state = {"since_ms": now_ms, "peak": equity, "peak_ms": now_ms, "max_dd_pct": 0.0,
+                 "basis": basis}
         store.put("equity_peak", state)
         return state
     changed = False

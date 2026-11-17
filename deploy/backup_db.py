@@ -10,7 +10,7 @@
 - Every run appends one JSON line to backup.log and rewrites last_backup.json, success or
   failure, and exits non-zero on failure (systemd records it in the journal too).
 
-Standard library only, so it runs with any Python 3.10+.
+Standard library only (Python 3.11+; the server has 3.12).
     backup_db.py --db /opt/sonic/app/server/sonic.db --dir /opt/sonic/backups
     backup_db.py --verify FILE.db.gz       # check one backup, print its table counts
 """
@@ -65,7 +65,7 @@ def snapshot(source: Path, target: Path) -> None:
     src = sqlite3.connect(f"file:{source}?mode=ro", uri=True, timeout=30)
     dst = sqlite3.connect(target)
     try:
-        src.backup(dst)
+        src.backup(dst, pages=64, sleep=0.02)  # short steps: the bot's writes never wait long
     finally:
         dst.close()
         src.close()
@@ -80,7 +80,8 @@ def stamp_of(name: str) -> dt.datetime | None:
 
 def to_keep(names: list[str], keep_daily: int, keep_monthly: int) -> set[str]:
     dated = sorted(((stamp_of(n), n) for n in names if stamp_of(n)), reverse=True)
-    keep = {n for _, n in dated[:keep_daily]}
+    keep = {n for n in names if stamp_of(n) is None}  # hand-made copies are never removed
+    keep.update(n for _, n in dated[:keep_daily])
     months: dict[str, str] = {}
     for when, name in dated:
         months.setdefault(when.strftime("%Y-%m"), name)
@@ -101,9 +102,9 @@ def run(db: Path, folder: Path, keep_daily: int, keep_monthly: int,
         now: dt.datetime | None = None) -> dict:
     now = now or dt.datetime.now(dt.UTC).replace(tzinfo=None)
     entry: dict = {"at_utc": now.strftime("%Y-%m-%dT%H:%M:%SZ"), "db": str(db), "ok": False}
-    folder.mkdir(parents=True, exist_ok=True)
-    os.chmod(folder, 0o700)
     try:
+        folder.mkdir(parents=True, exist_ok=True)
+        os.chmod(folder, 0o700)
         if not db.exists():
             raise FileNotFoundError(f"no database at {db}")
         name = f"{PREFIX}{now.strftime('%Y%m%d-%H%M%S')}{SUFFIX}"

@@ -29,6 +29,10 @@ HOUR_MS = 3_600_000
 # GET /fapi/v1/userTrades: at most 7 days between startTime and endTime, at most 1000 rows.
 USER_TRADES_WINDOW_MS = 7 * 24 * HOUR_MS - 1
 USER_TRADES_PAGE = 1000
+# The trade's opened_ms is the local time before the order; Binance's fill time can be a little
+# earlier (clock offset). Fills are read from this much before it; an earlier trade's fills are
+# still left out because only fills from the first opening-side fill on count.
+FILL_LOOKBACK_MS = 5 * 60_000
 
 
 class ExchangeError(Exception):
@@ -513,13 +517,13 @@ class BinanceDemo:
         Only fills from the first opening fill on count (an earlier trade's close is not this
         trade's). With no closing fill the result is unproven: exit and profit stay empty."""
         await self.cancel_protection(symbol)
-        fills = await self.fills_since(symbol, since_ms)
+        fills = await self.fills_since(symbol, max(since_ms - FILL_LOOKBACK_MS, 0))
         if not fills:
-            raise ExchangeError(f"no fills for {symbol}")
+            return Closed(None, None, 0.0, False, verified=False)
         entry_side = side or fills[0]["side"]
         first = next((i for i, item in enumerate(fills) if item["side"] == entry_side), None)
         if first is None:
-            raise ExchangeError(f"no opening fill for {symbol}")
+            return Closed(None, None, 0.0, False, verified=False)
         fills = fills[first:]
         fees = sum(float(item["commission"]) for item in fills)
         closing = [item for item in fills if item["side"] != entry_side]

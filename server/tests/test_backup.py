@@ -143,3 +143,10 @@ def test_restore_into_a_separate_folder_gives_the_same_data(tmp_path: Path) -> N
     assert db.read_bytes() == before  # the live database was not touched
     store.db.close()
     copy.db.close()
+
+
+def test_hand_made_copies_are_never_removed_by_retention() -> None:
+    names = [f"sonic-202611{d:02d}-023000.db.gz" for d in range(1, 31)]
+    names += ["sonic-before-upgrade.db.gz", "sonic-20261118-0230-manual.db.gz"]
+    keep = backup_db.to_keep(names, 14, 6)
+    assert "sonic-before-upgrade.db.gz" in keep and "sonic-20261118-0230-manual.db.gz" in keep

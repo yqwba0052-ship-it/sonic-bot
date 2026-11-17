@@ -123,6 +123,50 @@ async def test_engine_records_an_unproven_close_without_inventing_a_result() -> 
     assert closed["exit_reason"] == "insufficient_data"
     assert closed["exit_price"] is None and closed["pnl"] is None and closed["r"] is None
     assert any(e["code"] == "trade_result_unproven" for e in engine.store.events(10))
-    assert engine.running and not engine.halted
+    # an unproven loss would escape the loss guards: new entries stop until the owner looks
+    assert engine.halted == "result_unproven" and not engine.running
     report = engine.month_report()
     assert report["unproven"] == 1 and report["trades"] == 0
+
+
+async def test_an_opening_fill_slightly_before_the_recorded_time_still_counts() -> None:
+    now = int(time.time() * 1000)
+    opened = now - 2 * DAY
+    fills = [fill(1, opened - 1500, 100.0, 0.0),  # Binance time 1.5 s before the local time
+             fill(2, now - DAY, 108.0, 8.0, side="SELL", order=2)]
+    client = httpx.AsyncClient(base_url=DEMO_URL, transport=fake_binance(fills))
+    result = await BinanceDemo(client, "k", "s").closed_result("SOLUSDT", opened, "BUY")
+    assert result.verified and result.exit_price == 108.0
+
+
+async def test_no_fills_at_all_is_unproven_not_an_error() -> None:
+    now = int(time.time() * 1000)
+    client = httpx.AsyncClient(base_url=DEMO_URL, transport=fake_binance([]))
+    result = await BinanceDemo(client, "k", "s").closed_result("SOLUSDT", now - DAY, "BUY")
+    assert result.verified is False and result.exit_price is None
+
+
+async def test_half_then_original_stop_on_the_exchange_is_a_stop_loss_with_the_half_taken() -> None:
+    from test_system import build
+
+    from sonic.exchange import Closed
+
+    engine, exchange, _, clock = build()
+    await engine.start()
+    await engine.tick()
+    trade = engine.store.open_trades()[0]
+
+    async def gone() -> dict:
+        return {}
+
+    async def both(symbol: str, since_ms: int, side: str | None = None) -> Closed:
+        # half at the target, then the rest at the ORIGINAL stop (the exchange never moved it)
+        return Closed(trade["stop_price"], -0.3, 0.02, scaled=True)
+
+    exchange.positions, exchange.closed_result = gone, both
+    clock.now += 60
+    await engine.tick()
+    closed = engine.store.trades()[0]
+    assert closed["scaled"] == 1 and closed["exit_reason"] == "stop_loss"
+    assert closed["stop_price"] == trade["stop_price"]  # the stored stop is not rewritten
+    assert closed["pnl"] == -0.3
