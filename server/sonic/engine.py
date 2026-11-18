@@ -365,10 +365,14 @@ class Engine:
         assert self.bar_cache is not None
         held = [t["symbol"] for t in self.store.open_trades()]
         if not self.running or self.halted:
-            return True  # nothing will be opened: no need to wait (exits judge as before)
-        coins = list(self.limits.symbols) if len(held) < self.limits.max_open else []
+            wanted = held  # nothing will be opened; open trades still get their exit check
+        else:
+            coins = list(self.limits.symbols) if len(held) < self.limits.max_open else []
+            wanted = ["BTCUSDT", *coins, *held]
+        if not wanted:
+            return True
         stale, behind = [], []
-        for symbol in dict.fromkeys(["BTCUSDT", *coins, *held]):
+        for symbol in dict.fromkeys(wanted):
             try:
                 bars = await self._bars(symbol)
             except Exception as error:  # noqa: BLE001 - the scan fetches it again if it needs it

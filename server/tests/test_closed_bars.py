@@ -241,3 +241,28 @@ def test_holding_time_is_counted_in_bars_of_the_scan() -> None:
     held = (bar_ms + BAR_MS - opened + BAR_MS // 2) // BAR_MS
     assert held == 240
     assert ((bar_ms + BAR_MS + 5_000) - opened) // BAR_MS == 239  # the old wall-clock count
+
+
+async def test_a_stopped_bot_still_waits_for_the_bar_of_a_coin_it_holds() -> None:
+    from sonic import monitor
+
+    engine, clock, _, lag = _engine_with_lagging("NONE")
+    await engine.start()
+    await engine.tick()  # SOL opens
+    held = engine.store.open_trades()[0]["symbol"]
+    await engine.stop()
+    plain = engine.exchange.market.bars
+
+    async def lagging(sym: str, interval: str, limit: int):
+        out = await plain(sym, interval, limit)
+        return out[:-1] if sym == held and lag["on"] and interval == "4h" else out
+
+    engine.exchange.market.bars = lagging
+    before = len(monitor.scans(engine.store.db))
+    clock.now += BAR_MS // 1000
+    await engine.tick()
+    assert len(monitor.scans(engine.store.db)) == before  # waits for the held coin's bar
+    lag["on"] = False
+    clock.now += 15
+    await engine.tick()
+    assert len(monitor.scans(engine.store.db)) == before + 1
