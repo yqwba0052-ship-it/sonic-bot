@@ -58,6 +58,7 @@ COST = 2 * (FEE + SLIP)  # round trip, as a share of the price
 TRAIN_SHARE = 0.7
 MIN_TRADES = 20  # fewer usable closed trades than this is too little to learn from
 MIN_LOSSES = 3  # a record of winners only says nothing about risk: no rules from it
+MIN_TRAIN_ROWS = 10  # training trades left after leaving out those still open at the split
 MAX_PAGES = 12  # 1500 bars a page: about 8 years of 4h bars
 CAPITAL = 30.0
 RISK = 0.01
@@ -648,6 +649,7 @@ def context(trade: dict[str, Any], s: Series, btc: Series) -> dict[str, Any] | N
     btc_up = btc.btc_up(opened)
     return {
         "side": trade["side"], "symbol": trade["symbol"], "opened_ms": opened,
+        "closed_ms": closed,
         "win": (trade["pnl"] > 0) if trade.get("pnl") is not None else ret > 0,
         "ret": ret, "ret_atr": ret / atr_pct,
         "aligned": (s.fast[i] > s.slow[i]) == (d == 1),
@@ -724,6 +726,19 @@ def describe(trades: list[dict[str, Any]], rows: list[dict[str, Any]]) -> dict[s
 
 
 # ---------- learning an independent rule set
+
+def train_part(rows: list[dict[str, Any]], trades: list[dict[str, Any]]
+               ) -> tuple[int, int, list[dict[str, Any]], list[dict[str, Any]]]:
+    """The first TRAIN_SHARE of trades by opening time, keeping only what was known at the
+    split: trades already closed by then (one still open would use test-period prices for its
+    result), and settings such as leverage from those trades only. Rows get sorted in place."""
+    rows.sort(key=lambda r: r["opened_ms"])
+    cut = int(len(rows) * TRAIN_SHARE)
+    split = rows[cut]["opened_ms"]
+    train_rows = [r for r in rows[:cut] if r["closed_ms"] <= split]
+    train_trades = [t for t in trades if t["closed_ms"] <= split]
+    return cut, split, train_rows, train_trades
+
 
 def learn(rows: list[dict[str, Any]], trades: list[dict[str, Any]],
           q: float = 0.15) -> dict[str, Any]:
@@ -1313,23 +1328,27 @@ class Lab:
             report["notes"].append(
                 f"السجل فيه {losses} صفقة خاسرة فقط: لا تُستنتج قواعد من صفقات رابحة فقط، "
                 f"لأنها لا تكشف المخاطر. أضف سجله كاملًا ({MIN_LOSSES} خاسرة على الأقل).")
+        elif len(train_part(rows, trades)[2]) < MIN_TRAIN_ROWS:
+            cut, split, train_rows, _ = train_part(rows, trades)
+            report["learn"] = {"status": "not_enough_after_purge", "need": MIN_TRAIN_ROWS,
+                               "have": len(train_rows), "purged": cut - len(train_rows)}
         else:
-            rows.sort(key=lambda r: r["opened_ms"])
-            cut = int(len(rows) * TRAIN_SHARE)
-            split = rows[cut]["opened_ms"]
-            draft = learn(rows[:cut], trades)
+            cut, split, train_rows, train_trades = train_part(rows, trades)
+            purged = cut - len(train_rows)
+            draft = learn(train_rows, train_trades)
             test_end = min(now, max(last, split + 30 * 86_400_000))
             for symbol in draft["symbols"]:
                 await series_of(symbol, start, test_end)
             learned_series = {sym: cache[sym] for sym in draft["symbols"] if cache[sym].t}
-            model = fit(rows[:cut], trades, learned_series, btc, first, split)
+            model = fit(train_rows, train_trades, learned_series, btc, first, split)
             sonic_start = split - (WARMUP + 10) * BAR_MS
             sonic_series = {}
             for symbol in SONIC_SYMBOLS:
                 s = cache.get(symbol) or await series_of(symbol, sonic_start, test_end)
                 if s.t:
                     sonic_series[symbol] = s
-            report["learn"] = {"status": "ok", "train_trades": cut, "test_trades": len(rows) - cut,
+            report["learn"] = {"status": "ok", "train_trades": len(train_rows),
+                               "purged": purged, "test_trades": len(rows) - cut,
                                "split_ms": split, "test_end_ms": test_end}
             report["train"] = {"learned": simulate("learned", model, learned_series, btc,
                                                    first, split)}
