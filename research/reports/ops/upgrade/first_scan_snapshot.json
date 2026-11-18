@@ -1,0 +1,254 @@
+{
+ "service": "active",
+ "active_since": "Tue 2026-11-17 22:54:28 UTC",
+ "restarts": "0",
+ "deployed_commit": "1990a26",
+ "live_switch_lines": "0",
+ "last_backup": {
+  "at_utc": "2026-11-17T22:54:49Z",
+  "bytes": 30481,
+  "counts": {
+   "equity_daily": 1,
+   "events": 772,
+   "kv": 13,
+   "scan_log": 0,
+   "trader_models": 4,
+   "trader_trades": 157,
+   "trades": 0
+  },
+  "db": "/opt/sonic/app/server/sonic.db",
+  "file": "sonic-20261117-225449.db.gz",
+  "kept": 1,
+  "ok": true,
+  "removed": [],
+  "sha256": "45b3e972a9fd8c254636f1c779f3471dd7160ca6005dca99f47fc4f3f1414d5c"
+ },
+ "backup_timer_next": "Wed 2026-11-18 02:34:35 UTC",
+ "now_ms": 1794960189119,
+ "kv": {
+  "last_scan": {
+   "at_ms": 1794960003324,
+   "market": "btc_down",
+   "coins": 8,
+   "signals": 0,
+   "opened": 0
+  },
+  "last_bar_ms": 1794945600000,
+  "was_running": true,
+  "keep_awake": false,
+  "auto_resume": true,
+  "account_key": "<len 206>",
+  "account_synced_ms": 1794941323922,
+  "account_target": "my-account",
+  "history_6m": {
+   "status": "failed",
+   "id": "1173242270637457408",
+   "requested_ms": 1794487554629,
+   "from_ms": 1778762754629,
+   "error": "PermissionError"
+  },
+  "kopyon_key": "<len 76>",
+  "kopyon_usage": {
+   "2026-11-12": 16,
+   "2026-11-13": 143,
+   "2026-11-14": 144,
+   "2026-11-15": 144,
+   "2026-11-16": 144,
+   "2026-11-17": 144
+  },
+  "kopyon_state": {
+   "5141621486582775041": {
+    "collected": 157,
+    "backfilled": true,
+    "high_ms": 1794941279701,
+    "last_ms": 1794959685241,
+    "last_error": null,
+    "last_added": 0,
+    "last_seen": 1,
+    "not_closed": 1
+   }
+  },
+  "equity_peak": {
+   "since_ms": 1794956069679,
+   "peak": 30.0,
+   "peak_ms": 1794956069679,
+   "max_dd_pct": 0.0,
+   "basis": [
+    30.0,
+    0
+   ]
+  }
+ },
+ "trades": {
+  "total": 0,
+  "open": [],
+  "closed_7d": {
+   "n": 0,
+   "pnl": null
+  },
+  "closed_30d": {
+   "n": 0,
+   "pnl": null
+  },
+  "last": []
+ },
+ "events_by_code": [
+  {
+   "level": "info",
+   "code": "kopyon_synced",
+   "n": 726,
+   "last_ms": 1794959685732
+  },
+  {
+   "level": "info",
+   "code": "resumed_after_restart",
+   "n": 17,
+   "last_ms": 1794956069674
+  },
+  {
+   "level": "info",
+   "code": "account_synced",
+   "n": 25,
+   "last_ms": 1794941323925
+  },
+  {
+   "level": "info",
+   "code": "trader_studied",
+   "n": 4,
+   "last_ms": 1794939885143
+  },
+  {
+   "level": "warning",
+   "code": "kopyon_failed",
+   "n": 1,
+   "last_ms": 1794936877898
+  },
+  {
+   "level": "info",
+   "code": "kopyon_linked",
+   "n": 1,
+   "last_ms": 1794524313802
+  },
+  {
+   "level": "info",
+   "code": "account_linked",
+   "n": 1,
+   "last_ms": 1794463441110
+  },
+  {
+   "level": "info",
+   "code": "auto_resume_on",
+   "n": 1,
+   "last_ms": 1794264953307
+  },
+  {
+   "level": "info",
+   "code": "keep_awake_off",
+   "n": 1,
+   "last_ms": 1794264953300
+  },
+  {
+   "level": "info",
+   "code": "started",
+   "n": 1,
+   "last_ms": 1794264952835
+  }
+ ],
+ "problems": [
+  {
+   "at_ms": 1794936877898,
+   "level": "warning",
+   "code": "kopyon_failed",
+   "detail": "5141621486582775041: kopyon_http_503"
+  }
+ ],
+ "lab": {
+  "traders": [
+   {
+    "kind": "account",
+    "status": "watching",
+    "n": 1
+   },
+   {
+    "kind": "lead",
+    "status": "watching",
+    "n": 1
+   }
+  ],
+  "trader_trades": [
+   {
+    "trader_id": "5141621486582775041",
+    "n": 157,
+    "losses": 9,
+    "last_ms": 1794941279701
+   }
+  ],
+  "models": {
+   "n": 4,
+   "last_ms": 1794939868985
+  },
+  "trader_paper": {
+   "n": 4,
+   "open": 0,
+   "ret": 0.10927629898440844
+  },
+  "allocations": 0,
+  "live_trades": 0
+ },
+ "scan_log": [
+  {
+   "bar_ms": 1794945600000,
+   "at_ms": 1794960003355,
+   "status": "scanned",
+   "attempts": 1,
+   "market": "btc_down",
+   "btc_gap_pct": -16.61,
+   "data_ok": 0,
+   "signals": 0,
+   "opened": 0,
+   "error": null,
+   "coins": "{\"SOLUSDT\":{\"result\":\"no_cross_ema20_below\",\"fresh\":false,\"close\":72.79},\"XRPUSDT\":{\"result\":\"no_cross_ema20_below\",\"fresh\":false,\"close\":0.9649},\"DOGEUSDT\":{\"result\":\"no_cross_ema20_below\",\"fresh\":false,\"close\":0.05901},\"ADAUSDT\":{\"result\":\"no_cross_ema20_below\",\"fresh\":true,\"close\":0.1554},\"SUIUSDT\":{\"result\":\"no_cross_ema20_below\",\"fresh\":false,\"close\":0.7204},\"TRXUSDT\":{\"result\":\"no_cross_ema20_below\",\"fresh\":false,\"close\":0.30723},\"BNBUSDT\":{\"result\":\"no_cross_ema20_below\",\"fresh\":false,\"close\":588.25},\"AVAXUSDT\":{\"result\":\"no_cross_ema20_below\",\"fresh\":false,\"close\":7.09}}"
+  }
+ ],
+ "scan_gaps": [],
+ "equity_daily": [
+  {
+   "day": "2026-11-18",
+   "at_ms": 1794960000283,
+   "mode": "paper",
+   "capital": 30.0,
+   "wallet_balance": 10000.0,
+   "realized": 0.0,
+   "unrealized": 0.0,
+   "equity": 30.0,
+   "open_value": 0.0,
+   "fees": 0.0,
+   "peak": 30.0,
+   "drawdown_pct": 0.0,
+   "max_drawdown_pct": 0.0,
+   "open_count": 0,
+   "closed_count": 0,
+   "unproven_count": 0,
+   "tracking_since_ms": 1794956069679
+  },
+  {
+   "day": "2026-11-17",
+   "at_ms": 1794956069679,
+   "mode": "paper",
+   "capital": 30.0,
+   "wallet_balance": 10000.0,
+   "realized": 0.0,
+   "unrealized": 0.0,
+   "equity": 30.0,
+   "open_value": 0.0,
+   "fees": 0.0,
+   "peak": 30.0,
+   "drawdown_pct": 0.0,
+   "max_drawdown_pct": 0.0,
+   "open_count": 0,
+   "closed_count": 0,
+   "unproven_count": 0,
+   "tracking_since_ms": 1794956069679
+  }
+ ]
+}
