@@ -21,7 +21,19 @@
      و `research/reports/freqai_final.md` و `research/reports/jesse_holdout.md`.
    - `docs/STORAGE_PLAN.md`.
    - `D:\Sonic-Classical-Research\FINAL_SESSION_STATUS.md`.
-3. تحقق دون أي تغيير:
+3. **أول خطوة:** تحقق من أول فحص حقيقي بعد نشر إصلاح الشمعة (`ea839a7`، نُشر 2026-11-18 الساعة 00:44 UTC). الأمر:
+
+   ```
+   server/.venv/Scripts/python -I research/sonic_research/ops_audit/check_scan.py research/reports/ops/upgrade/scan_check_after_fix.json
+   ```
+
+   **النجاح يعني:**
+   - `all_prices_match: true`؛
+   - `data_ok = 1`؛
+   - كل العملات `fresh: true`.
+
+   ثم أكمل القسم 4 في `research/reports/sonic_closed_bars_fix.md`. **لا تدّعِ النجاح قبل رؤية النتيجة.**
+4. تحقق دون أي تغيير:
    - `git log -1`، وأن الفرع مطابق لـ `origin/research/classical-strategies`، وأن الشجرة نظيفة.
    - أن الفلاشة موصولة، وأن مجلدات `D:\Sonic-*` موجودة. إن تغيّر حرفها فأخبرني.
    - مساحة C و D.
@@ -30,7 +42,7 @@
      `python research/sonic_research/ops_audit/snapshot.py`، و
      `python research/sonic_research/ops_audit/replay_signals.py --since <آخر تاريخ مراجعة>`.
      لا توقفه ولا تغيّره ولا تكتب في قاعدته.
-4. اعرض عليّ بالعربية ملخصًا قصيرًا:
+5. اعرض عليّ بالعربية ملخصًا قصيرًا:
    - نتائج المراحل الأربع: Jesse مُعتمد مدققًا، FreqAI مرفوض، Hummingbot مرفوض، الاستراتيجيات الكلاسيكية بلا استراتيجية مؤهلة.
    - من `snapshot.py`:
      - هل فُتحت صفقات ورقية منذ 2026-11-18؟
