@@ -26,6 +26,10 @@ DAY_MS = 86_400_000
 MARKETS_TTL_MS = 10 * 60 * 1000
 GOAL_WIN_RATE = (0.80, 0.90)  # the owner's goal for a month of trades
 ACCOUNT_SYNC_MS = 6 * 3600 * 1000  # read the owner's futures history this often
+# A bar's scan waits (retrying every tick) until Binance serves that same closed bar for BTC and
+# every coin, so BTC and the coins are judged on one bar. After this long it goes ahead with
+# what it has and logs stale_bars (the old behaviour), so a feed problem never blocks forever.
+FRESH_WAIT_MS = 5 * 60 * 1000
 
 
 class Engine:
@@ -47,6 +51,8 @@ class Engine:
         monitor.ensure(store.db)
         self.scan: dict[str, Any] = {}
         self.last_skip = ""
+        # Bars fetched once for one scan: every coin and BTC come from the same fetch.
+        self.bar_cache: dict[str, list[strategy.Bar]] | None = None
         if store.get("account_target") not in (None, leader.ACCOUNT_ID):
             # older versions could point the owner's own sync at a lead trader
             store.put("account_target", leader.ACCOUNT_ID)
@@ -225,10 +231,17 @@ class Engine:
                 self._track_equity()
                 bar = self.last_closed_bar()
                 if bar > int(self.store.get("last_bar_ms", 0)):
-                    await self._on_bar()
-                    scanned = True
-                    self.store.put("last_bar_ms", bar)
-                    await self._lab_tick()
+                    self.bar_cache = {}
+                    try:
+                        ready = await self._bars_ready(bar)
+                        if ready:
+                            await self._on_bar()
+                            scanned = True
+                            self.store.put("last_bar_ms", bar)
+                    finally:
+                        self.bar_cache = None
+                    if scanned:
+                        await self._lab_tick()
                 if self.failing_since_ms is not None:
                     minutes = (self.now_ms() - self.failing_since_ms) // 60000
                     self.log("info", "connection_restored", f"after {minutes} min")
@@ -338,7 +351,36 @@ class Engine:
         return [float(row["r"]) for row in rows]
 
     async def _bars(self, symbol: str) -> list[strategy.Bar]:
-        return await self.exchange.bars(symbol, strategy.INTERVAL, strategy.HISTORY_BARS)
+        if self.bar_cache is not None and symbol in self.bar_cache:
+            return self.bar_cache[symbol]
+        bars = await self.exchange.bars(symbol, strategy.INTERVAL, strategy.HISTORY_BARS)
+        if self.bar_cache is not None:
+            self.bar_cache[symbol] = bars
+        return bars
+
+    async def _bars_ready(self, bar_ms: int) -> bool:
+        """Fetch BTC and every coin this scan needs; True when all end with the bar that just
+        closed (bar_ms). Otherwise wait for the next tick, up to FRESH_WAIT_MS after the close;
+        then go ahead and log which ones were stale."""
+        assert self.bar_cache is not None
+        symbols = ["BTCUSDT", *self.limits.symbols,
+                   *(t["symbol"] for t in self.store.open_trades())]
+        stale, behind = [], []
+        for symbol in dict.fromkeys(symbols):
+            bars = await self._bars(symbol)
+            if not bars or bars[-1].t != bar_ms:
+                stale.append(symbol)
+                # exactly one bar behind = Binance has not served it yet: worth waiting for.
+                # No recent data at all (not listed, delisted) is noted, never waited for.
+                if bars and bars[-1].t == bar_ms - strategy.BAR_MS:
+                    behind.append(symbol)
+        if not stale:
+            return True
+        if behind and self.now_ms() < bar_ms + strategy.BAR_MS + FRESH_WAIT_MS:
+            self.bar_cache.clear()  # fetch again on the next tick
+            return False
+        self._safe_log("warning", "stale_bars", " ".join(stale)[:200])
+        return True
 
     async def _lab_tick(self) -> None:
         """Paper-trade the learned models and refresh the owner's synced trades. Never allowed
@@ -560,7 +602,12 @@ class Engine:
         return direction * (exit_price / trade["entry_price"] - 1) >= -0.005
 
     def _note(self, scan: dict[str, Any], symbol: str, reason: str, **extra: Any) -> None:
-        scan["coins"][symbol] = {"result": reason, **extra}
+        """Set a coin's result; an earlier note (the signal reason, freshness) is kept."""
+        before = scan["coins"].get(symbol, {})
+        kept = {k: v for k, v in before.items() if k != "result"}
+        if "result" in before:
+            kept["signal"] = before["result"]
+        scan["coins"][symbol] = {"result": reason, **kept, **extra}
 
     def _note_signal(self, scan: dict[str, Any], symbol: str, bars: list[strategy.Bar],
                      btc_up: bool, bar_ms: int) -> None:

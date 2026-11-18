@@ -53,6 +53,8 @@ class FakeMarket:
         self.coin = list(UP_CROSS)
         self.btc = list(BTC_UP)
         self.last = self.coin[-1]
+        # When set, 4h bars end with the bar that last closed on this clock, like Binance.
+        self.clock: Clock | None = None
 
     async def filters(self, symbol: str) -> Filters:
         return FILTERS
@@ -64,10 +66,16 @@ class FakeMarket:
         return {symbol: self.last for symbol in ALLOWED_SYMBOLS}
 
     async def bars(self, symbol: str, interval: str, limit: int) -> list[Bar]:
-        return make_bars(self.btc if symbol == "BTCUSDT" else self.coin)
+        bars = make_bars(self.btc if symbol == "BTCUSDT" else self.coin)
+        if self.clock is None or interval != strategy.INTERVAL:
+            return bars
+        now = int(self.clock() * 1000)
+        shift = (now - now % BAR_MS - BAR_MS) - bars[-1].t
+        return [Bar(b.t + shift, b.o, b.h, b.low, b.c) for b in bars]
 
     async def bars_until(self, symbol: str, interval: str, end_ms: int, limit: int) -> list[Bar]:
-        return [b for b in await self.bars(symbol, interval, limit) if b.t < end_ms][-limit:]
+        bars = make_bars(self.btc if symbol == "BTCUSDT" else self.coin)
+        return [b for b in bars if b.t < end_ms][-limit:]
 
 
 class Clock:
@@ -92,6 +100,7 @@ def build(
     market = FakeMarket()
     exchange = PaperExchange(market, store, 10000.0)
     clock = Clock()
+    market.clock = clock
     engine = Engine(store, exchange, settings(), clock=clock)
     engine.limits = Limits(symbols=list(symbols), **limits)
     return engine, exchange, market, clock
