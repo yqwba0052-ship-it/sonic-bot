@@ -109,8 +109,10 @@ def parse_filters(info: dict[str, Any], symbol: str) -> Filters:
 class PublicMarket:
     """Unsigned market data. It has no way to send orders."""
 
-    def __init__(self, client: httpx.AsyncClient) -> None:
+    def __init__(self, client: httpx.AsyncClient,
+                 clock: Callable[[], float] = time.time) -> None:
         self.client = client
+        self.clock = clock
         self.info: dict[str, Any] | None = None
 
     async def get(self, path: str, params: dict[str, Any] | None = None) -> Any:
@@ -146,14 +148,19 @@ class PublicMarket:
         ]
 
     async def bars(self, symbol: str, interval: str, limit: int) -> list[Bar]:
-        """Closed bars only; the bar still forming is dropped."""
+        """The last `limit` CLOSED bars, oldest first. A bar counts as closed when its close
+        time (kline field 6) has passed. Right after a close Binance may not have opened the
+        next bar yet; dropping "the last row" then threw away the bar that had just closed."""
         data = await self.get(
             "/fapi/v1/klines", {"symbol": symbol, "interval": interval, "limit": limit + 1}
         )
-        return [
+        now = int(self.clock() * 1000)
+        closed = [
             Bar(int(row[0]), float(row[1]), float(row[2]), float(row[3]), float(row[4]))
-            for row in data[:-1]
+            for row in data
+            if int(row[6]) < now
         ]
+        return closed[-limit:]
 
 
 class PaperExchange:
