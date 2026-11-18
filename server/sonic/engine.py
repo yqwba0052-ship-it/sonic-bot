@@ -363,11 +363,18 @@ class Engine:
         closed (bar_ms). Otherwise wait for the next tick, up to FRESH_WAIT_MS after the close;
         then go ahead and log which ones were stale."""
         assert self.bar_cache is not None
-        symbols = ["BTCUSDT", *self.limits.symbols,
-                   *(t["symbol"] for t in self.store.open_trades())]
+        held = [t["symbol"] for t in self.store.open_trades()]
+        if not self.running or self.halted:
+            return True  # nothing will be opened: no need to wait (exits judge as before)
+        coins = list(self.limits.symbols) if len(held) < self.limits.max_open else []
         stale, behind = [], []
-        for symbol in dict.fromkeys(symbols):
-            bars = await self._bars(symbol)
+        for symbol in dict.fromkeys(["BTCUSDT", *coins, *held]):
+            try:
+                bars = await self._bars(symbol)
+            except Exception as error:  # noqa: BLE001 - the scan fetches it again if it needs it
+                self.bar_cache.pop(symbol, None)
+                stale.append(f"{symbol}({str(error)[:40]})")
+                continue
             if not bars or bars[-1].t != bar_ms:
                 stale.append(symbol)
                 # exactly one bar behind = Binance has not served it yet: worth waiting for.
@@ -503,12 +510,14 @@ class Engine:
 
     async def _on_bar(self) -> None:
         """Runs once per closed 4-hour bar: exits first, then entries."""
-        now = self.now_ms()
         bar_ms = self.last_closed_bar()
         self.scan = scan = {"status": "scanned", "strategy": strategy.NAME, "coins": {}}
         for trade in self.store.open_trades():
             bars = await self._bars(trade["symbol"])
-            held_bars = (now - trade["opened_ms"]) // strategy.BAR_MS
+            # bars since the entry, counted from the bar being scanned (not the clock):
+            # a scan a few seconds or minutes late must not make the 240-bar exit late
+            held_bars = (bar_ms + strategy.BAR_MS - trade["opened_ms"]
+                         + strategy.BAR_MS // 2) // strategy.BAR_MS
             reason = ""
             if strategy.exit_due(bars, trade["side"]):
                 reason = "trade_exit_signal"
@@ -745,7 +754,9 @@ class Engine:
         if self.markets_cache and now - self.markets_cache[0] < MARKETS_TTL_MS:
             return self.markets_cache[1]
         prices = await self.exchange.prices()
-        all_bars = await asyncio.gather(*(self._bars(s) for s in risk.ALLOWED_SYMBOLS))
+        all_bars = await asyncio.gather(*(
+            self.exchange.bars(s, strategy.INTERVAL, strategy.HISTORY_BARS)
+            for s in risk.ALLOWED_SYMBOLS))
         result = []
         for symbol, bars in zip(risk.ALLOWED_SYMBOLS, all_bars, strict=True):
             filters = await self.exchange.filters(symbol)

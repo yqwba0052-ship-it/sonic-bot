@@ -33,6 +33,10 @@ USER_TRADES_PAGE = 1000
 # earlier (clock offset). Fills are read from this much before it; an earlier trade's fills are
 # still left out because only fills from the first opening-side fill on count.
 FILL_LOOKBACK_MS = 5 * 60_000
+# A bar counts as closed only this long after its close time: if the server clock runs a few
+# seconds ahead of Binance, a still-forming bar is never taken as closed (the scan simply
+# retries on the next tick).
+CLOSE_MARGIN_MS = 5_000
 
 
 class ExchangeError(Exception):
@@ -158,7 +162,7 @@ class PublicMarket:
         closed = [
             Bar(int(row[0]), float(row[1]), float(row[2]), float(row[3]), float(row[4]))
             for row in data
-            if int(row[6]) < now
+            if int(row[6]) + CLOSE_MARGIN_MS < now
         ]
         return closed[-limit:]
 

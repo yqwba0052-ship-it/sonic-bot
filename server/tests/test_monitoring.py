@@ -88,8 +88,8 @@ async def test_a_failed_scan_is_logged_then_retried() -> None:
     calls = {"n": 0}
 
     async def broken(symbol: str, interval: str, limit: int):
-        if symbol == "BTCUSDT" and calls["n"] == 0:
-            calls["n"] += 1
+        if symbol == "BTCUSDT" and interval == "4h" and calls["n"] < 2:
+            calls["n"] += 1  # down for the prefetch and the scan's own fetch in this tick
             raise RuntimeError("feed down")
         return await plain(symbol, interval, limit)
 

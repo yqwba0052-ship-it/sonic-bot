@@ -27,7 +27,7 @@ def market(rows: list[list], now_ms: int) -> PublicMarket:
 
 async def test_just_after_a_close_without_the_next_bar_the_closed_bar_is_kept() -> None:
     rows = [kline(T - (k + 1) * BAR_MS, 100.0 + k) for k in reversed(range(5))]  # ..20:00
-    bars = await market(rows, T + 3_000).bars("BTCUSDT", "4h", 3)
+    bars = await market(rows, T + 8_000).bars("BTCUSDT", "4h", 3)
     assert bars[-1].t == T - BAR_MS  # the 20:00 bar that closed 3 s ago
     assert len(bars) == 3
 
@@ -42,8 +42,8 @@ async def test_the_forming_bar_is_still_dropped() -> None:
 
 async def test_same_answer_whether_or_not_binance_opened_the_next_bar() -> None:
     rows = [kline(T - (k + 1) * BAR_MS, 100.0 + k) for k in reversed(range(6))]
-    without = await market(rows, T + 2_000).bars("SOLUSDT", "4h", 4)
-    with_forming = await market(rows + [kline(T, 5.0)], T + 2_000).bars("SOLUSDT", "4h", 4)
+    without = await market(rows, T + 7_000).bars("SOLUSDT", "4h", 4)
+    with_forming = await market(rows + [kline(T, 5.0)], T + 7_000).bars("SOLUSDT", "4h", 4)
     assert without == with_forming
 
 
@@ -51,7 +51,7 @@ async def test_gaps_in_the_feed_do_not_change_which_bar_is_last() -> None:
     rows = [kline(T - (k + 1) * BAR_MS, 100.0 + k) for k in reversed(range(8))]
     del rows[3]  # a missing bar in the middle
     rows.append(kline(T, 7.0))  # forming
-    bars = await market(rows, T + 1_000).bars("SOLUSDT", "4h", 5)
+    bars = await market(rows, T + 6_000).bars("SOLUSDT", "4h", 5)
     assert bars[-1].t == T - BAR_MS and len(bars) == 5
     assert all(b.t + BAR_MS <= T for b in bars)
 
@@ -59,7 +59,7 @@ async def test_gaps_in_the_feed_do_not_change_which_bar_is_last() -> None:
 async def test_a_slow_answer_after_the_next_close_keeps_only_closed_bars() -> None:
     rows = [kline(T - (k + 1) * BAR_MS, 100.0 + k) for k in reversed(range(4))]
     rows.append(kline(T, 7.0))  # was forming when Binance answered, closed by the time we read
-    bars = await market(rows, T + BAR_MS + 500).bars("SOLUSDT", "4h", 3)
+    bars = await market(rows, T + BAR_MS + 6_000).bars("SOLUSDT", "4h", 3)
     assert bars[-1].t == T  # judged by the clock at reading time: it has closed
 
 
@@ -188,3 +188,56 @@ async def test_a_coin_without_recent_data_is_noted_but_never_delays_the_scan() -
     assert row["bar_ms"] == engine.last_closed_bar()
     assert row["coins"]["XRPUSDT"]["fresh"] is False
     assert any(e["code"] == "stale_bars" for e in engine.store.events(50))
+
+
+async def test_a_bar_counts_as_closed_only_after_the_safety_margin() -> None:
+    from sonic.exchange import CLOSE_MARGIN_MS
+
+    rows = [kline(T - (k + 1) * BAR_MS, 100.0 + k) for k in reversed(range(5))]
+    # close time of the 20:00 bar is T - 1 ms
+    at_close = await market(rows, T - 1).bars("BTCUSDT", "4h", 3)
+    assert at_close[-1].t == T - 2 * BAR_MS  # exactly at its close time: not yet
+    ahead = await market(rows, T + 3_000).bars("BTCUSDT", "4h", 3)  # server clock 3 s ahead
+    assert ahead[-1].t == T - 2 * BAR_MS  # a possibly still-forming bar is never used
+    after = await market(rows, T - 1 + CLOSE_MARGIN_MS + 1).bars("BTCUSDT", "4h", 3)
+    assert after[-1].t == T - BAR_MS
+
+
+async def test_a_stopped_bot_neither_waits_nor_prefetches() -> None:
+    from sonic import monitor
+
+    engine, _, calls, _ = _engine_with_lagging("XRPUSDT")
+    await engine.tick()  # not started
+    row = monitor.scans(engine.store.db)[0]
+    assert row["status"] == "not_running"
+    assert calls.get("XRPUSDT", 0) == 0 and calls.get("BTCUSDT", 0) == 0
+
+
+async def test_a_coin_that_cannot_be_fetched_does_not_stop_a_full_bot() -> None:
+    from test_system import build
+
+    from sonic import monitor
+
+    engine, _, market, _ = build(("SOLUSDT", "XRPUSDT"), max_open=1)
+    plain = market.bars
+
+    async def bars(sym: str, interval: str, limit: int):
+        if sym == "XRPUSDT":
+            raise RuntimeError("Invalid symbol")
+        return await plain(sym, interval, limit)
+
+    market.bars = bars
+    await engine.start()
+    await engine.tick()  # SOL opens and fills the single slot
+    assert len(engine.store.open_trades()) == 1 and engine.failures == 0
+    row = monitor.scans(engine.store.db)[0]
+    assert row["status"] == "scanned"
+
+
+def test_holding_time_is_counted_in_bars_of_the_scan() -> None:
+    # entry at a close + 4 min (a late scan), later scan at a close + 5 s: still 240 bars
+    opened = T + 4 * 60_000
+    bar_ms = T + 239 * BAR_MS  # the bar that closes 240 bars after the entry's close
+    held = (bar_ms + BAR_MS - opened + BAR_MS // 2) // BAR_MS
+    assert held == 240
+    assert ((bar_ms + BAR_MS + 5_000) - opened) // BAR_MS == 239  # the old wall-clock count
