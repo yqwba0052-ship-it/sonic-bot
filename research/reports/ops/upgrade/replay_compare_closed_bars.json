@@ -1,0 +1,169 @@
+{
+ "period": "2021-06..2026-10",
+ "old_trades": 224,
+ "new_trades": 224,
+ "money_or_price_differences": [],
+ "label_changes": [
+  [
+   "DOGEUSDT",
+   1627300800000,
+   "stop_loss",
+   "stop_loss",
+   0,
+   1
+  ],
+  [
+   "DOGEUSDT",
+   1634328000000,
+   "stop_loss",
+   "stop_loss",
+   0,
+   1
+  ],
+  [
+   "BNBUSDT",
+   1666728000000,
+   "stop_loss",
+   "breakeven",
+   0,
+   1
+  ],
+  [
+   "ADAUSDT",
+   1666785600000,
+   "stop_loss",
+   "breakeven",
+   0,
+   1
+  ],
+  [
+   "DOGEUSDT",
+   1688184000000,
+   "stop_loss",
+   "breakeven",
+   0,
+   1
+  ],
+  [
+   "SOLUSDT",
+   1691596800000,
+   "stop_loss",
+   "breakeven",
+   0,
+   1
+  ],
+  [
+   "SUIUSDT",
+   1696017600000,
+   "stop_loss",
+   "breakeven",
+   0,
+   1
+  ],
+  [
+   "SOLUSDT",
+   1697443200000,
+   "stop_loss",
+   "breakeven",
+   0,
+   1
+  ],
+  [
+   "XRPUSDT",
+   1697817600000,
+   "stop_loss",
+   "breakeven",
+   0,
+   1
+  ],
+  [
+   "DOGEUSDT",
+   1714924800000,
+   "stop_loss",
+   "breakeven",
+   0,
+   1
+  ],
+  [
+   "DOGEUSDT",
+   1717574400000,
+   "stop_loss",
+   "breakeven",
+   0,
+   1
+  ],
+  [
+   "XRPUSDT",
+   1735819200000,
+   "stop_loss",
+   "breakeven",
+   0,
+   1
+  ],
+  [
+   "ADAUSDT",
+   1736928000000,
+   "stop_loss",
+   "breakeven",
+   0,
+   1
+  ],
+  [
+   "SUIUSDT",
+   1737057600000,
+   "stop_loss",
+   "breakeven",
+   0,
+   1
+  ],
+  [
+   "SUIUSDT",
+   1751544000000,
+   "stop_loss",
+   "breakeven",
+   0,
+   1
+  ],
+  [
+   "ADAUSDT",
+   1773648000000,
+   "stop_loss",
+   "stop_loss",
+   0,
+   1
+  ],
+  [
+   "SUIUSDT",
+   1775649600000,
+   "stop_loss",
+   "stop_loss",
+   0,
+   1
+  ]
+ ],
+ "old_pnl": 53.486988,
+ "new_pnl": 53.486988,
+ "new_report": {
+  "trades": 224,
+  "win_rate": 0.8258928571428571,
+  "avg_r": 0.5059632198299869,
+  "pnl_usdt": 53.49,
+  "end_amount": 83.49,
+  "max_drop": 0.14982120018402445,
+  "scaled": 191,
+  "errors": [],
+  "open_at_end": 0,
+  "events": {
+   "stale_bars": 4200,
+   "trade_closed": 224,
+   "trade_scaled": 191,
+   "trade_opened": 224,
+   "trade_exit_signal": 19,
+   "trade_skipped": 27,
+   "trade_exit_time": 5,
+   "started": 1,
+   "limits_changed": 1,
+   "budget_restarted": 1
+  }
+ }
+}

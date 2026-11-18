@@ -6,13 +6,15 @@
 
 أنا مالك مشروع Sonic Bot. نكمل من حيث توقفنا. قبل أي عمل:
 
-1. افتح المشروع `C:\Users\sa\Projects\sonic_bot`، وانتقل إلى الفرع `feature/sonic-operational-safety` (أحدث عمل،
-   ومنشور على الخادم عند `1990a26`). وهناك فرع إصلاح غير منشور: `fix/closed-bars-only`. قبلهما الفروع البحثية:
+1. افتح المشروع `C:\Users\sa\Projects\sonic_bot`، وانتقل إلى الفرع `fix/closed-bars-only` (أحدث عمل، ومنشور على
+   الخادم عند `ea839a7`، ويحوي كل `feature/sonic-operational-safety`). وهناك فرع بحث غير منشور:
+   `research/learning-leakage`. قبلهما الفروع البحثية:
    `research/operational-audit` ثم `research/classical-strategies` ثم `research/hummingbot` ثم `research/freqai` ثم
    `research/jesse`. اسحب آخر نسخة من GitHub (`git fetch` ثم `git status`). لا تغيّر الفرع main.
 2. اقرأ كاملًا:
-   - `SESSION_HANDOFF.md` (ابدأ بالقسم 15، ثم 14، ثم 13، ثم 12، ثم 11، ثم 10ج، ثم 10ب).
-   - `research/reports/sonic_operational_upgrade_final.md` (التحديث المنشور) و
+   - `SESSION_HANDOFF.md` (ابدأ بالقسم 16، ثم 15، ثم 14، ثم 13، ثم 12، ثم 11، ثم 10ج، ثم 10ب).
+   - `research/reports/sonic_closed_bars_fix.md` (إصلاح الشمعة المغلقة وبحث التسرب) و
+     `research/reports/sonic_operational_upgrade_final.md` (التحديث المنشور) و
      `research/reports/sonic_operational_audit.md` (المراجعة التشغيلية) و
      `docs/proposals/2026-11-17-usertrades-window-fix.md` و `docs/proposals/2026-11-16-scaled-label-fix.md`.
    - `research/reports/classical_strategies_final.md` و `research/reports/hummingbot_final.md`
@@ -36,7 +38,7 @@
      - هل في سجل الفحوص فجوات أو أخطاء أو بيانات غير حديثة (`data_ok`/`fresh`)؟
      - هل آخر نسخة احتياطية ناجحة؟
    - ما ينتظر قراري:
-     - نشر `fix/closed-bars-only`؛
+     - تطبيق إصلاح تسرب التعلّم (`research/learning-leakage`)؛
      - الدمج في main؛
      - نسخة خارج الخادم؛
      - إصلاح تسرب التعلّم؛
