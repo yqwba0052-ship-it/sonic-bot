@@ -12,8 +12,9 @@
    `research/operational-audit` ثم `research/classical-strategies` ثم `research/hummingbot` ثم `research/freqai` ثم
    `research/jesse`. اسحب آخر نسخة من GitHub (`git fetch` ثم `git status`). لا تغيّر الفرع main.
 2. اقرأ كاملًا:
-   - `SESSION_HANDOFF.md` (ابدأ بالقسم 16، ثم 15، ثم 14، ثم 13، ثم 12، ثم 11، ثم 10ج، ثم 10ب).
+   - `SESSION_HANDOFF.md` (ابدأ بالقسم 17، ثم 16، ثم 15، ثم 14، ثم 13، ثم 12، ثم 11، ثم 10ج، ثم 10ب).
    - `research/reports/sonic_closed_bars_fix.md` (إصلاح الشمعة المغلقة وبحث التسرب) و
+     `research/reports/learning_leakage_eval.md` (على الفرع `research/learning-leakage`) و
      `research/reports/sonic_operational_upgrade_final.md` (التحديث المنشور) و
      `research/reports/sonic_operational_audit.md` (المراجعة التشغيلية) و
      `docs/proposals/2026-11-17-usertrades-window-fix.md` و `docs/proposals/2026-11-16-scaled-label-fix.md`.
@@ -21,18 +22,14 @@
      و `research/reports/freqai_final.md` و `research/reports/jesse_holdout.md`.
    - `docs/STORAGE_PLAN.md`.
    - `D:\Sonic-Classical-Research\FINAL_SESSION_STATUS.md`.
-3. **أول خطوة:** تحقق من أول فحص حقيقي بعد نشر إصلاح الشمعة (`ea839a7`، نُشر 2026-11-18 الساعة 00:44 UTC). الأمر:
+3. **أول خطوة:** راجع الفحوص منذ آخر مراجعة (قراءة فقط):
 
    ```
-   server/.venv/Scripts/python -I research/sonic_research/ops_audit/check_scan.py research/reports/ops/upgrade/scan_check_after_fix.json
+   server/.venv/Scripts/python -I research/sonic_research/ops_audit/verify_scans.py --since "<تاريخ آخر شمعة مراجَعة>" --json research/reports/ops/upgrade/scans_<date>.json
    ```
 
-   **النجاح يعني:**
-   - `all_prices_match: true`؛
-   - `data_ok = 1`؛
-   - كل العملات `fresh: true`.
-
-   ثم أكمل القسم 4 في `research/reports/sonic_closed_bars_fix.md`. **لا تدّعِ النجاح قبل رؤية النتيجة.**
+   آخر مراجعة: كل الفحوص حتى شمعة 2026-11-19 الساعة 00:00 صحيحة.
+   **النجاح يعني:** `all_ok: true`، ولا فجوات، ولا `stale_bars`. **لا تدّعِ النجاح قبل رؤية النتيجة.**
 4. تحقق دون أي تغيير:
    - `git log -1`، وأن الفرع مطابق لـ `origin/research/classical-strategies`، وأن الشجرة نظيفة.
    - أن الفلاشة موصولة، وأن مجلدات `D:\Sonic-*` موجودة. إن تغيّر حرفها فأخبرني.

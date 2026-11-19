@@ -1,0 +1,631 @@
+{
+ "checked_at_utc": "2026-11-19 05:58:11",
+ "since_bar_utc": "2026-11-18 00:00",
+ "scans": 7,
+ "missing": [],
+ "problems": [],
+ "all_ok": true,
+ "scans_detail": [
+  {
+   "bar_utc": "2026-11-18 00:00:00",
+   "scanned_utc": "2026-11-18 04:00:11",
+   "seconds_after_close": 11.1,
+   "status": "scanned",
+   "attempts": 1,
+   "data_ok": 1,
+   "market": "btc_down",
+   "signals": 0,
+   "opened": 0,
+   "btc_server": 64424.7,
+   "btc_binance": 64424.7,
+   "coins": {
+    "SOLUSDT": {
+     "server": 74.74,
+     "binance": 74.74,
+     "fresh": true,
+     "result": "no_cross_ema20_below"
+    },
+    "XRPUSDT": {
+     "server": 0.9766,
+     "binance": 0.9766,
+     "fresh": true,
+     "result": "no_cross_ema20_below"
+    },
+    "DOGEUSDT": {
+     "server": 0.05931,
+     "binance": 0.05931,
+     "fresh": true,
+     "result": "no_cross_ema20_below"
+    },
+    "ADAUSDT": {
+     "server": 0.1534,
+     "binance": 0.1534,
+     "fresh": true,
+     "result": "no_cross_ema20_below"
+    },
+    "SUIUSDT": {
+     "server": 0.7291,
+     "binance": 0.7291,
+     "fresh": true,
+     "result": "no_cross_ema20_below"
+    },
+    "TRXUSDT": {
+     "server": 0.30796,
+     "binance": 0.30796,
+     "fresh": true,
+     "result": "no_cross_ema20_below"
+    },
+    "BNBUSDT": {
+     "server": 592.11,
+     "binance": 592.11,
+     "fresh": true,
+     "result": "no_cross_ema20_below"
+    },
+    "AVAXUSDT": {
+     "server": 7.143,
+     "binance": 7.143,
+     "fresh": true,
+     "result": "no_cross_ema20_below"
+    }
+   }
+  },
+  {
+   "bar_utc": "2026-11-18 04:00:00",
+   "scanned_utc": "2026-11-18 08:00:24",
+   "seconds_after_close": 24.5,
+   "status": "scanned",
+   "attempts": 1,
+   "data_ok": 1,
+   "market": "btc_down",
+   "signals": 0,
+   "opened": 0,
+   "btc_server": 64851.1,
+   "btc_binance": 64851.1,
+   "coins": {
+    "SOLUSDT": {
+     "server": 75.14,
+     "binance": 75.14,
+     "fresh": true,
+     "result": "no_cross_ema20_below"
+    },
+    "XRPUSDT": {
+     "server": 1.0014,
+     "binance": 1.0014,
+     "fresh": true,
+     "result": "no_cross_ema20_below"
+    },
+    "DOGEUSDT": {
+     "server": 0.05973,
+     "binance": 0.05973,
+     "fresh": true,
+     "result": "no_cross_ema20_below"
+    },
+    "ADAUSDT": {
+     "server": 0.1546,
+     "binance": 0.1546,
+     "fresh": true,
+     "result": "no_cross_ema20_below"
+    },
+    "SUIUSDT": {
+     "server": 0.7351,
+     "binance": 0.7351,
+     "fresh": true,
+     "result": "no_cross_ema20_below"
+    },
+    "TRXUSDT": {
+     "server": 0.30894,
+     "binance": 0.30894,
+     "fresh": true,
+     "result": "no_cross_ema20_below"
+    },
+    "BNBUSDT": {
+     "server": 594.16,
+     "binance": 594.16,
+     "fresh": true,
+     "result": "no_cross_ema20_below"
+    },
+    "AVAXUSDT": {
+     "server": 7.19,
+     "binance": 7.19,
+     "fresh": true,
+     "result": "no_cross_ema20_below"
+    }
+   }
+  },
+  {
+   "bar_utc": "2026-11-18 08:00:00",
+   "scanned_utc": "2026-11-18 12:00:17",
+   "seconds_after_close": 17.1,
+   "status": "scanned",
+   "attempts": 1,
+   "data_ok": 1,
+   "market": "btc_down",
+   "signals": 0,
+   "opened": 0,
+   "btc_server": 64205.0,
+   "btc_binance": 64205.0,
+   "coins": {
+    "SOLUSDT": {
+     "server": 74.41,
+     "binance": 74.41,
+     "fresh": true,
+     "result": "no_cross_ema20_below"
+    },
+    "XRPUSDT": {
+     "server": 0.9873,
+     "binance": 0.9873,
+     "fresh": true,
+     "result": "no_cross_ema20_below"
+    },
+    "DOGEUSDT": {
+     "server": 0.05934,
+     "binance": 0.05934,
+     "fresh": true,
+     "result": "no_cross_ema20_below"
+    },
+    "ADAUSDT": {
+     "server": 0.153,
+     "binance": 0.153,
+     "fresh": true,
+     "result": "no_cross_ema20_below"
+    },
+    "SUIUSDT": {
+     "server": 0.7256,
+     "binance": 0.7256,
+     "fresh": true,
+     "result": "no_cross_ema20_below"
+    },
+    "TRXUSDT": {
+     "server": 0.30993,
+     "binance": 0.30993,
+     "fresh": true,
+     "result": "no_cross_ema20_below"
+    },
+    "BNBUSDT": {
+     "server": 590.05,
+     "binance": 590.05,
+     "fresh": true,
+     "result": "no_cross_ema20_below"
+    },
+    "AVAXUSDT": {
+     "server": 7.118,
+     "binance": 7.118,
+     "fresh": true,
+     "result": "no_cross_ema20_below"
+    }
+   }
+  },
+  {
+   "bar_utc": "2026-11-18 12:00:00",
+   "scanned_utc": "2026-11-18 16:00:10",
+   "seconds_after_close": 10.7,
+   "status": "scanned",
+   "attempts": 1,
+   "data_ok": 1,
+   "market": "btc_down",
+   "signals": 0,
+   "opened": 0,
+   "btc_server": 63094.9,
+   "btc_binance": 63094.9,
+   "coins": {
+    "SOLUSDT": {
+     "server": 73.45,
+     "binance": 73.45,
+     "fresh": true,
+     "result": "no_cross_ema20_below"
+    },
+    "XRPUSDT": {
+     "server": 0.9761,
+     "binance": 0.9761,
+     "fresh": true,
+     "result": "no_cross_ema20_below"
+    },
+    "DOGEUSDT": {
+     "server": 0.05869,
+     "binance": 0.05869,
+     "fresh": true,
+     "result": "no_cross_ema20_below"
+    },
+    "ADAUSDT": {
+     "server": 0.1506,
+     "binance": 0.1506,
+     "fresh": true,
+     "result": "no_cross_ema20_below"
+    },
+    "SUIUSDT": {
+     "server": 0.7121,
+     "binance": 0.7121,
+     "fresh": true,
+     "result": "no_cross_ema20_below"
+    },
+    "TRXUSDT": {
+     "server": 0.30926,
+     "binance": 0.30926,
+     "fresh": true,
+     "result": "no_cross_ema20_below"
+    },
+    "BNBUSDT": {
+     "server": 582.54,
+     "binance": 582.54,
+     "fresh": true,
+     "result": "no_cross_ema20_below"
+    },
+    "AVAXUSDT": {
+     "server": 6.961,
+     "binance": 6.961,
+     "fresh": true,
+     "result": "no_cross_ema20_below"
+    }
+   }
+  },
+  {
+   "bar_utc": "2026-11-18 16:00:00",
+   "scanned_utc": "2026-11-18 20:00:21",
+   "seconds_after_close": 21.6,
+   "status": "scanned",
+   "attempts": 1,
+   "data_ok": 1,
+   "market": "btc_down",
+   "signals": 0,
+   "opened": 0,
+   "btc_server": 62724.6,
+   "btc_binance": 62724.6,
+   "coins": {
+    "SOLUSDT": {
+     "server": 73.07,
+     "binance": 73.07,
+     "fresh": true,
+     "result": "no_cross_ema20_below"
+    },
+    "XRPUSDT": {
+     "server": 0.9665,
+     "binance": 0.9665,
+     "fresh": true,
+     "result": "no_cross_ema20_below"
+    },
+    "DOGEUSDT": {
+     "server": 0.05863,
+     "binance": 0.05863,
+     "fresh": true,
+     "result": "no_cross_ema20_below"
+    },
+    "ADAUSDT": {
+     "server": 0.1513,
+     "binance": 0.1513,
+     "fresh": true,
+     "result": "no_cross_ema20_below"
+    },
+    "SUIUSDT": {
+     "server": 0.7165,
+     "binance": 0.7165,
+     "fresh": true,
+     "result": "no_cross_ema20_below"
+    },
+    "TRXUSDT": {
+     "server": 0.30893,
+     "binance": 0.30893,
+     "fresh": true,
+     "result": "no_cross_ema20_below"
+    },
+    "BNBUSDT": {
+     "server": 579.22,
+     "binance": 579.22,
+     "fresh": true,
+     "result": "no_cross_ema20_below"
+    },
+    "AVAXUSDT": {
+     "server": 6.948,
+     "binance": 6.948,
+     "fresh": true,
+     "result": "no_cross_ema20_below"
+    }
+   }
+  },
+  {
+   "bar_utc": "2026-11-18 20:00:00",
+   "scanned_utc": "2026-11-19 00:00:10",
+   "seconds_after_close": 10.4,
+   "status": "scanned",
+   "attempts": 1,
+   "data_ok": 1,
+   "market": "btc_down",
+   "signals": 0,
+   "opened": 0,
+   "btc_server": 63036.8,
+   "btc_binance": 63036.8,
+   "coins": {
+    "SOLUSDT": {
+     "server": 73.6,
+     "binance": 73.6,
+     "fresh": true,
+     "result": "no_cross_ema20_below"
+    },
+    "XRPUSDT": {
+     "server": 0.967,
+     "binance": 0.967,
+     "fresh": true,
+     "result": "no_cross_ema20_below"
+    },
+    "DOGEUSDT": {
+     "server": 0.05874,
+     "binance": 0.05874,
+     "fresh": true,
+     "result": "no_cross_ema20_below"
+    },
+    "ADAUSDT": {
+     "server": 0.1514,
+     "binance": 0.1514,
+     "fresh": true,
+     "result": "no_cross_ema20_below"
+    },
+    "SUIUSDT": {
+     "server": 0.7199,
+     "binance": 0.7199,
+     "fresh": true,
+     "result": "no_cross_ema20_below"
+    },
+    "TRXUSDT": {
+     "server": 0.30953,
+     "binance": 0.30953,
+     "fresh": true,
+     "result": "no_cross_ema20_below"
+    },
+    "BNBUSDT": {
+     "server": 582.84,
+     "binance": 582.84,
+     "fresh": true,
+     "result": "no_cross_ema20_below"
+    },
+    "AVAXUSDT": {
+     "server": 7.028,
+     "binance": 7.028,
+     "fresh": true,
+     "result": "no_cross_ema20_below"
+    }
+   }
+  },
+  {
+   "bar_utc": "2026-11-19 00:00:00",
+   "scanned_utc": "2026-11-19 04:00:26",
+   "seconds_after_close": 26.8,
+   "status": "scanned",
+   "attempts": 1,
+   "data_ok": 1,
+   "market": "btc_down",
+   "signals": 0,
+   "opened": 0,
+   "btc_server": 63181.5,
+   "btc_binance": 63181.5,
+   "coins": {
+    "SOLUSDT": {
+     "server": 74.2,
+     "binance": 74.2,
+     "fresh": true,
+     "result": "no_cross_ema20_below"
+    },
+    "XRPUSDT": {
+     "server": 0.9687,
+     "binance": 0.9687,
+     "fresh": true,
+     "result": "no_cross_ema20_below"
+    },
+    "DOGEUSDT": {
+     "server": 0.05897,
+     "binance": 0.05897,
+     "fresh": true,
+     "result": "no_cross_ema20_below"
+    },
+    "ADAUSDT": {
+     "server": 0.1523,
+     "binance": 0.1523,
+     "fresh": true,
+     "result": "no_cross_ema20_below"
+    },
+    "SUIUSDT": {
+     "server": 0.7257,
+     "binance": 0.7257,
+     "fresh": true,
+     "result": "no_cross_ema20_below"
+    },
+    "TRXUSDT": {
+     "server": 0.31127,
+     "binance": 0.31127,
+     "fresh": true,
+     "result": "no_cross_ema20_below"
+    },
+    "BNBUSDT": {
+     "server": 584.23,
+     "binance": 584.23,
+     "fresh": true,
+     "result": "no_cross_ema20_below"
+    },
+    "AVAXUSDT": {
+     "server": 7.066,
+     "binance": 7.066,
+     "fresh": true,
+     "result": "no_cross_ema20_below"
+    }
+   }
+  }
+ ],
+ "service": {
+  "state": "active",
+  "since": "Wed 2026-11-18 00:44:35 UTC",
+  "restarts": "0",
+  "commit": "ea839a7"
+ },
+ "live_switch_lines": "0",
+ "backup_timer": {
+  "state": "active",
+  "next": "Fri 2026-11-20 02:31:40 UTC"
+ },
+ "backups_on_server": "4",
+ "backup_log_tail": [
+  {
+   "at_utc": "2026-11-17T22:54:49Z",
+   "bytes": 30481,
+   "counts": {
+    "equity_daily": 1,
+    "events": 772,
+    "kv": 13,
+    "scan_log": 0,
+    "trader_models": 4,
+    "trader_trades": 157,
+    "trades": 0
+   },
+   "db": "/opt/sonic/app/server/sonic.db",
+   "file": "sonic-20261117-225449.db.gz",
+   "kept": 1,
+   "ok": true,
+   "removed": [],
+   "sha256": "45b3e972a9fd8c254636f1c779f3471dd7160ca6005dca99f47fc4f3f1414d5c"
+  },
+  {
+   "at_utc": "2026-11-18T00:35:42Z",
+   "bytes": 30857,
+   "counts": {
+    "equity_daily": 2,
+    "events": 782,
+    "kv": 13,
+    "scan_log": 1,
+    "trader_models": 4,
+    "trader_trades": 157,
+    "trades": 0
+   },
+   "db": "/opt/sonic/app/server/sonic.db",
+   "file": "sonic-20261118-003542.db.gz",
+   "kept": 2,
+   "ok": true,
+   "removed": [],
+   "sha256": "898c561c6d5a91bd51567f0de668bcc0d7e5ce508148e1789d2519bb228ac63a"
+  },
+  {
+   "at_utc": "2026-11-18T02:31:25Z",
+   "bytes": 31103,
+   "counts": {
+    "equity_daily": 2,
+    "events": 795,
+    "kv": 13,
+    "scan_log": 1,
+    "trader_models": 4,
+    "trader_trades": 158,
+    "trades": 0
+   },
+   "db": "/opt/sonic/app/server/sonic.db",
+   "file": "sonic-20261118-023125.db.gz",
+   "kept": 3,
+   "ok": true,
+   "removed": [],
+   "sha256": "1418a9c4e0aa04bf8aa25fb100179d9aba30929ef84b2232ac9e212458cd2c48"
+  },
+  {
+   "at_utc": "2026-11-19T02:32:25Z",
+   "bytes": 33374,
+   "counts": {
+    "equity_daily": 3,
+    "events": 943,
+    "kv": 13,
+    "scan_log": 7,
+    "trader_models": 4,
+    "trader_trades": 159,
+    "trades": 0
+   },
+   "db": "/opt/sonic/app/server/sonic.db",
+   "file": "sonic-20261119-023225.db.gz",
+   "kept": 4,
+   "ok": true,
+   "removed": [],
+   "sha256": "8c381294ff6312a5ab7f33d2e242b8f56ef3ee3eea3c734da7f3b87f0e515845"
+  }
+ ],
+ "warnings_errors": [],
+ "event_codes": [
+  {
+   "code": "account_synced",
+   "n": 5
+  },
+  {
+   "code": "kopyon_synced",
+   "n": 180
+  },
+  {
+   "code": "resumed_after_restart",
+   "n": 1
+  },
+  {
+   "code": "trader_studied",
+   "n": 1
+  }
+ ],
+ "equity_daily": [
+  {
+   "day": "2026-11-17",
+   "at_ms": 1794956069679,
+   "mode": "paper",
+   "capital": 30.0,
+   "wallet_balance": 10000.0,
+   "realized": 0.0,
+   "unrealized": 0.0,
+   "equity": 30.0,
+   "open_value": 0.0,
+   "fees": 0.0,
+   "peak": 30.0,
+   "drawdown_pct": 0.0,
+   "max_drawdown_pct": 0.0,
+   "open_count": 0,
+   "closed_count": 0,
+   "unproven_count": 0,
+   "tracking_since_ms": 1794956069679
+  },
+  {
+   "day": "2026-11-18",
+   "at_ms": 1794960000283,
+   "mode": "paper",
+   "capital": 30.0,
+   "wallet_balance": 10000.0,
+   "realized": 0.0,
+   "unrealized": 0.0,
+   "equity": 30.0,
+   "open_value": 0.0,
+   "fees": 0.0,
+   "peak": 30.0,
+   "drawdown_pct": 0.0,
+   "max_drawdown_pct": 0.0,
+   "open_count": 0,
+   "closed_count": 0,
+   "unproven_count": 0,
+   "tracking_since_ms": 1794956069679
+  },
+  {
+   "day": "2026-11-19",
+   "at_ms": 1795046406143,
+   "mode": "paper",
+   "capital": 30.0,
+   "wallet_balance": 10000.0,
+   "realized": 0.0,
+   "unrealized": 0.0,
+   "equity": 30.0,
+   "open_value": 0.0,
+   "fees": 0.0,
+   "peak": 30.0,
+   "drawdown_pct": 0.0,
+   "max_drawdown_pct": 0.0,
+   "open_count": 0,
+   "closed_count": 0,
+   "unproven_count": 0,
+   "tracking_since_ms": 1794956069679
+  }
+ ],
+ "trades": {
+  "n": 0,
+  "open": null
+ },
+ "live_trades": 0,
+ "allocations": 0,
+ "kv": {
+  "equity_peak": "{\"since_ms\": 1794956069679, \"peak\": 30.0, \"peak_ms\": 1794956069679, \"max_dd_pct\": 0.0, \"basis\": [30.0, 0]}",
+  "last_bar_ms": "1795046400000",
+  "last_scan": "{\"at_ms\": 1795060826789, \"market\": \"btc_down\", \"coins\": 8, \"signals\": 0, \"opened\": 0}",
+  "was_running": "true"
+ }
+}
