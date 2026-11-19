@@ -1,0 +1,257 @@
+{
+ "server_dir": "deployed leader.py (ea839a7, unchanged since main)",
+ "trades": 160,
+ "runs": [
+  {
+   "train_share": 0.5,
+   "learn": {
+    "status": "ok",
+    "train_trades": 80,
+    "test_trades": 80,
+    "split_ms": 1788354130981,
+    "test_end_ms": 1795061658943
+   },
+   "model_leverage": 5,
+   "train": {
+    "trades": 87,
+    "wins": 45,
+    "win_rate": 0.5172,
+    "net_pnl": 5.28,
+    "net_pct": 0.1759,
+    "profit_factor": 1.42,
+    "max_drawdown": 0.043,
+    "months": 3,
+    "months_positive": 0.6667,
+    "worst_trade": -0.0107,
+    "days": 45
+   },
+   "test_learned": {
+    "trades": 111,
+    "wins": 45,
+    "win_rate": 0.4054,
+    "net_pnl": -2.08,
+    "net_pct": -0.0692,
+    "profit_factor": 0.87,
+    "max_drawdown": 0.1524,
+    "months": 3,
+    "months_positive": 0.3333,
+    "worst_trade": -0.0108,
+    "days": 78
+   },
+   "test_sonic": {
+    "trades": 12,
+    "wins": 9,
+    "win_rate": 0.75,
+    "net_pnl": 1.24,
+    "net_pct": 0.0412,
+    "profit_factor": 4.91,
+    "max_drawdown": 0.0105,
+    "months": 2,
+    "months_positive": 0.5,
+    "worst_trade": -0.0102,
+    "days": 78
+   },
+   "test_trader_actual": {
+    "trades": 80,
+    "win_rate": 0.925,
+    "pnl_reported": 75370.91,
+    "pnl_missing": 0
+   },
+   "test_days": 78,
+   "qualified": false,
+   "why_not": [
+    "net <= 0",
+    "PF < 1.2",
+    "positive months < 50%"
+   ]
+  },
+  {
+   "train_share": 0.6,
+   "learn": {
+    "status": "ok",
+    "train_trades": 96,
+    "test_trades": 64,
+    "split_ms": 1789871871835,
+    "test_end_ms": 1795061658943
+   },
+   "model_leverage": 5,
+   "train": {
+    "trades": 108,
+    "wins": 42,
+    "win_rate": 0.3889,
+    "net_pnl": 5.71,
+    "net_pct": 0.1902,
+    "profit_factor": 1.25,
+    "max_drawdown": 0.1081,
+    "months": 3,
+    "months_positive": 0.6667,
+    "worst_trade": -0.0119,
+    "days": 63
+   },
+   "test_learned": {
+    "trades": 73,
+    "wins": 30,
+    "win_rate": 0.411,
+    "net_pnl": 3.06,
+    "net_pct": 0.1019,
+    "profit_factor": 1.22,
+    "max_drawdown": 0.0924,
+    "months": 3,
+    "months_positive": 0.3333,
+    "worst_trade": -0.0114,
+    "days": 60
+   },
+   "test_sonic": {
+    "trades": 4,
+    "wins": 3,
+    "win_rate": 0.75,
+    "net_pnl": 0.07,
+    "net_pct": 0.0022,
+    "profit_factor": 10.0,
+    "max_drawdown": 0.0006,
+    "months": 1,
+    "months_positive": 1.0,
+    "worst_trade": -0.0001,
+    "days": 60
+   },
+   "test_trader_actual": {
+    "trades": 64,
+    "win_rate": 0.9375,
+    "pnl_reported": 74823.27,
+    "pnl_missing": 0
+   },
+   "test_days": 60,
+   "qualified": false,
+   "why_not": [
+    "positive months < 50%"
+   ]
+  },
+  {
+   "train_share": 0.7,
+   "learn": {
+    "status": "ok",
+    "train_trades": 112,
+    "test_trades": 48,
+    "split_ms": 1791858577495,
+    "test_end_ms": 1795061658943
+   },
+   "model_leverage": 5,
+   "train": {
+    "trades": 185,
+    "wins": 98,
+    "win_rate": 0.5297,
+    "net_pnl": 1.19,
+    "net_pct": 0.0397,
+    "profit_factor": 1.04,
+    "max_drawdown": 0.1194,
+    "months": 4,
+    "months_positive": 0.75,
+    "worst_trade": -0.011,
+    "days": 86
+   },
+   "test_learned": {
+    "trades": 63,
+    "wins": 31,
+    "win_rate": 0.4921,
+    "net_pnl": -1.58,
+    "net_pct": -0.0525,
+    "profit_factor": 0.83,
+    "max_drawdown": 0.1246,
+    "months": 2,
+    "months_positive": 0.0,
+    "worst_trade": -0.0106,
+    "days": 37
+   },
+   "test_sonic": {
+    "trades": 1,
+    "wins": 0,
+    "win_rate": 0.0,
+    "net_pnl": -0.0,
+    "net_pct": -0.0001,
+    "profit_factor": 0.0,
+    "max_drawdown": 0.0006,
+    "months": 1,
+    "months_positive": 0.0,
+    "worst_trade": -0.0001,
+    "days": 37
+   },
+   "test_trader_actual": {
+    "trades": 48,
+    "win_rate": 0.9583,
+    "pnl_reported": 71115.26,
+    "pnl_missing": 0
+   },
+   "test_days": 37,
+   "qualified": false,
+   "why_not": [
+    "test < 60 days",
+    "net <= 0",
+    "PF < 1.2",
+    "positive months < 50%"
+   ]
+  },
+  {
+   "train_share": 0.8,
+   "learn": {
+    "status": "ok",
+    "train_trades": 128,
+    "test_trades": 32,
+    "split_ms": 1792763952341,
+    "test_end_ms": 1795075200000
+   },
+   "model_leverage": 5,
+   "train": {
+    "trades": 186,
+    "wins": 86,
+    "win_rate": 0.4624,
+    "net_pnl": 5.06,
+    "net_pct": 0.1686,
+    "profit_factor": 1.15,
+    "max_drawdown": 0.1193,
+    "months": 4,
+    "months_positive": 0.75,
+    "worst_trade": -0.0115,
+    "days": 96
+   },
+   "test_learned": {
+    "trades": 24,
+    "wins": 10,
+    "win_rate": 0.4167,
+    "net_pnl": -0.01,
+    "net_pct": -0.0003,
+    "profit_factor": 1.0,
+    "max_drawdown": 0.0402,
+    "months": 2,
+    "months_positive": 0.5,
+    "worst_trade": -0.0105,
+    "days": 27
+   },
+   "test_sonic": {
+    "trades": 0,
+    "wins": 0,
+    "win_rate": null,
+    "net_pnl": 0.0,
+    "net_pct": 0.0,
+    "profit_factor": null,
+    "max_drawdown": 0.0,
+    "months": 0,
+    "months_positive": null,
+    "worst_trade": 0.0,
+    "days": 27
+   },
+   "test_trader_actual": {
+    "trades": 32,
+    "win_rate": 0.9375,
+    "pnl_reported": 61489.03,
+    "pnl_missing": 0
+   },
+   "test_days": 27,
+   "qualified": false,
+   "why_not": [
+    "test < 60 days",
+    "net <= 0",
+    "PF < 1.2"
+   ]
+  }
+ ]
+}
