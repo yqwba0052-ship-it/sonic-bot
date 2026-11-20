@@ -1,0 +1,105 @@
+{
+ "base": {
+  "trigger": "base",
+  "trades": 86,
+  "open_at_end": 0,
+  "win_rate": 0.8605,
+  "net": 14.37,
+  "max_drawdown": 0.1476,
+  "net_without_top5": -1.78,
+  "avg_win_usd": 0.242,
+  "avg_loss_usd": -0.293,
+  "avg_win_r": 0.615,
+  "avg_loss_r": -0.885,
+  "avg_r": 0.406,
+  "profit_factor": 5.08,
+  "fees": 0.64,
+  "by_year": {
+   "2021": 0.63,
+   "2022": 1.61,
+   "2023": 12.08
+  },
+  "kinds": {
+   "stop_loss": 10,
+   "breakeven": 68,
+   "stop_after_half": 2,
+   "trade_exit_signal": 4,
+   "trade_exit_time": 2
+  },
+  "errors": []
+ },
+ "candidates": [
+  {
+   "trigger": "0.5",
+   "trades": 76,
+   "open_at_end": 0,
+   "win_rate": 0.7105,
+   "net": 9.18,
+   "max_drawdown": 0.1357,
+   "net_without_top5": -1.35,
+   "avg_win_usd": 0.253,
+   "avg_loss_usd": -0.203,
+   "avg_win_r": 0.792,
+   "avg_loss_r": -0.601,
+   "avg_r": 0.389,
+   "profit_factor": 3.06,
+   "fees": 0.55,
+   "by_year": {
+    "2021": 0.45,
+    "2022": 1.48,
+    "2023": 7.21
+   },
+   "kinds": {
+    "stop_loss": 8,
+    "breakeven": 45,
+    "stop_after_half": 9,
+    "trade_exit_signal": 11,
+    "trade_exit_time": 3
+   },
+   "errors": [],
+   "checks": {
+    "net_above_base": false,
+    "drawdown_within_1.25x": true,
+    "net_without_top5_above_base": true,
+    "eligible": false,
+    "years_better": 0
+   }
+  },
+  {
+   "trigger": "1.0",
+   "trades": 73,
+   "open_at_end": 1,
+   "win_rate": 0.5068,
+   "net": 24.64,
+   "max_drawdown": 0.1629,
+   "net_without_top5": -1.93,
+   "avg_win_usd": 0.888,
+   "avg_loss_usd": -0.229,
+   "avg_win_r": 2.045,
+   "avg_loss_r": -0.5,
+   "avg_r": 0.79,
+   "profit_factor": 3.99,
+   "fees": 0.72,
+   "by_year": {
+    "2021": 13.53,
+    "2022": 1.58,
+    "2023": 9.53
+   },
+   "kinds": {
+    "stop_loss": 7,
+    "trade_exit_time": 5,
+    "stop_after_half": 20,
+    "trade_exit_signal": 18,
+    "breakeven": 23
+   },
+   "errors": [],
+   "checks": {
+    "net_above_base": true,
+    "drawdown_within_1.25x": true,
+    "net_without_top5_above_base": false,
+    "eligible": false,
+    "years_better": 1
+   }
+  }
+ ]
+}
