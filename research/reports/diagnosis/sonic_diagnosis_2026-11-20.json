@@ -1,0 +1,830 @@
+{
+ "funnel_coin_bars": {
+  "no_cross_ema20_below": 49771,
+  "no_data": 4210,
+  "cross_up_btc_down": 236,
+  "no_cross_ema20_above": 40475,
+  "sell": 269,
+  "buy": 275,
+  "cross_up_coin_below_ema200": 59,
+  "cross_down_btc_up": 274,
+  "cross_down_coin_above_ema200": 28,
+  "not_enough_bars": 299
+ },
+ "funnel_by_year": {
+  "2021": {
+   "no_cross_ema20_below": 4678,
+   "no_data": 1284,
+   "cross_up_btc_down": 22,
+   "no_cross_ema20_above": 4212,
+   "sell": 25,
+   "buy": 24,
+   "cross_up_coin_below_ema200": 3,
+   "cross_down_btc_up": 23,
+   "cross_down_coin_above_ema200": 1
+  },
+  "2022": {
+   "no_cross_ema20_below": 10155,
+   "no_data": 2190,
+   "cross_up_btc_down": 66,
+   "no_cross_ema20_above": 4982,
+   "sell": 82,
+   "cross_up_coin_below_ema200": 9,
+   "cross_down_btc_up": 8,
+   "buy": 22,
+   "cross_down_coin_above_ema200": 6
+  },
+  "2023": {
+   "no_cross_ema20_below": 7596,
+   "no_data": 736,
+   "no_cross_ema20_above": 8696,
+   "cross_up_btc_down": 19,
+   "sell": 24,
+   "cross_up_coin_below_ema200": 21,
+   "buy": 58,
+   "cross_down_btc_up": 64,
+   "cross_down_coin_above_ema200": 7,
+   "not_enough_bars": 299
+  },
+  "2024": {
+   "no_cross_ema20_above": 9312,
+   "no_cross_ema20_below": 8046,
+   "buy": 70,
+   "cross_down_btc_up": 70,
+   "sell": 34,
+   "cross_up_btc_down": 24,
+   "cross_up_coin_below_ema200": 9,
+   "cross_down_coin_above_ema200": 3
+  },
+  "2025": {
+   "no_cross_ema20_below": 10221,
+   "no_cross_ema20_above": 7062,
+   "buy": 59,
+   "cross_down_btc_up": 58,
+   "sell": 52,
+   "cross_down_coin_above_ema200": 8,
+   "cross_up_btc_down": 54,
+   "cross_up_coin_below_ema200": 6
+  },
+  "2026": {
+   "no_cross_ema20_below": 9075,
+   "no_cross_ema20_above": 6211,
+   "cross_up_btc_down": 51,
+   "cross_down_btc_up": 51,
+   "sell": 52,
+   "buy": 42,
+   "cross_up_coin_below_ema200": 11,
+   "cross_down_coin_above_ema200": 3
+  }
+ },
+ "btc_up_bars": {
+  "2021-down": 658,
+  "2021-up": 626,
+  "2022-down": 1772,
+  "2022-up": 418,
+  "2023-down": 693,
+  "2023-up": 1497,
+  "2024-down": 659,
+  "2024-up": 1537,
+  "2025-down": 1135,
+  "2025-up": 1055,
+  "2026-down": 1118,
+  "2026-up": 819
+ },
+ "buy_signals": 275,
+ "signals_taken": 225,
+ "signals_not_taken": {
+  "size_or_budget": 33,
+  "max_open": 17
+ },
+ "trades": 225,
+ "by_exit": {
+  "breakeven": {
+   "n": 169,
+   "win": 0.976,
+   "pnl": 5.78,
+   "avg_r": 0.065,
+   "avg_win_r": 0.067,
+   "avg_loss_r": -0.014,
+   "pf": 128.12,
+   "fees": 2.39
+  },
+  "stop_loss": {
+   "n": 32,
+   "win": 0.031,
+   "pnl": -15.53,
+   "avg_r": -0.904,
+   "avg_win_r": 0.022,
+   "avg_loss_r": -0.934,
+   "pf": 0.0,
+   "fees": 0.39
+  },
+  "trade_exit_signal": {
+   "n": 19,
+   "win": 0.842,
+   "pnl": 22.57,
+   "avg_r": 2.204,
+   "avg_win_r": 2.69,
+   "avg_loss_r": -0.387,
+   "pf": 30.85,
+   "fees": 0.24
+  },
+  "trade_exit_time": {
+   "n": 5,
+   "win": 1.0,
+   "pnl": 41.85,
+   "avg_r": 17.54,
+   "avg_win_r": 17.54,
+   "avg_loss_r": null,
+   "pf": null,
+   "fees": 0.11
+  }
+ },
+ "by_scaled": {
+  "0": {
+   "n": 32,
+   "win": 0.031,
+   "pnl": -3.43,
+   "avg_r": -0.0,
+   "avg_win_r": 29.96,
+   "avg_loss_r": -0.967,
+   "pf": 0.79,
+   "fees": 0.4
+  },
+  "1": {
+   "n": 193,
+   "win": 0.964,
+   "pnl": 58.1,
+   "avg_r": 0.579,
+   "avg_win_r": 0.601,
+   "avg_loss_r": -0.028,
+   "pf": 397.01,
+   "fees": 2.73
+  }
+ },
+ "by_coin": {
+  "SOLUSDT": {
+   "n": 34,
+   "win": 0.941,
+   "pnl": 2.43,
+   "avg_r": 0.149,
+   "avg_win_r": 0.222,
+   "avg_loss_r": -1.021,
+   "pf": 3.2,
+   "fees": 0.36
+  },
+  "XRPUSDT": {
+   "n": 30,
+   "win": 0.8,
+   "pnl": 17.01,
+   "avg_r": 1.1,
+   "avg_win_r": 1.632,
+   "avg_loss_r": -1.03,
+   "pf": 6.1,
+   "fees": 0.35
+  },
+  "DOGEUSDT": {
+   "n": 37,
+   "win": 0.919,
+   "pnl": 3.32,
+   "avg_r": 0.227,
+   "avg_win_r": 0.309,
+   "avg_loss_r": -0.694,
+   "pf": 3.77,
+   "fees": 0.36
+  },
+  "ADAUSDT": {
+   "n": 33,
+   "win": 0.879,
+   "pnl": 6.81,
+   "avg_r": 0.417,
+   "avg_win_r": 0.548,
+   "avg_loss_r": -0.531,
+   "pf": 6.42,
+   "fees": 0.36
+  },
+  "SUIUSDT": {
+   "n": 20,
+   "win": 0.8,
+   "pnl": 2.43,
+   "avg_r": 0.144,
+   "avg_win_r": 0.37,
+   "avg_loss_r": -0.76,
+   "pf": 2.28,
+   "fees": 0.19
+  },
+  "TRXUSDT": {
+   "n": 35,
+   "win": 0.829,
+   "pnl": 5.77,
+   "avg_r": 0.268,
+   "avg_win_r": 0.399,
+   "avg_loss_r": -0.361,
+   "pf": 7.29,
+   "fees": 0.93
+  },
+  "BNBUSDT": {
+   "n": 28,
+   "win": 0.679,
+   "pnl": 4.21,
+   "avg_r": 0.288,
+   "avg_win_r": 0.914,
+   "avg_loss_r": -1.034,
+   "pf": 2.16,
+   "fees": 0.46
+  },
+  "AVAXUSDT": {
+   "n": 8,
+   "win": 0.5,
+   "pnl": 12.7,
+   "avg_r": 3.882,
+   "avg_win_r": 8.572,
+   "avg_loss_r": -0.807,
+   "pf": 5.27,
+   "fees": 0.13
+  }
+ },
+ "by_year": {
+  "2021": {
+   "n": 17,
+   "win": 0.882,
+   "pnl": 0.63,
+   "avg_r": 0.129,
+   "avg_win_r": 0.217,
+   "avg_loss_r": -0.531,
+   "pf": 2.36,
+   "fees": 0.09
+  },
+  "2022": {
+   "n": 16,
+   "win": 1.0,
+   "pnl": 1.61,
+   "avg_r": 0.322,
+   "avg_win_r": 0.322,
+   "avg_loss_r": null,
+   "pf": null,
+   "fees": 0.11
+  },
+  "2023": {
+   "n": 53,
+   "win": 0.811,
+   "pnl": 12.12,
+   "avg_r": 0.52,
+   "avg_win_r": 0.863,
+   "avg_loss_r": -0.955,
+   "pf": 4.97,
+   "fees": 0.44
+  },
+  "2024": {
+   "n": 59,
+   "win": 0.864,
+   "pnl": 30.49,
+   "avg_r": 1.061,
+   "avg_win_r": 1.39,
+   "avg_loss_r": -1.032,
+   "pf": 8.97,
+   "fees": 0.72
+  },
+  "2025": {
+   "n": 41,
+   "win": 0.829,
+   "pnl": 5.92,
+   "avg_r": 0.216,
+   "avg_win_r": 0.472,
+   "avg_loss_r": -1.028,
+   "pf": 2.0,
+   "fees": 0.73
+  },
+  "2026": {
+   "n": 39,
+   "win": 0.718,
+   "pnl": 3.89,
+   "avg_r": 0.135,
+   "avg_win_r": 0.334,
+   "avg_loss_r": -0.373,
+   "pf": 2.28,
+   "fees": 1.04
+  }
+ },
+ "by_btc_gap": {
+  "<0.03": {
+   "n": 49,
+   "win": 0.796,
+   "pnl": -0.03,
+   "avg_r": 0.049,
+   "avg_win_r": 0.201,
+   "avg_loss_r": -0.544,
+   "pf": 0.99,
+   "fees": 0.75
+  },
+  "<0.08": {
+   "n": 82,
+   "win": 0.89,
+   "pnl": 22.58,
+   "avg_r": 0.467,
+   "avg_win_r": 0.627,
+   "avg_loss_r": -0.832,
+   "pf": 6.82,
+   "fees": 1.29
+  },
+  "<0.15": {
+   "n": 69,
+   "win": 0.841,
+   "pnl": 34.55,
+   "avg_r": 1.098,
+   "avg_win_r": 1.463,
+   "avg_loss_r": -0.824,
+   "pf": 6.96,
+   "fees": 0.91
+  },
+  "<0.25": {
+   "n": 22,
+   "win": 0.636,
+   "pnl": -2.54,
+   "avg_r": -0.229,
+   "avg_win_r": 0.225,
+   "avg_loss_r": -1.023,
+   "pf": 0.3,
+   "fees": 0.16
+  },
+  ">=0.25": {
+   "n": 3,
+   "win": 1.0,
+   "pnl": 0.1,
+   "avg_r": 0.065,
+   "avg_win_r": 0.065,
+   "avg_loss_r": null,
+   "pf": null,
+   "fees": 0.02
+  }
+ },
+ "by_stop_pct": {
+  "<0.04": {
+   "n": 75,
+   "win": 0.813,
+   "pnl": 10.33,
+   "avg_r": 0.27,
+   "avg_win_r": 0.504,
+   "avg_loss_r": -0.749,
+   "pf": 2.98,
+   "fees": 1.74
+  },
+  "<0.06": {
+   "n": 76,
+   "win": 0.789,
+   "pnl": 33.65,
+   "avg_r": 0.924,
+   "avg_win_r": 1.379,
+   "avg_loss_r": -0.783,
+   "pf": 6.12,
+   "fees": 0.84
+  },
+  "<0.08": {
+   "n": 51,
+   "win": 0.882,
+   "pnl": 10.17,
+   "avg_r": 0.394,
+   "avg_win_r": 0.582,
+   "avg_loss_r": -1.017,
+   "pf": 3.65,
+   "fees": 0.42
+  },
+  "<0.11": {
+   "n": 18,
+   "win": 0.944,
+   "pnl": 0.69,
+   "avg_r": 0.075,
+   "avg_win_r": 0.083,
+   "avg_loss_r": -0.044,
+   "pf": 31.8,
+   "fees": 0.1
+  },
+  ">=0.11": {
+   "n": 5,
+   "win": 0.8,
+   "pnl": -0.18,
+   "avg_r": -0.054,
+   "avg_win_r": 0.185,
+   "avg_loss_r": -1.008,
+   "pf": 0.75,
+   "fees": 0.03
+  }
+ },
+ "totals": {
+  "gross_before_fees": 57.79,
+  "fees": 3.13,
+  "net": 54.67
+ },
+ "r_distribution": {
+  "<-0.9": 28,
+  "<0.12": 145,
+  "<0": 9,
+  "<4": 4,
+  "<0.05": 21,
+  ">=4": 8,
+  "<2": 4,
+  "<1": 5,
+  "<-0.3": 1
+ },
+ "mfe": {
+  "median_mfe_r_all": 0.39,
+  "breakeven_trades_median_mfe_r": 0.41,
+  "breakeven_trades_mfe_ge_1r": 29,
+  "breakeven_trades_mfe_ge_0_5r": 68,
+  "breakeven_trades_after20d_ge_1r": 123,
+  "stop_loss_trades_mfe_ge_0_2r": 6,
+  "signal_exit_mfe_vs_r": [
+   [
+    10.71,
+    2.18
+   ],
+   [
+    34.04,
+    4.15
+   ],
+   [
+    0.02,
+    -0.28
+   ],
+   [
+    8.88,
+    1.17
+   ],
+   [
+    3.68,
+    0.49
+   ],
+   [
+    3.41,
+    0.59
+   ],
+   [
+    5.55,
+    0.96
+   ],
+   [
+    6.85,
+    1.34
+   ],
+   [
+    6.35,
+    2.24
+   ],
+   [
+    42.5,
+    13.9
+   ],
+   [
+    5.54,
+    0.56
+   ],
+   [
+    13.72,
+    4.75
+   ],
+   [
+    8.43,
+    1.55
+   ],
+   [
+    4.86,
+    1.37
+   ],
+   [
+    1.23,
+    -0.16
+   ],
+   [
+    0.13,
+    -0.72
+   ],
+   [
+    13.7,
+    3.1
+   ],
+   [
+    13.03,
+    4.19
+   ],
+   [
+    4.28,
+    0.5
+   ]
+  ]
+ },
+ "top_trades": [
+  [
+   "XRPUSDT",
+   "2024-11-07 04:00",
+   16.77,
+   33.42
+  ],
+  [
+   "AVAXUSDT",
+   "2023-10-22 04:00",
+   12.76,
+   29.96
+  ],
+  [
+   "ADAUSDT",
+   "2024-11-07 04:00",
+   6.87,
+   13.9
+  ],
+  [
+   "BNBUSDT",
+   "2024-02-08 04:00",
+   6.71,
+   15.12
+  ],
+  [
+   "TRXUSDT",
+   "2025-06-29 04:00",
+   4.58,
+   5.91
+  ],
+  [
+   "SUIUSDT",
+   "2025-04-22 08:00",
+   3.56,
+   4.75
+  ],
+  [
+   "AVAXUSDT",
+   "2026-09-18 00:00",
+   2.83,
+   4.19
+  ],
+  [
+   "XRPUSDT",
+   "2026-08-20 04:00",
+   2.47,
+   3.1
+  ],
+  [
+   "DOGEUSDT",
+   "2022-10-25 20:00",
+   1.28,
+   4.15
+  ],
+  [
+   "DOGEUSDT",
+   "2025-05-08 08:00",
+   1.16,
+   1.55
+  ]
+ ],
+ "hold_days_median": 0.7,
+ "signal_detail_not_taken": [
+  [
+   "ADAUSDT",
+   "2021-07-26 12:00",
+   "size_or_budget"
+  ],
+  [
+   "TRXUSDT",
+   "2021-07-26 12:00",
+   "size_or_budget"
+  ],
+  [
+   "AVAXUSDT",
+   "2021-07-26 12:00",
+   "size_or_budget"
+  ],
+  [
+   "AVAXUSDT",
+   "2021-09-10 16:00",
+   "size_or_budget"
+  ],
+  [
+   "SOLUSDT",
+   "2021-10-01 20:00",
+   "size_or_budget"
+  ],
+  [
+   "AVAXUSDT",
+   "2021-10-21 20:00",
+   "size_or_budget"
+  ],
+  [
+   "ADAUSDT",
+   "2021-11-09 04:00",
+   "size_or_budget"
+  ],
+  [
+   "BNBUSDT",
+   "2022-02-15 12:00",
+   "size_or_budget"
+  ],
+  [
+   "AVAXUSDT",
+   "2022-03-01 08:00",
+   "size_or_budget"
+  ],
+  [
+   "BNBUSDT",
+   "2022-03-01 20:00",
+   "size_or_budget"
+  ],
+  [
+   "BNBUSDT",
+   "2022-03-18 00:00",
+   "size_or_budget"
+  ],
+  [
+   "AVAXUSDT",
+   "2022-09-12 12:00",
+   "size_or_budget"
+  ],
+  [
+   "AVAXUSDT",
+   "2022-10-26 04:00",
+   "size_or_budget"
+  ],
+  [
+   "AVAXUSDT",
+   "2023-02-16 20:00",
+   "size_or_budget"
+  ],
+  [
+   "BNBUSDT",
+   "2023-03-14 08:00",
+   "size_or_budget"
+  ],
+  [
+   "AVAXUSDT",
+   "2023-03-18 04:00",
+   "size_or_budget"
+  ],
+  [
+   "AVAXUSDT",
+   "2023-03-29 16:00",
+   "size_or_budget"
+  ],
+  [
+   "AVAXUSDT",
+   "2023-07-08 12:00",
+   "size_or_budget"
+  ],
+  [
+   "SOLUSDT",
+   "2024-01-17 16:00",
+   "size_or_budget"
+  ],
+  [
+   "AVAXUSDT",
+   "2024-01-29 04:00",
+   "size_or_budget"
+  ],
+  [
+   "AVAXUSDT",
+   "2024-02-27 16:00",
+   "size_or_budget"
+  ],
+  [
+   "AVAXUSDT",
+   "2024-05-17 20:00",
+   "size_or_budget"
+  ],
+  [
+   "SUIUSDT",
+   "2024-06-05 16:00",
+   "size_or_budget"
+  ],
+  [
+   "AVAXUSDT",
+   "2024-07-16 04:00",
+   "size_or_budget"
+  ],
+  [
+   "AVAXUSDT",
+   "2024-10-12 04:00",
+   "size_or_budget"
+  ],
+  [
+   "BNBUSDT",
+   "2024-11-07 16:00",
+   "max_open"
+  ],
+  [
+   "AVAXUSDT",
+   "2024-11-07 16:00",
+   "max_open"
+  ],
+  [
+   "TRXUSDT",
+   "2024-11-11 08:00",
+   "max_open"
+  ],
+  [
+   "SOLUSDT",
+   "2024-12-05 12:00",
+   "size_or_budget"
+  ],
+  [
+   "TRXUSDT",
+   "2025-01-03 08:00",
+   "size_or_budget"
+  ],
+  [
+   "DOGEUSDT",
+   "2025-01-03 20:00",
+   "max_open"
+  ],
+  [
+   "AVAXUSDT",
+   "2025-01-04 08:00",
+   "max_open"
+  ],
+  [
+   "AVAXUSDT",
+   "2025-01-17 04:00",
+   "size_or_budget"
+  ],
+  [
+   "XRPUSDT",
+   "2025-05-09 00:00",
+   "max_open"
+  ],
+  [
+   "AVAXUSDT",
+   "2025-05-09 08:00",
+   "max_open"
+  ],
+  [
+   "AVAXUSDT",
+   "2025-05-22 04:00",
+   "max_open"
+  ],
+  [
+   "SUIUSDT",
+   "2025-06-11 08:00",
+   "max_open"
+  ],
+  [
+   "SOLUSDT",
+   "2025-06-11 12:00",
+   "max_open"
+  ],
+  [
+   "ADAUSDT",
+   "2025-06-11 16:00",
+   "max_open"
+  ],
+  [
+   "SUIUSDT",
+   "2025-08-08 20:00",
+   "max_open"
+  ],
+  [
+   "DOGEUSDT",
+   "2025-08-09 00:00",
+   "max_open"
+  ],
+  [
+   "AVAXUSDT",
+   "2025-08-09 00:00",
+   "max_open"
+  ],
+  [
+   "SOLUSDT",
+   "2025-08-09 04:00",
+   "max_open"
+  ],
+  [
+   "AVAXUSDT",
+   "2025-08-23 04:00",
+   "size_or_budget"
+  ],
+  [
+   "AVAXUSDT",
+   "2025-10-02 12:00",
+   "size_or_budget"
+  ],
+  [
+   "AVAXUSDT",
+   "2025-10-02 20:00",
+   "size_or_budget"
+  ],
+  [
+   "TRXUSDT",
+   "2025-10-03 00:00",
+   "max_open"
+  ],
+  [
+   "SUIUSDT",
+   "2026-09-18 20:00",
+   "size_or_budget"
+  ],
+  [
+   "TRXUSDT",
+   "2026-09-18 20:00",
+   "size_or_budget"
+  ],
+  [
+   "XRPUSDT",
+   "2026-09-19 12:00",
+   "max_open"
+  ]
+ ]
+}

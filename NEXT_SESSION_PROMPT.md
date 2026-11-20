@@ -6,13 +6,16 @@
 
 أنا مالك مشروع Sonic Bot. نكمل من حيث توقفنا. قبل أي عمل:
 
-1. افتح المشروع `C:\Users\sa\Projects\sonic_bot`، وانتقل إلى الفرع `fix/closed-bars-only` (أحدث عمل، ومنشور على
-   الخادم عند `ea839a7`، ويحوي كل `feature/sonic-operational-safety`). وهناك فرع بحث غير منشور:
-   `research/learning-leakage`. قبلهما الفروع البحثية:
+1. افتح المشروع `C:\Users\sa\Projects\sonic_bot`، وانتقل إلى الفرع `research/breakeven-delay` (أحدث عمل: اختبار
+   الأداء والتشخيص وتجربة الوقف؛ يحوي `research/performance-check`). الخادم على `ea839a7` من الفرع
+   `fix/closed-bars-only`. وهناك فرع بحث غير منشور: `research/learning-leakage`. قبلها الفروع البحثية:
    `research/operational-audit` ثم `research/classical-strategies` ثم `research/hummingbot` ثم `research/freqai` ثم
    `research/jesse`. اسحب آخر نسخة من GitHub (`git fetch` ثم `git status`). لا تغيّر الفرع main.
 2. اقرأ كاملًا:
-   - `SESSION_HANDOFF.md` (ابدأ بالقسم 17، ثم 16، ثم 15، ثم 14، ثم 13، ثم 12، ثم 11، ثم 10ج، ثم 10ب).
+   - `SESSION_HANDOFF.md` (ابدأ بالقسم 18، ثم 17، ثم 16، ثم 15، ثم 14، ثم 13، ثم 12، ثم 11، ثم 10ج، ثم 10ب).
+   - `research/reports/breakeven_delay_result.md` (تجربة الوقف) و`research/reports/sonic_diagnosis_2026-11-20.md`
+     (التشخيص) و`research/reports/sonic_performance_2026-11-20.md` (الأداء) و
+     `docs/ideas/2026-11-20-intrabar-high-leverage-trading.md` (فكرة لم تُنفَّذ) و
    - `research/reports/sonic_closed_bars_fix.md` (إصلاح الشمعة المغلقة وبحث التسرب) و
      `research/reports/learning_leakage_eval.md` (على الفرع `research/learning-leakage`) و
      `research/reports/sonic_operational_upgrade_final.md` (التحديث المنشور) و
@@ -47,6 +50,10 @@
      - هل في سجل الفحوص فجوات أو أخطاء أو بيانات غير حديثة (`data_ok`/`fresh`)؟
      - هل آخر نسخة احتياطية ناجحة؟
    - ما ينتظر قراري:
+     - نتيجة تجربة الوقف (القسم 18 في `SESSION_HANDOFF.md`): قبولها، أو تجربة جديدة، أو «ظل» ورقي؛
+     - التحسين الثاني: دخول متأخر عند صعود BTC؛
+     - رفع المبلغ؛
+     - ترقية الخادم إلى 2 GB؛
      - تطبيق إصلاح تسرب التعلّم (`research/learning-leakage`)؛
      - الدمج في main؛
      - نسخة خارج الخادم؛
