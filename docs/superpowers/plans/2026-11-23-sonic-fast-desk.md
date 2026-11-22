@@ -75,6 +75,29 @@
 - [ ] **Step 4:** Tests pass; ruff clean.
 - [ ] **Step 5:** Commit `Fast desk: paper accounting, separate tables, deferred switching [skip ci]`.
 
+### Task 2b: Experience memory and River (`fastmind.py`)
+
+**Files:**
+- Modify: `server/sonic/fastdesk.py` (run all 72 variants in shadow; only the active one moves the balance; write `fast_experience`)
+- Create: `server/sonic/fastmind.py`
+- Test: `server/tests/test_fastmind.py`
+
+**Interfaces:**
+- Consumes: Task 2 `FastDesk`; `intrabar.core.SymbolBars.features`.
+- Produces: table `fast_experience(id, decided_ms, symbol, variant, features TEXT json, net REAL NULL, kind TEXT NULL, predicted REAL NULL)`; `class Mind(db, model_path: str | None)` with `predict(features: dict) -> float | None`, `learn(features: dict, net: float) -> None`, `rebuild() -> int` (replays every finished `fast_experience` row in id order, returns count), `shadow_report(now_ms) -> dict` (`n`, `all_mean`, `taken_mean`, `eligible`); `Mind.available` is False when `import river` fails.
+
+- [ ] **Step 1: Write failing tests:**
+  - `test_every_shadow_candidate_is_recorded`: synthetic stream where 3 variants fire → 3 `fast_experience` rows, only the active one in `fast_trades`.
+  - `test_experience_row_completed_on_close`: `net`/`kind` filled when the shadow trade closes; features JSON has keys `rise, up10, breakout, buyshare30, tf, in_session, hour, vol60`.
+  - `test_mind_absent_is_harmless` (monkeypatch import failure): desk runs, rows recorded, `predicted is None`.
+  - `test_rebuild_reproduces_model` (skip if river missing): learn rows online, save; new `Mind(...).rebuild()` gives the same `predict()` to 1e-9 for 5 probe feature dicts.
+  - `test_shadow_never_filters`: with a model predicting 0.0 for everything, the active variant still trades.
+  - `test_eligibility_thresholds`: 299 rows → `eligible False`; 300 rows with `taken_mean > all_mean` over last 28 days → `True`.
+- [ ] **Step 2:** Run → FAIL.
+- [ ] **Step 3:** Implement. Model: `river.compose.Pipeline(preprocessing.StandardScaler(), linear_model.LogisticRegression())`, target `net > 0`; deterministic (no random seed paths). `predicted` stored at decision time, before the outcome. River installed in `server/.venv` locally only (add `river` to an optional extra, not to the server's required deps).
+- [ ] **Step 4:** Tests pass; ruff clean.
+- [ ] **Step 5:** Commit `Fast desk: tool-neutral experience memory and River shadow learner [skip ci]`.
+
 ### Task 3: Stream, schedule, isolation and `/fast`
 
 **Files:**
