@@ -61,6 +61,16 @@ class Engine:
             self.account_target_reset = False
         # Money for approved strategies: approve, allocate and activate are separate steps.
         self.capital = capital.Capital(store.db, self.lab, self.now_ms)
+        # Fast desk (paper, own fast_* tables): on only when SONIC_FAST_THRESHOLDS is set.
+        self.fast = None
+        if settings.db_path != ":memory:":
+            try:
+                from . import fastdesk
+
+                self.fast = fastdesk.from_env(store.db, Path(settings.db_path).resolve().parent,
+                                              self.now_ms)
+            except Exception as error:  # noqa: BLE001 - the desk must never stop Sonic
+                self.log("error", "fast_desk_failed", f"{type(error).__name__}: {error}"[:200])
         self.strategy_clients: dict[str, Any] = {}
         self.sync_task: asyncio.Task[None] | None = None
         self.study_tasks: dict[str, asyncio.Task[None]] = {}
@@ -241,7 +251,8 @@ class Engine:
                     finally:
                         self.bar_cache = None
                     if scanned:
-                        await self._lab_tick()
+                        if self.settings.trader_lab:
+                            await self._lab_tick()
                 if self.failing_since_ms is not None:
                     minutes = (self.now_ms() - self.failing_since_ms) // 60000
                     self.log("info", "connection_restored", f"after {minutes} min")
@@ -495,7 +506,7 @@ class Engine:
     def queue_study(self, trader_id: str) -> bool:
         """With 20+ complete trades and new ones since the last study: study the trader and
         compare per coin again, in the background (paper only)."""
-        if not self.lab.needs_study(trader_id):
+        if not self.settings.trader_lab or not self.lab.needs_study(trader_id):
             return False
         running = self.study_tasks.get(trader_id)
         if running and not running.done():
@@ -957,7 +968,8 @@ class Engine:
         while True:
             await self.tick()
             self.maybe_sync_account()
-            self.maybe_sync_kopyon()
+            if self.settings.trader_lab:
+                self.maybe_sync_kopyon()
             await asyncio.sleep(self.settings.tick_seconds)
 
     # ---------- Kopyon: lead traders' closed positions (third-party source, see kopyon.py)

@@ -96,6 +96,20 @@ class SymbolBars:
                 st["high"] = max(st["high"], s.h)
         self.recent.append(s)
 
+    def vol(self, sec: int, span: int = 60) -> float:
+        """(highest high - lowest low) / last close over the closed seconds in (sec-span, sec]."""
+        hi = lo = last = None
+        for b in reversed(self.recent):
+            if b.sec > sec:
+                continue
+            if b.sec <= sec - span:
+                break
+            if last is None:
+                last = b.c
+            hi = b.h if hi is None else max(hi, b.h)
+            lo = b.low if lo is None else min(lo, b.low)
+        return (hi - lo) / last if last else 0.0
+
     def features(self, s: Second, tf: int) -> dict | None:
         """Features at the END of second s (already closed), from s and earlier only."""
         st = self.candle.get(tf)
@@ -143,7 +157,7 @@ class Account:
     pending: dict | None = None
     position: dict | None = None
     days: dict = field(default_factory=dict)
-    closed: list = field(default_factory=list)
+    closed: deque = field(default_factory=lambda: deque(maxlen=50))  # recent only: bounded memory
 
     def day(self, sec: int) -> dict:
         return self.days.setdefault(sec // 86400, {"wins": 0, "losses": 0, "pnl": 0.0,
@@ -155,10 +169,11 @@ class Account:
         d = self.day(sec)
         return not d["stopped"] and d["per_coin"].get(symbol, 0) < MAX_PER_COIN_DAY
 
-    def place(self, symbol: str, s: Second, candle_end: int) -> None:
+    def place(self, symbol: str, s: Second, candle_end: int, extra: dict | None = None) -> None:
+        """extra: what the bot saw at the decision (carried to the closed record, unchanged)."""
         self.pending = {"symbol": symbol, "price": s.c, "decided": s.sec,
                         "expires": min(s.sec + LIMIT_WAIT_S[self.variant.tf], candle_end),
-                        "candle_end": candle_end}
+                        "candle_end": candle_end, "extra": extra if extra is not None else {}}
 
     def on_trade(self, symbol: str, sec: int, price: float, prev_price: float) -> dict | None:
         """Process one live trade for this account; returns a closed trade record or None."""
@@ -171,7 +186,7 @@ class Account:
                 x = self.variant.target
                 self.position = {"symbol": symbol, "entry": entry, "decided": p["decided"],
                                  "opened": sec, "target": entry * (1 + x), "stop": entry * (1 - x),
-                                 "candle_end": p["candle_end"]}
+                                 "candle_end": p["candle_end"], "extra": p.get("extra", {})}
                 self.pending = None
                 # the filling trade itself may already be through the stop (conservative)
                 return self._check_exit(symbol, sec, price, prev_price)
@@ -195,20 +210,25 @@ class Account:
         fees = FEE_MAKER + exit_fee
         rec = {"variant": self.variant.name, "symbol": pos["symbol"], "decided": pos["decided"],
                "opened": pos["opened"], "closed": sec, "entry": pos["entry"], "exit": exit_price,
-               "kind": kind, "gross": gross, "fees": fees, "net": gross - fees}
+               "kind": kind, "gross": gross, "fees": fees, "net": gross - fees,
+               "extra": pos.get("extra", {})}
         self.position = None
-        d = self.day(pos["decided"])
-        d["per_coin"][pos["symbol"]] = d["per_coin"].get(pos["symbol"], 0) + 1
-        d["pnl"] += rec["net"]
-        if rec["net"] > 0:
+        self.count_day(pos["symbol"], pos["decided"], rec["net"])
+        self.closed.append(rec)
+        return rec
+
+    def count_day(self, symbol: str, decided: int, net: float) -> None:
+        """The owner's day rules; also used to rebuild today's state after a restart."""
+        d = self.day(decided)
+        d["per_coin"][symbol] = d["per_coin"].get(symbol, 0) + 1
+        d["pnl"] += net
+        if net > 0:
             d["wins"] += 1
         else:
             d["losses"] += 1
         if (d["wins"] >= 2 and d["losses"] == 0) or d["losses"] >= 2 or \
                 (d["wins"] >= 1 and d["losses"] >= 1 and d["pnl"] > 0):
             d["stopped"] = True
-        self.closed.append(rec)
-        return rec
 
 
 class Engine:
@@ -247,6 +267,10 @@ class Engine:
                 if f is None or thr is None:
                     continue
                 if fires(v, f, thr):
-                    acc.place(symbol, closed, f["candle_end"])
+                    seen = {k: f[k] for k in ("rise", "up10", "breakout", "buyshare30",
+                                              "in_session")}
+                    seen.update(tf=v.tf, hour=(closed.sec % 86400) // 3600,
+                                vol60=self.bars[symbol].vol(closed.sec, 60))
+                    acc.place(symbol, closed, f["candle_end"], {"features": seen})
         self.last_price[symbol] = price
         return out

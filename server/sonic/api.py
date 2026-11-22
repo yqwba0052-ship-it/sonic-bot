@@ -26,11 +26,15 @@ def create_app(engine: Engine, token: str, background: bool = True) -> FastAPI:
     @asynccontextmanager
     async def lifespan(_: FastAPI) -> AsyncIterator[None]:
         task = asyncio.create_task(engine.run_forever()) if background else None
+        fast = (asyncio.create_task(engine.fast.run_forever())
+                if background and engine.fast is not None else None)
         yield
-        if task:
-            task.cancel()
+        for running in (fast, task):
+            if not running:
+                continue
+            running.cancel()
             with suppress(asyncio.CancelledError):
-                await task
+                await running
 
     def require_token(authorization: str = Header(default="")) -> None:
         if not hmac.compare_digest(authorization.encode(), f"Bearer {token}".encode()):
@@ -42,6 +46,13 @@ def create_app(engine: Engine, token: str, background: bool = True) -> FastAPI:
     @app.get("/health")
     async def health() -> dict[str, bool]:
         return {"ok": True}
+
+    @app.get("/fast", dependencies=secured)
+    async def fast_desk() -> dict[str, Any]:
+        """The fast desk (paper, beside the 4-hour strategy) and its learning."""
+        if engine.fast is None:
+            return {"enabled": False}
+        return {"enabled": True, **engine.fast.status()}
 
     @app.get("/status", dependencies=secured)
     async def status() -> dict[str, Any]:

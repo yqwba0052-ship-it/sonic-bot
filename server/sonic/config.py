@@ -23,6 +23,9 @@ class Settings:
     paper_balance: float = 10000.0
     demo_key: str = ""
     demo_secret: str = ""
+    # The traders lab (Kopyon + studies of other traders) can be switched off: SONIC_TRADER_LAB=off
+    # (owner 2026-11-23: it never produced a usable model; the fast desk learns instead).
+    trader_lab: bool = True
 
 
 def read_env_file(path: Path) -> dict[str, str]:
@@ -60,4 +63,6 @@ def load_settings(root: Path) -> Settings:
         port=int(values.get("SONIC_PORT", "8787")),
         demo_key=key,
         demo_secret=secret,
+        trader_lab=values.get("SONIC_TRADER_LAB", "on").strip().lower()
+        not in ("off", "0", "false"),
     )
