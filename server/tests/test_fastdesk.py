@@ -157,7 +157,8 @@ def test_rebuild_reproduces_model(tmp_path) -> None:
     before = [desk.mind.predict(p) for p in probes]
     (tmp_path / "model.pkl").unlink(missing_ok=True)
     fresh = fastmind.Mind(desk.db, str(tmp_path / "model.pkl"))
-    assert fresh.learned == desk.mind.learned > 0
+    assert fresh.needs_rebuild and fresh.predict(probes[0]) is None  # start is never blocked
+    assert fresh.rebuild() == desk.mind.learned > 0
     assert [fresh.predict(p) for p in probes] == pytest.approx(before, abs=1e-9)
 
 
@@ -185,3 +186,41 @@ def test_eligibility_thresholds(tmp_path) -> None:
     fill(300)
     report = mind.shadow_report(T0 * 1000)
     assert report["eligible_for_owner_review"] and report["mode"] == "shadow"
+
+
+async def test_background_rebuild_keeps_what_was_learned_meanwhile(tmp_path) -> None:
+    pytest.importorskip("river")
+    desk, _ = make(tmp_path)
+    one_trade(desk, True)
+    (tmp_path / "model.pkl").unlink(missing_ok=True)
+    fresh = fastmind.Mind(desk.db, str(tmp_path / "model.pkl"))
+    fresh.learn({"rise": 0.001}, 0.001)  # arrives while the rebuild has not run yet
+    assert await fresh.rebuild_in_background() == 7 and not fresh.needs_rebuild
+
+
+def test_switch_waits_until_the_new_variant_is_flat_too(tmp_path) -> None:
+    desk, _ = make(tmp_path)
+    for i in range(12):  # every B2-1m-q1 variant has a pending order
+        desk.on_trade("SOLUSDT", (T0 + i) * 1000, 100 + i * 0.01, 1, False)
+    desk.engine.accounts[START_VARIANT].pending = None  # the old one is flat
+    desk.wanted = "B2-1m-q1-t0.3-all_day"  # the new one is not
+    desk._maybe_switch()
+    assert desk.active == START_VARIANT
+
+
+def test_repeating_error_written_once_a_minute(tmp_path) -> None:
+    desk, _ = make(tmp_path)
+    for _ in range(100):
+        desk.log("error", "desk_error", "same")
+    desk.clock["ms"] += 61_000
+    desk.log("error", "desk_error", "same")
+    rows = [r[0] for r in desk.db.execute("SELECT detail FROM fast_events")]
+    assert len(rows) == 2 and rows[1].startswith("(+99 similar)")
+
+
+def test_gap_resets_the_bars(tmp_path) -> None:
+    desk, _ = make(tmp_path)
+    for i in range(5):
+        desk.on_trade("SOLUSDT", (T0 + i) * 1000, 100 + i * 0.01, 1, False)
+    desk.drop_open("disconnected")
+    assert desk.engine.bars["SOLUSDT"].cur is None and not desk.engine.last_price

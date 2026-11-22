@@ -25,7 +25,7 @@ try:
     import intrabar  # noqa: F401
 except ImportError:  # the repo root holds the intrabar package
     sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
-from intrabar.core import Engine, Variant  # noqa: E402
+from intrabar.core import Engine, SymbolBars, Variant  # noqa: E402
 from intrabar.thresholds import load as load_thresholds  # noqa: E402
 
 from . import fastlearn  # noqa: E402
@@ -34,6 +34,9 @@ from .fastmind import Mind  # noqa: E402
 SYMBOLS = ["SOLUSDT", "XRPUSDT"]
 STREAM = "wss://fstream.binance.com/market/stream?streams="
 SILENCE_S = 30
+ERROR_EVERY_MS = 60_000  # the same error code is written at most once a minute
+EVENTS_KEEP = 5000
+REVIEW_EVERY_S = 60
 START_VARIANT = "B2-1m-q1-t0.1-all_day"
 START_BALANCE = 30.0
 LEVERAGE = 1
@@ -87,6 +90,10 @@ class FastDesk:
         if self._get("last_review_ms", None) is None:
             self._put("last_review_ms", self.now_ms())
         self.mind = Mind(db, model_path)
+        self._last_error_ms: dict[str, int] = {}
+        self._suppressed: dict[str, int] = {}
+        self._events_written = 0
+        self._next_review = 0.0
         self._restore_today()
 
     # ---------- small helpers
@@ -94,15 +101,34 @@ class FastDesk:
         row = self.db.execute("SELECT value FROM fast_state WHERE key=?", (key,)).fetchone()
         return json.loads(row[0]) if row else default
 
-    def _put(self, key: str, value: Any) -> None:
+    def _put(self, key: str, value: Any, commit: bool = True) -> None:
         self.db.execute("INSERT INTO fast_state VALUES (?, ?) ON CONFLICT(key) DO UPDATE SET "
                         "value=excluded.value", (key, json.dumps(value)))
-        self.db.commit()
+        if commit:
+            self.db.commit()
 
     def log(self, level: str, code: str, detail: str = "") -> None:
+        now = self.now_ms()
+        if level == "error":  # a repeating error must not flood the table or slow the loop
+            if now - self._last_error_ms.get(code, -ERROR_EVERY_MS) < ERROR_EVERY_MS:
+                self._suppressed[code] = self._suppressed.get(code, 0) + 1
+                return
+            self._last_error_ms[code] = now
+            if self._suppressed.get(code):
+                detail = f"(+{self._suppressed.pop(code)} similar) {detail}"
         self.db.execute("INSERT INTO fast_events VALUES (?,?,?,?)",
-                        (self.now_ms(), level, code, detail[:300]))
+                        (now, level, code, detail[:300]))
+        self._events_written += 1
+        if self._events_written % 500 == 0:  # bounded table
+            self.db.execute("DELETE FROM fast_events WHERE rowid <= "
+                            "(SELECT MAX(rowid) FROM fast_events) - ?", (EVENTS_KEEP,))
         self.db.commit()
+
+    def _safe_log(self, level: str, code: str, detail: str = "") -> None:
+        try:
+            self.log(level, code, detail)
+        except Exception:  # noqa: BLE001, S110 - logging must never break the loop
+            pass
 
     def _restore_today(self) -> None:
         """Day rules continue after a restart: replay today's finished shadow trades."""
@@ -127,6 +153,8 @@ class FastDesk:
             self._record(rec)
             if rec["variant"] == self.active:
                 out.append(rec)
+        if recs:
+            self.db.commit()  # one commit per live trade, however many records closed
         self._maybe_switch()
         return out
 
@@ -146,8 +174,7 @@ class FastDesk:
                 (rec["variant"], rec["symbol"], rec["decided"], rec["opened"], rec["closed"],
                  rec["entry"], rec["exit"], rec["kind"], rec["gross"], rec["fees"], rec["net"],
                  self.balance))
-            self._put("balance", self.balance)
-        self.db.commit()
+            self._put("balance", self.balance, commit=False)
         self.mind.learn(features, rec["net"])
 
     def drop_open(self, reason: str) -> None:
@@ -157,6 +184,9 @@ class FastDesk:
             if acc.pending or acc.position:
                 dropped += 1
             acc.pending = acc.position = None
+        for symbol, bars in list(self.engine.bars.items()):  # no stale pre-gap second
+            self.engine.bars[symbol] = SymbolBars(bars.timeframes)
+        self.engine.last_price.clear()
         if dropped:
             self.log("warning", "dropped_on_gap", f"{dropped} ({reason})")
         self._maybe_switch()
@@ -175,9 +205,8 @@ class FastDesk:
                          int(choice.no_profitable), choice.reason, json.dumps(choice.stats)))
         self._put("last_review_ms", now)
         self._put("no_profitable", choice.no_profitable)
-        if choice.changed:
-            self.wanted = choice.variant
-            self._put("wanted", self.wanted)
+        self.wanted = choice.variant if choice.changed else None
+        self._put("wanted", self.wanted)
         self.log("info", "weekly_review", choice.reason)
         self._maybe_switch()
         return choice
@@ -185,9 +214,9 @@ class FastDesk:
     def _maybe_switch(self) -> None:
         if not self.wanted or self.wanted == self.active:
             return
-        acc = self.engine.accounts[self.active]
-        if acc.pending or acc.position:
-            return  # never switch in the middle of a trade
+        old, new = self.engine.accounts[self.active], self.engine.accounts[self.wanted]
+        if old.pending or old.position or new.pending or new.position:
+            return  # both flat: no trade that began before the switch is credited
         self.log("info", "variant_switched", f"{self.active} -> {self.wanted}")
         self.active, self.wanted = self.wanted, None
         self._put("active", self.active)
@@ -226,7 +255,25 @@ class FastDesk:
             d = json.loads(raw)["data"]
             self.on_trade(d["s"], int(d["T"]), float(d["p"]), float(d["q"]), bool(d["m"]))
         except Exception as error:  # noqa: BLE001 - never let the desk stop Sonic
-            self.log("error", "desk_error", f"{type(error).__name__}: {error}")
+            self._safe_log("error", "desk_error", f"{type(error).__name__}: {error}")
+
+    def _safe_review(self) -> None:
+        """At most once a minute, connected or not."""
+        if time.monotonic() < self._next_review:
+            return
+        self._next_review = time.monotonic() + REVIEW_EVERY_S
+        try:
+            self.review()
+        except Exception as error:  # noqa: BLE001
+            self._safe_log("error", "review_failed", f"{type(error).__name__}: {error}")
+
+    async def _rebuild_mind(self) -> None:
+        try:
+            learned = await self.mind.rebuild_in_background()
+            if learned:
+                self._safe_log("info", "mind_rebuilt", f"{learned} experiences")
+        except Exception as error:  # noqa: BLE001 - predictions stay off, experience is kept
+            self._safe_log("error", "mind_rebuild_failed", f"{type(error).__name__}: {error}")
 
     async def run_forever(self, stop_after: float | None = None) -> None:
         import websockets
@@ -234,32 +281,35 @@ class FastDesk:
         url = STREAM + "/".join(f"{s.lower()}@aggTrade" for s in SYMBOLS)
         began = time.time()
         backoff = 1
-        next_review = 0.0
-        while True:
-            try:
-                async with websockets.connect(url, ping_interval=20, max_size=2**22) as ws:
-                    self.log("info", "connected", url)
-                    backoff = 1
-                    while True:
-                        if stop_after and time.time() - began > stop_after:
-                            return
-                        if time.time() >= next_review:
-                            next_review = time.time() + 60
-                            try:
-                                self.review()
-                            except Exception as error:  # noqa: BLE001
-                                self.log("error", "review_failed", str(error))
-                        await self.handle(await asyncio.wait_for(ws.recv(), SILENCE_S))
-            except asyncio.CancelledError:
-                self.mind.save()
-                raise
-            except Exception as error:  # noqa: BLE001 - reconnect on anything
-                self.log("warning", "disconnected", f"{type(error).__name__}: {error}")
-                self.drop_open("disconnected")
+        rebuild = asyncio.create_task(self._rebuild_mind()) if self.mind.needs_rebuild else None
+        try:
+            while True:
                 if stop_after and time.time() - began > stop_after:
                     return
-                await asyncio.sleep(backoff)
-                backoff = min(backoff * 2, 60)
+                self._safe_review()
+                try:
+                    async with websockets.connect(url, ping_interval=20, max_size=2**22) as ws:
+                        self._safe_log("info", "connected", url)
+                        backoff = 1
+                        while True:
+                            if stop_after and time.time() - began > stop_after:
+                                return
+                            self._safe_review()
+                            await self.handle(await asyncio.wait_for(ws.recv(), SILENCE_S))
+                except asyncio.CancelledError:
+                    raise
+                except Exception as error:  # noqa: BLE001 - reconnect on anything
+                    self._safe_log("warning", "disconnected", f"{type(error).__name__}: {error}")
+                    try:
+                        self.drop_open("disconnected")
+                    except Exception as drop_error:  # noqa: BLE001
+                        self._safe_log("error", "drop_failed", str(drop_error))
+                    await asyncio.sleep(backoff)
+                    backoff = min(backoff * 2, 60)
+        finally:
+            if rebuild and not rebuild.done():
+                rebuild.cancel()
+            self.mind.save()  # never raises: the model file is only a cache
 
 
 def from_env(db: sqlite3.Connection, root: Path,

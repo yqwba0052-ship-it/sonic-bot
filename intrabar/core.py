@@ -160,6 +160,10 @@ class Account:
     closed: deque = field(default_factory=lambda: deque(maxlen=50))  # recent only: bounded memory
 
     def day(self, sec: int) -> dict:
+        key = sec // 86400
+        if key not in self.days:  # keep today and yesterday only: bounded memory
+            for old in [k for k in self.days if k < key - 1]:
+                del self.days[old]
         return self.days.setdefault(sec // 86400, {"wins": 0, "losses": 0, "pnl": 0.0,
                                                     "stopped": False, "per_coin": {}})
 

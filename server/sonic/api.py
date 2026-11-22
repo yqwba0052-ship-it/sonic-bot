@@ -29,11 +29,11 @@ def create_app(engine: Engine, token: str, background: bool = True) -> FastAPI:
         fast = (asyncio.create_task(engine.fast.run_forever())
                 if background and engine.fast is not None else None)
         yield
-        for running in (fast, task):
+        for running in (task, fast):  # Sonic first; the desk can never block its shutdown
             if not running:
                 continue
             running.cancel()
-            with suppress(asyncio.CancelledError):
+            with suppress(asyncio.CancelledError, Exception):
                 await running
 
     def require_token(authorization: str = Header(default="")) -> None:

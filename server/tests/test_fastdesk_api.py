@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import json
 
+import pytest
 from fastapi.testclient import TestClient
 from test_system import Clock, FakeMarket
 
@@ -66,7 +67,7 @@ async def test_desk_exception_does_not_stop_sonic(tmp_path, monkeypatch) -> None
     await engine.fast.handle(msg)
     await engine.fast.handle("not json")
     codes = [r[0] for r in engine.fast.db.execute("SELECT code FROM fast_events")]
-    assert codes == ["desk_error", "desk_error"]
+    assert codes == ["desk_error"]  # the repeat within a minute is counted, not written
     assert engine.halted == ""
     client = TestClient(create_app(engine, "secret", background=False))
     assert client.get("/status", headers=AUTH).status_code == 200
@@ -77,3 +78,28 @@ def test_trader_lab_switch_off_stops_studies(tmp_path, monkeypatch) -> None:
     monkeypatch.setattr(engine.lab, "needs_study", lambda _tid: True)
     assert engine.queue_study("anyone") is False
     assert Settings(mode="paper", token="t", db_path=":memory:").trader_lab is True  # default
+
+
+async def test_lab_off_still_runs_the_money_manager(tmp_path, monkeypatch) -> None:
+    engine = build(tmp_path, monkeypatch, desk=False, trader_lab=False)
+    calls = []
+
+    async def capital_tick(*_: object) -> None:
+        calls.append("capital")
+
+    async def paper_tick(*_: object) -> None:
+        calls.append("lab")
+
+    monkeypatch.setattr(engine.capital, "tick", capital_tick)
+    monkeypatch.setattr(engine.lab, "paper_tick", paper_tick)
+    await engine._lab_tick()
+    assert calls == ["capital"]
+
+
+async def test_lab_off_refuses_kopyon(tmp_path, monkeypatch) -> None:
+    engine = build(tmp_path, monkeypatch, desk=False, trader_lab=False)
+    monkeypatch.setattr(engine, "kopyon_key", lambda: {"key": "k" * 20})
+    engine.maybe_sync_kopyon()
+    assert engine.kopyon_task is None
+    with pytest.raises(ValueError, match="trader_lab_off"):
+        await engine.sync_kopyon(force=True)

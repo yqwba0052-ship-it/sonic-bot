@@ -11,6 +11,7 @@ module only reports eligibility; nothing here changes a trade.
 
 from __future__ import annotations
 
+import asyncio
 import json
 import math
 import pickle
@@ -52,6 +53,8 @@ class Mind:
         self.available = compose is not None
         self.learned = 0
         self.model = None
+        self.needs_rebuild = False
+        self.queued: list[tuple[dict, bool]] = []  # learned while a rebuild runs
         if not self.available:
             return
         if self.model_path and self.model_path.exists():
@@ -61,7 +64,12 @@ class Mind:
             except Exception:  # noqa: BLE001 - a broken cache is rebuilt from experience
                 self.model = None
         if self.model is None:
-            self.rebuild()
+            done = db.execute("SELECT COUNT(*) FROM fast_experience WHERE net IS NOT NULL"
+                              ).fetchone()[0]
+            if done == 0:
+                self.model = self._new_model()
+            else:  # never block Sonic's start: rebuild_in_background() does it
+                self.needs_rebuild = True
 
     @staticmethod
     def _new_model():
@@ -74,31 +82,60 @@ class Mind:
         return float(self.model.predict_proba_one(x_of(features)).get(True, 0.5))
 
     def learn(self, features: dict, net: float) -> None:
-        if not self.available or self.model is None:
+        if not self.available:
+            return
+        if self.model is None:
+            if self.needs_rebuild:
+                self.queued.append((x_of(features), net > 0))
             return
         self.model.learn_one(x_of(features), net > 0)
         self.learned += 1
         if self.learned % SAVE_EVERY == 0:
             self.save()
 
-    def save(self) -> None:
+    def save(self) -> bool:
+        """The file is only a cache: a failed save is harmless (rebuilt from experience)."""
         if not (self.available and self.model is not None and self.model_path):
-            return
-        tmp = self.model_path.with_suffix(".tmp")
-        with tmp.open("wb") as fh:
-            pickle.dump((self.model, self.learned), fh)
-        tmp.replace(self.model_path)
+            return False
+        try:
+            tmp = self.model_path.with_suffix(".tmp")
+            with tmp.open("wb") as fh:
+                pickle.dump((self.model, self.learned), fh)
+            tmp.replace(self.model_path)
+            return True
+        except OSError:
+            return False
+
+    def _rows(self) -> list[tuple[dict, bool]]:
+        return [(x_of(json.loads(f)), net > 0) for f, net in self.db.execute(
+            "SELECT features, net FROM fast_experience WHERE net IS NOT NULL ORDER BY id")]
+
+    def _train(self, rows: list[tuple[dict, bool]]):
+        model = self._new_model()
+        for x, y in rows:
+            model.learn_one(x, y)
+        return model
 
     def rebuild(self) -> int:
-        """Fresh model from the whole experience table, oldest first."""
+        """Fresh model from the whole experience table, oldest first (blocking)."""
         if not self.available:
             return 0
-        self.model = self._new_model()
-        self.learned = 0
-        for features, net in self.db.execute(
-                "SELECT features, net FROM fast_experience WHERE net IS NOT NULL ORDER BY id"):
-            self.model.learn_one(x_of(json.loads(features)), net > 0)
-            self.learned += 1
+        rows = self._rows()
+        self.model, self.learned = self._train(rows), len(rows)
+        self.queued, self.needs_rebuild = [], False
+        self.save()
+        return self.learned
+
+    async def rebuild_in_background(self) -> int:
+        """Read in the loop thread (shared sqlite connection), train in a worker thread."""
+        if not (self.available and self.needs_rebuild):
+            return 0
+        rows = self._rows()
+        model = await asyncio.to_thread(self._train, rows)
+        for x, y in self.queued:  # learned while training: nothing is lost
+            model.learn_one(x, y)
+        self.model, self.learned = model, len(rows) + len(self.queued)
+        self.queued, self.needs_rebuild = [], False
         self.save()
         return self.learned
 
@@ -115,6 +152,7 @@ class Mind:
         eligible = bool(n >= MIN_EXPERIENCE and taken_n and all_mean is not None
                         and taken_mean > all_mean)
         return {"available": self.available, "experience": n, "learned": self.learned,
+                "rebuilding": self.needs_rebuild,
                 "all_n_28d": all_n, "all_mean_28d": all_mean,
                 "taken_n_28d": taken_n, "taken_mean_28d": taken_mean,
                 "eligible_for_owner_review": eligible, "mode": "shadow"}

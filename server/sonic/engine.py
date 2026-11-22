@@ -251,8 +251,7 @@ class Engine:
                     finally:
                         self.bar_cache = None
                     if scanned:
-                        if self.settings.trader_lab:
-                            await self._lab_tick()
+                        await self._lab_tick()
                 if self.failing_since_ms is not None:
                     minutes = (self.now_ms() - self.failing_since_ms) // 60000
                     self.log("info", "connection_restored", f"after {minutes} min")
@@ -407,15 +406,16 @@ class Engine:
     async def _lab_tick(self) -> None:
         """Paper-trade the learned models and refresh the owner's synced trades. Never allowed
         to disturb Sonic: any failure is logged and ignored."""
-        try:
-            await self.lab.paper_tick(
-                lambda symbol: self.exchange.bars(symbol, strategy.INTERVAL, 600))
-            made = (self.lab.state("coins") or {}).get("made_ms") or 0
-            if self.lab.strategies() and self.now_ms() - made >= DAY_MS:
-                # new prices and paper results: compare the strategies per coin again daily
-                await self.lab.compare_coins(self.exchange.bars_until)
-        except Exception as error:  # noqa: BLE001 - the lab must never stop the trading loop
-            self.log("warning", "lab_failed", str(error)[:200])
+        if self.settings.trader_lab:  # switched off: only the lab stops; capital.tick still runs
+            try:
+                await self.lab.paper_tick(
+                    lambda symbol: self.exchange.bars(symbol, strategy.INTERVAL, 600))
+                made = (self.lab.state("coins") or {}).get("made_ms") or 0
+                if self.lab.strategies() and self.now_ms() - made >= DAY_MS:
+                    # new prices and paper results: compare the strategies per coin again daily
+                    await self.lab.compare_coins(self.exchange.bars_until)
+            except Exception as error:  # noqa: BLE001 - the lab must never stop the trading loop
+                self.log("warning", "lab_failed", str(error)[:200])
         try:
             await self.capital.tick(
                 self.strategy_client,
@@ -968,8 +968,7 @@ class Engine:
         while True:
             await self.tick()
             self.maybe_sync_account()
-            if self.settings.trader_lab:
-                self.maybe_sync_kopyon()
+            self.maybe_sync_kopyon()
             await asyncio.sleep(self.settings.tick_seconds)
 
     # ---------- Kopyon: lead traders' closed positions (third-party source, see kopyon.py)
@@ -990,7 +989,8 @@ class Engine:
                 and t["status"] == "watching" and kopyon.PORTFOLIO_ID.match(t["trader_id"])]
 
     def maybe_sync_kopyon(self) -> None:
-        if not self.kopyon_key() or (self.kopyon_task and not self.kopyon_task.done()):
+        if not self.settings.trader_lab or not self.kopyon_key() \
+                or (self.kopyon_task and not self.kopyon_task.done()):
             return
         targets = self.kopyon_targets()
         if not targets:
@@ -1004,6 +1004,8 @@ class Engine:
     async def sync_kopyon(self, only: str | None = None, force: bool = False) -> dict[str, Any]:
         """Due traders (or `only`, now): history once, then positions closed since the last
         seen. Budget-checked before every trader; errors are kept per trader and logged."""
+        if not self.settings.trader_lab:
+            raise ValueError("trader_lab_off")
         saved = self.kopyon_key()
         if not saved:
             raise ValueError("no_kopyon_key")
